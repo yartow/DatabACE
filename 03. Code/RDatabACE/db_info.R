@@ -1,8 +1,9 @@
 tableNames <- c(
-  "Persons", 
-  "Transactions",
+  "Person",
+  "State",
+  "Transaction",
   "Class", 
-  "Adress", 
+  "Address", 
   "SubjectGroup",
   "Subject",
   "ICCE_Certificate",
