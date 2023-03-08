@@ -10,6 +10,6 @@ tableNames <- c(
   "Enrollment",
   "Course",
   "PaceCourse",
-  "Pace",
+  "PACE",
   "CourseWorkICCE_Certificate"
 )
