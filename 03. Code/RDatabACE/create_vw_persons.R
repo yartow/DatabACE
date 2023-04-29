@@ -1,11 +1,6 @@
 
 library(sqldf)
 
-Person <- my_data$Person
-Address <- my_data$Address
-State <- my_data$State
-Class <- my_data$Class
-
 # Get Persons data
 
 # Show only 

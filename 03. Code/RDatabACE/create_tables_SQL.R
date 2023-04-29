@@ -22,12 +22,13 @@ dbFileLocation <- paste0(HOME_DIRECTORY, DATA_FOLDER, dbFileName)
 EXT_SQL <- ".sql"
 CHAR <- "character"
 DATE <- "Date"
-IGNORE_CHAR = "_"
+IGNORE_CHAR = "__"
 
 # this file gets info on the database, including table names
 source(paste0(CODE_DIRECTORY_R, "db_info.R"))
 
-# if lapply doesn't work, let's go for the old-fashioned for-loop way
+# create a new list and read and import the input data and store this into separate tables
+# if lapply doesn't work, go for the old-fashioned for-loop way
 my_data <- list()
 my_data <- lapply(tableNames, 
                   FUN = read_tables, 
@@ -40,8 +41,10 @@ my_data <- lapply(tableNames,
 # rename the tables according to `tableNames`
 names(my_data) <- tableNames
 
-# next step: create queries to join tables
+source(paste0(getwd(), "/03. Code/RDatabACE/separateTables.R"))
 
+# next step: create queries to join tables
+# see create_vw_grades.R
 
 
 

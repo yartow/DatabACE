@@ -14,7 +14,12 @@
 createSQL <- function(currentTableName, 
                       sql_populate_file_location, 
                       temp_table, 
-                      CHAR = "character"){
+                      CHAR = "character", 
+                      thisIgnoreCharacter = "__"){
+  
+  # for testing purposes
+  temp_table <- Person
+  thisIgnoreCharacter <- "__"
   
   # create SQL file
   temp_row <- ""
@@ -23,7 +28,14 @@ createSQL <- function(currentTableName,
   
   print(paste0("Creating SQL code for table '", currentTableName, "'"))
   
-  for(m in 1:nrow(temp_table)){
+  # Create an array of columns to ignore
+  columns_to_ignore <- grep(thisIgnoreCharacter, names(temp_table))
+  
+  for (m in 1:nrow(temp_table)){
+    
+    # testing purposes
+    # m <- 1
+    # n <- 1
     
     # create the SQL Insert-preamble
     temp_row <- paste0("insert into ", currentTableName, " values (")
@@ -31,11 +43,17 @@ createSQL <- function(currentTableName,
     # Concatenate all column values
     for (n in 1:ncol(temp_table)){
       
+      
+      # break from the for-loop if this column name contains an ignore character
+      if (length(which(columns_to_ignore == n)) > 0){
+        break
+      }
+      
       # write the current value into the SQL-line
       temp_value <- temp_table[[n]][m]
       
       # handle empty values
-      if(is.na(temp_value)){
+      if (is.na(temp_value)){
         
         # the value is null
         def_value <- "NULL"

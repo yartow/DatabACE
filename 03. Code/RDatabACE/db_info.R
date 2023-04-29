@@ -1,5 +1,9 @@
+# this is a list of tables that need to be imported
+
 tableNames <- c(
   "Person",
+  "Grade",
+  "Date",
   "State",
   "Transaction",
   "Class", 

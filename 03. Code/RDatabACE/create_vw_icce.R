@@ -1,11 +1,5 @@
 # create a view to show all ICCE levels
 
-ICCE_certificates <- my_data$ICCE_Certificate
-Enrollment <- my_data$Enrollment
-Coursework <- my_data$CourseWorkICCE_Certificate
-Course <- my_data$Course
-SubjectGroup <- my_data$SubjectGroup
-
 # select a certificate to view the requirements and options
 view_certificate <- "Intermediate"
 view_certificate <- "General Level 9"

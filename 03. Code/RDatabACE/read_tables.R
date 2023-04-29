@@ -4,7 +4,7 @@ read_tables <- function(currentTableName,
                         dbFileLocation, 
                         EXT_SQL, 
                         CODE_DIRECTORY_SQL, 
-                        IGNORE_CHAR = "+"
+                        IGNORE_CHAR = "__"
                         ){
   
   # testing purposes
@@ -20,6 +20,11 @@ read_tables <- function(currentTableName,
     print(paste0("Table ", currentTableName, " skipped"))
     return(paste0("Table ", currentTableName, " skipped"))
   }
+  
+  require(xlsx)
+  require(plyr)
+  require(dplyr)
+  require(tibble)
   
   # read file
   temp_table <- read.xlsx(
@@ -37,7 +42,8 @@ read_tables <- function(currentTableName,
   source(paste0(CODE_DIRECTORY_R, "createSQL.R"))
   createSQL(currentTableName, 
             sql_populate_file_location, 
-            temp_table)
+            temp_table, 
+            thisIgnoreCharacter = IGNORE_CHAR)
   
   # return the table as a result
   return(temp_table)
