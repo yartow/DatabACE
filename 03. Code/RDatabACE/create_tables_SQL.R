@@ -1,4 +1,4 @@
-
+# this function reads an Excel-file and inserts everything into tables
 
 library(xlsx)
 library(plyr)
@@ -15,8 +15,6 @@ CODE_DIRECTORY_R <- paste0(HOME_DIRECTORY, CODE_FOLDER, "RDatabACE/")
 
 dbFileName <- "db.xlsx"
 dbFileLocation <- paste0(HOME_DIRECTORY, DATA_FOLDER, dbFileName)
-
-
 
 # Static variables
 EXT_SQL <- ".sql"

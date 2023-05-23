@@ -2,3 +2,6 @@
 *$*.xlsx
 .DS_Store
 .Rproj.user
+*.RData*
+*03. Code/RDatabACE/.Rhistory
+03. Code/RDatabACE/.Rhistory

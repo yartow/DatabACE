@@ -1,10 +1,5 @@
 # create_vw_grades.R
 
-join(Grade, Person, 
-     # by = c("StudentID", "ID"))
-     join_by("StudentID" == "ID")
-)
-
   
 library(sqldf)
 
@@ -32,7 +27,7 @@ Grades <- sqldf(
     pace.Number
     
   from Grade g
-  join Person p 
+  join Person p  
     on g.StudentID = p.ID
   join Date d 
     on g.Date = d.Date
@@ -43,10 +38,36 @@ Grades <- sqldf(
     on pc.paceID = pace.ID
   join Course c 
     on c.ID = pc.courseID
-  
   "
 ) %>% 
   as_tibble
+
+# Selection
+# Only Toby, only the "Advanced Maths Bias" certificate
+
+thisSurname <- "Adeleke"
+thisCallName <- "Oluwatobi"
+certificate_selected <- "Advanced Maths Bias"
+
+# Get the Grades table, filter it to get only the relevant certificate
+Grades_filtered <- Grades %>% 
+  filter(Surname == thisSurname,
+         CallName == thisCallName)
+  # arrange()
+
+# Get the Enrollment table, filter it to get only the relevant certificate
+Enrollment_ordered <- Enrollment %>% 
+  filter(Certificate == certificate_selected) %>%
+  arrange(Order)
+
+# I need a way to find out which course's turn it is when we go through the Grades_filtered table.
+# This is only possible if in the EnrollmentCourses sheet there is data. This needs 
+# to be populated through a UI, such as 
+# * StudentID
+# * Certificate (optional), but needed when applying for a certificate
+# * Course (each selected course needs to be mapped to a field within the selected certificate. 
+# For example, if Apologetics has been chosen, the user must indicate wether this course 
+# applies as an elective, further credit option, or as elective for Biblical Studies.)
 
 # Find a way to pivot these into one row for each course
 # in a specific order 
@@ -57,10 +78,13 @@ Grades <- sqldf(
 
 #todo/tothiergebleven 
 
+# Plotting can occur later, first pivot 
+
 # Create plot
 # first update order of courses on enrollment worksheet 
 # then, according to this order reorder this table, for this student (regardless of term), by number 
 # plot each value with text, and then a position 
+
 
 # Dimensions of A4
 # create empty plot #todo/opzoeken 

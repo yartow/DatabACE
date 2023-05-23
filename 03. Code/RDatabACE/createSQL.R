@@ -1,4 +1,4 @@
-# this function create the SQL File with inserts
+# this function create the SQL File with inserts to populate an SQL table 
 
 
 # # if the file already exists, delete this first

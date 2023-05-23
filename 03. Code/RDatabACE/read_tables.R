@@ -1,4 +1,4 @@
-
+# this functions read a table and creates an SQL-file which populates an SQL table
 
 read_tables <- function(currentTableName, 
                         dbFileLocation, 
