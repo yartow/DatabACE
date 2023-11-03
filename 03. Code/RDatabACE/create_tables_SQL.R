@@ -1,10 +1,6 @@
 # this function reads an Excel-file and inserts everything into tables
 
-library(xlsx)
-library(plyr)
-library(dplyr)
-library(tibble)
-# library(DBI) # for SQL connections 
+source(paste0(getwd(), "/loadLibraries.R"))
 
 HOME_DIRECTORY <- "/Users/andrewyong/Documents/GitHub/DatabACE/"
 setwd(HOME_DIRECTORY)
@@ -39,6 +35,7 @@ my_data <- lapply(tableNames,
 # rename the tables according to `tableNames`
 names(my_data) <- tableNames
 
+# after loading all the data, separate this into tables
 source(paste0(getwd(), "/03. Code/RDatabACE/separateTables.R"))
 
 # next step: create queries to join tables

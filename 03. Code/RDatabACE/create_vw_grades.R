@@ -66,7 +66,7 @@ Enrollment_ordered <- Enrollment %>%
 # * StudentID
 # * Certificate (optional), but needed when applying for a certificate
 # * Course (each selected course needs to be mapped to a field within the selected certificate. 
-# For example, if Apologetics has been chosen, the user must indicate wether this course 
+# For example, if Apologetics has been chosen, the user must indicate whether this course 
 # applies as an elective, further credit option, or as elective for Biblical Studies.)
 
 # Find a way to pivot these into one row for each course
@@ -87,16 +87,36 @@ Enrollment_ordered <- Enrollment %>%
 
 
 # Dimensions of A4
-# create empty plot #todo/opzoeken 
+# create empty plot 
+# TODO find a way to plot same scale on both axes
 xlim_A4 <- c(0, 468)
 ylim_A4 <- c(0, 689)
+
+# create an empty plot
 plot(
   c(), 
-  c(), 
-  xlim_A4, 
-  ylim_A4
+  c(),
+  main = "Current Progress",
+  xlim = xlim_A4, 
+  ylim = ylim_A4
   )
-text(Grades$Alias[1], 
-     10, 10)
+
+
+# calculate the position of the row
+# for each course (`Alias`), print out the grades from left to right
+
+#todo/tothiergebleven 
+# TODO
+# Uitzoeken hoe A4 plotten
+# https://stackoverflow.com/questions/41768273/create-ggplots-with-the-same-scale-in-r
+# https://stackoverflow.com/questions/16783019/how-to-save-a-graph-as-an-a4-size-pdf-file-under-windows-system-r-ggplot2
+# Uitzoeken hoe hoog die rijen zijn
+# Elke rij in een apart png-bestand zetten en die als achtergrond gebruiken
+## Of eventueel elk blokje apart printen, en zelfs de kleur afhankelijk maken van het vak
+# Deze rijen moeten in een bepaalde volgorde. Welke volgorde gebruiken?
+
+
+# text(Grades$Alias[1], 
+#      10, 10)
 
 
