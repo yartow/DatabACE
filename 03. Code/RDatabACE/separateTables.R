@@ -1,17 +1,16 @@
 # separate tables from the my_data list into separate tables
 
-Person <- my_data$Person
-Person <- Person[-which(grepl(IGNORE_CHAR, names(Person)))]
-
-Date <- my_data$Date
-Grade <- my_data$Grade
-Address <- my_data$Address
-State <- my_data$State
-Class <- my_data$Class
-ICCE_certificates <- my_data$ICCE_Certificate
-Enrollment <- my_data$Enrollment
-Coursework <- my_data$CourseWorkICCE_Certificate
-Course <- my_data$Course
-SubjectGroup <- my_data$SubjectGroup
-PaceCourse <- my_data$PaceCourse
-PACE <- my_data$PACE
+print("Separating tables")
+Person <- my_data$Person %>% select(-contains(IGNORE_CHAR)) # Person <- Person[-which(grepl(IGNORE_CHAR, names(Person)))]
+Date <- my_data$Date %>% select(-contains(IGNORE_CHAR))
+Grade <- my_data$Grade %>% select(-contains(IGNORE_CHAR))
+Address <- my_data$Address %>% select(-contains(IGNORE_CHAR))
+State <- my_data$State %>% select(-contains(IGNORE_CHAR))
+Class <- my_data$Class %>% select(-contains(IGNORE_CHAR))
+ICCE_certificates <- my_data$ICCE_Certificate %>% select(-contains(IGNORE_CHAR))
+Enrollment <- my_data$Enrollment %>% select(-contains(IGNORE_CHAR))
+Coursework <- my_data$CourseWorkICCE_Certificate %>% select(-contains(IGNORE_CHAR))
+Course <- my_data$Course %>% select(-contains(IGNORE_CHAR))
+SubjectGroup <- my_data$SubjectGroup %>% select(-contains(IGNORE_CHAR))
+PaceCourse <- my_data$PaceCourse %>% select(-contains(IGNORE_CHAR))
+PACE <- my_data$PACE %>% select(-contains(IGNORE_CHAR))

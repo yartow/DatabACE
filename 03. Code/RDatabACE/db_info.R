@@ -1,4 +1,4 @@
-# this is a list of tables that need to be imported
+# this is a list of tables that need to be imported from the Excel file. 
 
 tableNames <- c(
   "Person",
