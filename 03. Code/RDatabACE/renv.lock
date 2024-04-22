@@ -210,6 +210,20 @@
       ],
       "Hash": "a8ebb0bb0edcf041a7649ee43a0e1735"
     },
+    "hms": {
+      "Package": "hms",
+      "Version": "1.1.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "lifecycle",
+        "methods",
+        "pkgconfig",
+        "rlang",
+        "vctrs"
+      ],
+      "Hash": "b59377caa7ed00fa41808342002138f9"
+    },
     "lifecycle": {
       "Package": "lifecycle",
       "Version": "1.0.3",
@@ -243,6 +257,23 @@
         "rlang"
       ],
       "Hash": "e2817ccf4a065c5d9d7f2cfbe7c1d78c"
+    },
+    "odbc": {
+      "Package": "odbc",
+      "Version": "1.3.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "DBI",
+        "R",
+        "Rcpp",
+        "bit64",
+        "blob",
+        "hms",
+        "methods",
+        "rlang"
+      ],
+      "Hash": "d42c4f464e14ce542718a17525265e05"
     },
     "pillar": {
       "Package": "pillar",
