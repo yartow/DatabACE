@@ -1,0 +1,61 @@
+ID,Surname,SurnamePrefix,FirstNames,CallName,Email,DateOfBirth,AddressID,Status,ClassID,FirstLanguageID,SecondLanguageID,StateID,BaptismId,DenominationId
+1,Adeleke,,Deborah,Deborah,,2007-01-01,1,Student,4,2,1,1,8,5
+2,Adeleke,,Oluwatobi Samuel,Oluwatobi,,2009-05-29,1,Student,4,2,1,1,4,5
+3,Adeleke,,Dorcas Mayowa Oluwatofarati Temitope Esther,Dorcas,,2011-11-24,1,Student,4,2,1,1,10,5
+4,Benschop,,Jannetje Hendrika,Hannah,,2013-01-02,2,Student,4,1,2,4,8,0
+5,Boulahdaraj,,Zakariya,Zakariya,,2011-06-18,3,Student,4,1,5,1,4,0
+6,Brand,van den,Ezra,Ezra,,2014-01-15,4,Student,4,1,2,1,6,0
+7,Brand,van den,Lois-Daan,Lois-Daan,,2015-03-05,4,Student,4,1,2,1,7,0
+8,Bruijne,de,Matthias,Matthias,,2013-08-21,5,Student,4,1,2,1,1,0
+9,Choi,,Byeol,Byeol,,2015-03-23,6,Student,4,1,2,2,9,6
+10,Gonzalez Rodriguez,,Eleazar Leonardo,Eleazar,,2016-03-17,7,Student,4,1,3,1,4,3
+11,Gunnink,,Johannes David Bernardus,Daan,,2018-10-21,8,Student,4,1,2,4,2,4
+12,Harkes,,Marinus Dirk Martijn,Stijn,,2018-07-17,9,Student,4,1,2,1,2,1
+13,Harkes,,Jonathan Anne Theodoor,Jona,,2020-07-21,9,Student,4,1,2,1,1,1
+14,Houweling,van,Benjamin Ezra,Ben,,2022-08-01,10,Student,4,1,2,1,7,0
+15,Houweling,van,Noah Christian,Noah,,2022-02-05,10,Student,4,1,2,1,3,0
+16,Houweling,van,Emma Rhod‚,Aim‚e,,2024-11-03,10,Student,4,1,2,1,7,0
+17,Kleef,van,Lo‹s Eunice,Lo‹s,,2022-02-23,11,Student,4,1,2,3,1,0
+18,Kleef,van,Jonathan,Jonathan,,2024-03-23,11,Student,4,1,2,3,8,0
+19,Lee ,,Kang Kevin,Kevin,,2024-10-10,12,Student,4,6,2,1,3,0
+20,Lee ,,Myung,Matthew,,2026-11-20,12,Student,4,6,2,1,7,0
+21,Littel,,Beline Elizabeth,Lina,,2024-02-13,13,Student,4,1,2,1,6,4
+22,Littel,,Simon Johannes,Sam,,2022-12-23,13,Student,4,1,2,1,8,4
+23,Littel,,Catharina Johanna,Noa,,2025-07-31,13,Student,4,1,2,1,9,4
+24,Trimp,,Elbert Dani‰l,Dani,,2022-08-22,14,Student,4,1,3,1,5,4
+25,Trimp,,Aron Pieter,Aron,,2023-01-10,14,Student,4,1,3,1,9,4
+26,Verwoerd,,Cornelia Elisabeth,Isolde,,2023-06-21,15,Student,4,1,2,4,10,0
+27,Verwoerd,,Martinus Gerardus,Magnus,,2022-11-05,15,Student,4,1,2,4,9,0
+28,Visser,,Lo‹s,Lo‹s,,2023-12-09,16,Student,4,1,2,4,8,0
+29,Yong,,Joseph Nathan Andrew Jun-Yin,Nathan,,2010-10-02,17,Student,4,1,4,1,6,4
+30,Yong,,Andrew,Andrew,a.yong@ceder.nl,1983-09-25,17,Monitor,0,1,2,0,6,4
+31,Bezemer,,Simon,Simon,s.bezemer@ceder.nl,1984-01-05,20,Supervisor,0,1,2,0,3,0
+32,Visser,,Hanna,Hanna,h.visser@ceder.nl,1981-01-17,16,Supervisor,3,1,2,0,7,0
+33,Trimp,,Annelies,Annelies,a.trimp@ceder.nl,1978-08-19,14,Supervisor,1,1,2,0,3,0
+34,Westerhof,,Petra,Petra,,1978-09-30,20,Monitor,0,1,2,0,3,0
+35,Kleef,van,Johanna,Johanna,,1980-06-21,20,Supervisor,2,1,2,0,8,0
+36,Bruin,de,Ada,Ada,,1979-11-06,21,Supervisor,0,1,2,0,8,0
+37,Lee ,,Irene,Irene,irene7416@naver.com,1982-03-22,12,Monitor,0,6,2,0,3,0
+38,Steenbeek,,Lukas,Lukas,,1983-05-25,18,Student,4,1,2,0,1,0
+39,Steenbeek,,Nathana‰l,Nathana‰l,,1984-05-25,18,Student,4,1,2,0,4,0
+40,Steenbeek,,Felicia (?),Anna,,1986-09-18,18,Student,3,1,2,0,5,0
+41,Brand,van den,Joost,Joost,joostvandenbrand@gmail.com,1985-02-10,4,Parent,0,1,2,0,7,0
+42,Harkes,,F.J. ,Frannie,harkesfj@gmail.com,1982-09-06,9,Parent,0,1,2,0,7,0
+43,Harkes,,Claudia,Dennis,,1980-05-10,9,Parent,0,1,,0,7,0
+44,Houweling,van,Rob,Rob,rob@vhouwenling.nl,1979-10-19,10,Parent,0,1,2,0,5,0
+45,Littel,,Annemieke,Annemieke,aplittel@hotmail.com,1979-08-29,13,Parent,0,1,2,0,6,0
+46,Littel,,Paul,Paul,aplittel@hotmail.com,1979-06-12,13,Parent,0,1,2,0,2,0
+47,Trimp,,Hugo,Hugo,hugo@trimp.nl,1982-01-06,14,Parent,0,1,2,0,7,0
+48,Steenbeek,,Robert,Robert,robertsteenbeek@hotmail.com,1979-08-29,18,Parent,0,1,2,0,6,0
+49,Wijngaarden,van,Jan,Jan,janvanwijngaarden@live.nl,1979-10-13,22,Parent,0,1,2,0,7,0
+50,Trimp,,Claudia,Claudia,claudia@trimp.nl,1980-01-20,23,Parent,0,1,2,0,8,0
+51,Unknown,,Unknown,Unknown,seai81@hotmail.com,1977-05-29,24,Parent,0,1,2,0,8,0
+52,Hoogendoorn,,Claudia,Claudia,,1975-07-27,25,Parent,0,1,,0,7,0
+53,Hoogendoorn,,Boaz,Boaz,,1973-07-07,25,Student,3,1,,1,3,0
+54,Steenbeek,,,Refaja,,1976-04-22,18,Student,1,1,,1,8,0
+55,Steenbeek,,Gabri‰l,Gabri‰l,,1978-04-12,18,Student,2,1,,1,6,0
+56,Chen,,,Sofia,,1980-04-07,26,Student,1,6,1,1,10,0
+57,Houweling,van,,Eva,,1977-12-10,10,Student,1,1,,1,10,0
+58,Choi,,Daniel,Daniel,,1980-02-19,6,Student,3,1,2,2,9,0
+59,Romeijn,Ter Aar,Harold,Harold,,1980-07-18,27,Student,3,1,,,2,
+60,Romeijn,Ter Aar,Marith,Marith,,1980-04-16,27,Student,2,1,,,4,

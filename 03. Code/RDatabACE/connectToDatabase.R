@@ -14,7 +14,10 @@ library(odbc)
 # HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
 # ```
 
-# Replace the following with your actual connection details
+
+Server=localhost\SQLEXPRESS;Database=Ceder;Trusted_Connection=True;
+
+# Database credentials 
 server <- "localhost,1433"
 database <- "Ceder"
 uid <- "sa"
