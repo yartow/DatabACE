@@ -6,7 +6,8 @@ select
     l.FirstLanguage, 
     l.SecondLanguage, 
     b.Baptism, 
-    d.Denomination
+    d.Denomination,
+	p.IsDislectic
 from Person p
 join Address a 
     on p.AddressID = a.ID
