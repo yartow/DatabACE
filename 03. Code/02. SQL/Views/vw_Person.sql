@@ -1,4 +1,4 @@
-create view vw_Person as 
+-- create view vw_Person as 
 
 select 
     p.Surname, 
