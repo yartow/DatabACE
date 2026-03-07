@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { insertStudentSchema } from "@shared/schema";
+import { insertStudentSchema, insertEnrollmentSchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -109,6 +109,45 @@ export async function registerRoutes(
     }
     const d = await storage.getDates();
     res.json(d);
+  });
+
+  app.get("/api/enrollments", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile) return res.status(403).json({ message: "Forbidden" });
+    const { studentId } = req.query;
+    if (!studentId) return res.status(400).json({ message: "studentId query parameter required" });
+    const result = await storage.getEnrollmentsByStudent(parseInt(studentId));
+    res.json(result);
+  });
+
+  app.post("/api/enrollments", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertEnrollmentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const enrollment = await storage.createEnrollment(parsed.data);
+    res.json(enrollment);
+  });
+
+  app.patch("/api/enrollments/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertEnrollmentSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const enrollment = await storage.updateEnrollment(parseInt(req.params.id), parsed.data);
+    if (!enrollment) return res.status(404).json({ message: "Not found" });
+    res.json(enrollment);
+  });
+
+  app.delete("/api/enrollments/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteEnrollment(parseInt(req.params.id));
+    res.json({ success: true });
   });
 
   app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {

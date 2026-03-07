@@ -15,6 +15,7 @@ import ReportsPage from "@/pages/reports";
 import MaterialsPage from "@/pages/materials";
 import StudentsPage from "@/pages/students";
 import ImportPage from "@/pages/import";
+import EnrollmentsPage from "@/pages/enrollments";
 import SetupProfilePage from "@/pages/setup-profile";
 import type { UserProfile } from "@shared/schema";
 
@@ -26,6 +27,7 @@ function AuthenticatedRouter() {
       <Route path="/reports" component={ReportsPage} />
       <Route path="/materials" component={MaterialsPage} />
       <Route path="/students" component={StudentsPage} />
+      <Route path="/enrollments" component={EnrollmentsPage} />
       <Route path="/import" component={ImportPage} />
       <Route component={NotFound} />
     </Switch>

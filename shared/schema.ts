@@ -82,6 +82,25 @@ export const dates = pgTable("dates", {
   week: integer("week"),
 });
 
+export const enrollments = pgTable("enrollments", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  studentId: integer("student_id").notNull().references(() => students.id),
+  courseId: integer("course_id").notNull().references(() => courses.id),
+  dateStarted: text("date_started").notNull(),
+  dateEnded: text("date_ended"),
+  grade: real("grade"),
+  remarks: text("remarks"),
+});
+
+export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+  student: one(students, { fields: [enrollments.studentId], references: [students.id] }),
+  course: one(courses, { fields: [enrollments.courseId], references: [courses.id] }),
+}));
+
+export const studentsRelations = relations(students, ({ many }) => ({
+  enrollments: many(enrollments),
+}));
+
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
   user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
 }));
@@ -104,6 +123,7 @@ export const insertCourseSchema = createInsertSchema(courses);
 export const insertPaceSchema = createInsertSchema(paces);
 export const insertPaceCourseSchema = createInsertSchema(paceCourses);
 export const insertDateSchema = createInsertSchema(dates);
+export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({ id: true });
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true });
 
 export type Student = typeof students.$inferSelect;
@@ -116,5 +136,7 @@ export type PaceCourse = typeof paceCourses.$inferSelect;
 export type InsertPaceCourse = z.infer<typeof insertPaceCourseSchema>;
 export type DateEntry = typeof dates.$inferSelect;
 export type InsertDate = z.infer<typeof insertDateSchema>;
+export type Enrollment = typeof enrollments.$inferSelect;
+export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;

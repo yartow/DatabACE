@@ -1,10 +1,10 @@
 import {
-  students, courses, paces, paceCourses, dates, userProfiles,
-  type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile,
-  type InsertStudent, type InsertUserProfile,
+  students, courses, paces, paceCourses, dates, userProfiles, enrollments,
+  type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment,
+  type InsertStudent, type InsertUserProfile, type InsertEnrollment,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   getStudents(): Promise<Student[]>;
@@ -24,6 +24,12 @@ export interface IStorage {
 
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
+
+  getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
+  getEnrollment(id: number): Promise<Enrollment | undefined>;
+  createEnrollment(data: InsertEnrollment): Promise<Enrollment>;
+  updateEnrollment(id: number, data: Partial<InsertEnrollment>): Promise<Enrollment | undefined>;
+  deleteEnrollment(id: number): Promise<void>;
 
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   createUserProfile(data: InsertUserProfile): Promise<UserProfile>;
@@ -78,6 +84,25 @@ export class DatabaseStorage implements IStorage {
   }
   async getDatesByTerm(term: number): Promise<DateEntry[]> {
     return db.select().from(dates).where(eq(dates.term, term));
+  }
+
+  async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {
+    return db.select().from(enrollments).where(eq(enrollments.studentId, studentId));
+  }
+  async getEnrollment(id: number): Promise<Enrollment | undefined> {
+    const [e] = await db.select().from(enrollments).where(eq(enrollments.id, id));
+    return e;
+  }
+  async createEnrollment(data: InsertEnrollment): Promise<Enrollment> {
+    const [e] = await db.insert(enrollments).values(data).returning();
+    return e;
+  }
+  async updateEnrollment(id: number, data: Partial<InsertEnrollment>): Promise<Enrollment | undefined> {
+    const [e] = await db.update(enrollments).set(data).where(eq(enrollments.id, id)).returning();
+    return e;
+  }
+  async deleteEnrollment(id: number): Promise<void> {
+    await db.delete(enrollments).where(eq(enrollments.id, id));
   }
 
   async getUserProfile(userId: string): Promise<UserProfile | undefined> {
