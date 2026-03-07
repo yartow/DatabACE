@@ -1,269 +1,241 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
-import type { Student, Subject, Material, StudentSubject, UserProfile } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Package, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from "react";
+import type { Course, Pace, PaceCourse } from "@shared/schema";
+import { BookOpen, Package, CheckCircle2, XCircle } from "lucide-react";
 
 export default function MaterialsPage() {
-  const [selectedStudent, setSelectedStudent] = useState<string>("");
-  const { toast } = useToast();
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedCourse, setSelectedCourse] = useState<string>("all");
 
-  const { data: students } = useQuery<Student[]>({ queryKey: ["/api/students"] });
-  const { data: subjects } = useQuery<Subject[]>({ queryKey: ["/api/subjects"] });
-  const { data: materials } = useQuery<Material[]>({ queryKey: ["/api/materials"] });
-  const { data: studentSubjects } = useQuery<StudentSubject[]>({
-    queryKey: ["/api/student-subjects", selectedStudent],
-    queryFn: async () => {
-      if (!selectedStudent) return [];
-      const res = await fetch(`/api/student-subjects?studentId=${selectedStudent}`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch");
-      return res.json();
-    },
-    enabled: !!selectedStudent,
-  });
-  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
+  const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
+  const { data: allPaces } = useQuery<Pace[]>({ queryKey: ["/api/paces"] });
+  const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
 
-  const isTeacher = profile?.role === "teacher";
-  const subjectMap = new Map(subjects?.map(s => [s.id, s]) || []);
+  const uniqueSubjects = useMemo(() => {
+    if (!courses) return [];
+    return [...new Set(courses.filter(c => c.subjectTemp).map(c => c.subjectTemp!))].sort();
+  }, [courses]);
 
-  const updateMaterial = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<Material> }) => {
-      await apiRequest("PATCH", `/api/materials/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
-      toast({ title: "Material updated" });
-    },
-  });
+  const filteredCourses = useMemo(() => {
+    if (!courses) return [];
+    if (selectedSubject === "all") return courses;
+    return courses.filter(c => c.subjectTemp === selectedSubject);
+  }, [courses, selectedSubject]);
 
-  const updateStudentSubject = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<StudentSubject> }) => {
-      await apiRequest("PATCH", `/api/student-subjects/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/student-subjects"] });
-      toast({ title: "Status updated" });
-    },
-  });
+  const activePaceCourses = useMemo(() => {
+    if (!paceCourses) return [];
+    return paceCourses.filter(pc => pc.active === 1);
+  }, [paceCourses]);
 
-  const notPassedSubjects = studentSubjects?.filter(ss => !ss.passed) || [];
-  const notExaminedSubjects = studentSubjects?.filter(ss => !ss.examined) || [];
-  const pendingMaterials = materials?.filter(m => !m.received) || [];
-  const notOrderedMaterials = materials?.filter(m => !m.ordered) || [];
+  const inactivePaceCourses = useMemo(() => {
+    if (!paceCourses) return [];
+    return paceCourses.filter(pc => pc.active === 0);
+  }, [paceCourses]);
+
+  const courseMap = useMemo(() => {
+    return new Map(courses?.map(c => [c.id, c]) || []);
+  }, [courses]);
+
+  const paceMap = useMemo(() => {
+    return new Map(allPaces?.map(p => [p.id, p]) || []);
+  }, [allPaces]);
+
+  const displayPaceCourses = useMemo(() => {
+    if (!paceCourses) return [];
+    let filtered = paceCourses;
+    if (selectedSubject !== "all") {
+      const courseIds = new Set(filteredCourses.map(c => c.id));
+      filtered = filtered.filter(pc => courseIds.has(pc.courseId));
+    }
+    if (selectedCourse !== "all") {
+      filtered = filtered.filter(pc => pc.courseId === parseInt(selectedCourse));
+    }
+    return filtered;
+  }, [paceCourses, selectedSubject, selectedCourse, filteredCourses]);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Materials & Examinations</h1>
-        <p className="text-muted-foreground mt-1">Track course completion, exams, and material orders.</p>
+        <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Courses & PACEs</h1>
+        <p className="text-muted-foreground mt-1">Browse courses, PACEs, and their active status.</p>
       </div>
 
-      <Tabs defaultValue="exams" className="space-y-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Courses</CardTitle>
+            <BookOpen className="w-4 h-4 text-chart-1" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" data-testid="text-total-courses">{courses?.length || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total PACEs</CardTitle>
+            <Package className="w-4 h-4 text-chart-2" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" data-testid="text-total-paces">{allPaces?.length || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active PACE-Courses</CardTitle>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-active">{activePaceCourses.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Inactive PACE-Courses</CardTitle>
+            <XCircle className="w-4 h-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" data-testid="text-inactive">{inactivePaceCourses.length}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Subject</label>
+          <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v); setSelectedCourse("all"); }}>
+            <SelectTrigger className="w-[180px]" data-testid="select-subject">
+              <SelectValue placeholder="All subjects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Subjects</SelectItem>
+              {uniqueSubjects.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Course</label>
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+            <SelectTrigger className="w-[250px]" data-testid="select-course">
+              <SelectValue placeholder="All courses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Courses</SelectItem>
+              {filteredCourses.map(c => (
+                <SelectItem key={c.id} value={c.id.toString()}>
+                  {c.course || c.aceAlias || `Course ${c.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs defaultValue="pace-courses" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="exams" data-testid="tab-exams">Exams & Courses</TabsTrigger>
-          <TabsTrigger value="materials" data-testid="tab-materials">Materials</TabsTrigger>
+          <TabsTrigger value="pace-courses" data-testid="tab-pace-courses">PACE-Course Links</TabsTrigger>
+          <TabsTrigger value="courses" data-testid="tab-courses">Courses</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="exams" className="space-y-6">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Student</label>
-            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-              <SelectTrigger className="w-[220px]" data-testid="select-student-materials">
-                <SelectValue placeholder="Select a student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students?.map(s => (
-                  <SelectItem key={s.id} value={s.id.toString()}>
-                    {s.firstName} {s.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {!selectedStudent ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <p className="text-muted-foreground">Select a student to view their course and exam status.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid sm:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Not Passed</CardTitle>
-                  <XCircle className="w-4 h-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold" data-testid="text-not-passed">{notPassedSubjects.length}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Not Examined</CardTitle>
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold" data-testid="text-not-examined">{notExaminedSubjects.length}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Courses</CardTitle>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold" data-testid="text-total-courses">{studentSubjects?.length || 0}</p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {selectedStudent && studentSubjects && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Course Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full text-sm" data-testid="table-courses">
+        <TabsContent value="pace-courses">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                PACE-Course Links ({displayPaceCourses.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" data-testid="table-pace-courses">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Subject</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Passed</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Examined</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Exam Date</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">ID</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Code</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Course</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">PACE #</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Credit</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {studentSubjects.map(ss => {
-                      const subject = subjectMap.get(ss.subjectId);
+                    {displayPaceCourses.slice(0, 100).map(pc => {
+                      const course = courseMap.get(pc.courseId);
                       return (
-                        <tr key={ss.id} className="border-b last:border-0">
-                          <td className="py-3 px-2 font-medium">{subject?.name || "Unknown"}</td>
-                          <td className="text-center py-3 px-2">
-                            {isTeacher ? (
-                              <Checkbox
-                                checked={ss.passed}
-                                onCheckedChange={(checked) => updateStudentSubject.mutate({ id: ss.id, data: { passed: !!checked } })}
-                                data-testid={`checkbox-passed-${ss.id}`}
-                              />
-                            ) : (
-                              <Badge variant={ss.passed ? "default" : "destructive"}>
-                                {ss.passed ? "Yes" : "No"}
-                              </Badge>
-                            )}
+                        <tr key={pc.id} className="border-b last:border-0">
+                          <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
+                          <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
+                          <td className="py-2 px-2 font-medium text-xs">
+                            {course?.course || course?.aceAlias || `#${pc.courseId}`}
                           </td>
-                          <td className="text-center py-3 px-2">
-                            {isTeacher ? (
-                              <Checkbox
-                                checked={ss.examined}
-                                onCheckedChange={(checked) => updateStudentSubject.mutate({ id: ss.id, data: { examined: !!checked } })}
-                                data-testid={`checkbox-examined-${ss.id}`}
-                              />
-                            ) : (
-                              <Badge variant={ss.examined ? "default" : "secondary"}>
-                                {ss.examined ? "Yes" : "No"}
-                              </Badge>
-                            )}
+                          <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
+                          <td className="text-center py-2 px-2">{pc.creditValuePace ?? "—"}</td>
+                          <td className="text-center py-2 px-2 text-muted-foreground">
+                            {pc.passThreshold != null ? `${Math.round(pc.passThreshold * 100)}%` : "—"}
                           </td>
-                          <td className="text-center py-3 px-2 text-muted-foreground">
-                            {ss.examDate || "—"}
+                          <td className="text-center py-2 px-2">
+                            <Badge variant={pc.active === 1 ? "default" : "secondary"}>
+                              {pc.active === 1 ? "Active" : "Inactive"}
+                            </Badge>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-              </CardContent>
-            </Card>
-          )}
+                {displayPaceCourses.length > 100 && (
+                  <p className="text-sm text-muted-foreground text-center py-3">
+                    Showing 100 of {displayPaceCourses.length}. Use filters to narrow results.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="materials" className="space-y-6">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Pending Delivery</CardTitle>
-                <Package className="w-4 h-4 text-amber-500" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold" data-testid="text-pending-materials">{pendingMaterials.length}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Not Ordered</CardTitle>
-                <BookOpen className="w-4 h-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold" data-testid="text-not-ordered">{notOrderedMaterials.length}</p>
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="courses">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">All Materials</CardTitle>
+              <CardTitle className="text-base">Courses ({filteredCourses.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <table className="w-full text-sm" data-testid="table-materials">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Material</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Subject</th>
-                    <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
-                    <th className="text-center py-3 px-2 font-medium text-muted-foreground">Ordered</th>
-                    <th className="text-center py-3 px-2 font-medium text-muted-foreground">Received</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {materials?.map(mat => {
-                    const subject = subjectMap.get(mat.subjectId);
-                    return (
-                      <tr key={mat.id} className="border-b last:border-0">
-                        <td className="py-3 px-2 font-medium">{mat.name}</td>
-                        <td className="py-3 px-2 text-muted-foreground">{subject?.name || "Unknown"}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" data-testid="table-courses-list">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Course</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Subject</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Group</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCourses.map(c => (
+                      <tr key={c.id} className="border-b last:border-0">
+                        <td className="py-3 px-2 font-medium">{c.course || c.aceAlias || `Course ${c.id}`}</td>
                         <td className="text-center py-3 px-2">
-                          <Badge variant="secondary">{mat.type}</Badge>
+                          <Badge variant="secondary">{c.subjectAbb || "—"}</Badge>
                         </td>
-                        <td className="text-center py-3 px-2">
-                          {isTeacher ? (
-                            <Checkbox
-                              checked={mat.ordered}
-                              onCheckedChange={(checked) => updateMaterial.mutate({ id: mat.id, data: { ordered: !!checked } })}
-                              data-testid={`checkbox-ordered-${mat.id}`}
-                            />
-                          ) : (
-                            <Badge variant={mat.ordered ? "default" : "destructive"}>
-                              {mat.ordered ? "Yes" : "No"}
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="text-center py-3 px-2">
-                          {isTeacher ? (
-                            <Checkbox
-                              checked={mat.received}
-                              onCheckedChange={(checked) => updateMaterial.mutate({ id: mat.id, data: { received: !!checked } })}
-                              data-testid={`checkbox-received-${mat.id}`}
-                            />
-                          ) : (
-                            <Badge variant={mat.received ? "default" : "secondary"}>
-                              {mat.received ? "Yes" : "No"}
-                            </Badge>
-                          )}
+                        <td className="text-center py-3 px-2 text-muted-foreground text-xs">{c.subjectGroup || "—"}</td>
+                        <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
+                        <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
+                        <td className="text-center py-3 px-2">{c.starValue ?? "—"}</td>
+                        <td className="text-center py-3 px-2 text-muted-foreground">
+                          {c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,49 +1,29 @@
 import {
-  families, students, subjects, terms, grades, materials, studentSubjects, userProfiles,
-  type Family, type Student, type Subject, type Term, type Grade, type Material,
-  type StudentSubject, type UserProfile,
-  type InsertFamily, type InsertStudent, type InsertSubject, type InsertTerm,
-  type InsertGrade, type InsertMaterial, type InsertStudentSubject, type InsertUserProfile,
+  students, courses, paces, paceCourses, dates, userProfiles,
+  type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile,
+  type InsertStudent, type InsertUserProfile,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getFamilies(): Promise<Family[]>;
-  getFamily(id: number): Promise<Family | undefined>;
-  createFamily(data: InsertFamily): Promise<Family>;
-
   getStudents(): Promise<Student[]>;
-  getStudentsByFamily(familyId: number): Promise<Student[]>;
   getStudent(id: number): Promise<Student | undefined>;
   createStudent(data: InsertStudent): Promise<Student>;
   updateStudent(id: number, data: Partial<InsertStudent>): Promise<Student | undefined>;
   deleteStudent(id: number): Promise<void>;
 
-  getSubjects(): Promise<Subject[]>;
-  getSubject(id: number): Promise<Subject | undefined>;
-  createSubject(data: InsertSubject): Promise<Subject>;
+  getCourses(): Promise<Course[]>;
+  getCourse(id: number): Promise<Course | undefined>;
 
-  getTerms(): Promise<Term[]>;
-  getTerm(id: number): Promise<Term | undefined>;
-  createTerm(data: InsertTerm): Promise<Term>;
+  getPaces(): Promise<Pace[]>;
 
-  getGrades(): Promise<Grade[]>;
-  getGradesByStudent(studentId: number): Promise<Grade[]>;
-  getGradesByStudentAndTerm(studentId: number, termId: number): Promise<Grade[]>;
-  createGrade(data: InsertGrade): Promise<Grade>;
-  updateGrade(id: number, data: Partial<InsertGrade>): Promise<Grade | undefined>;
-  deleteGrade(id: number): Promise<void>;
+  getPaceCourses(): Promise<PaceCourse[]>;
+  getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]>;
+  getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]>;
 
-  getMaterials(): Promise<Material[]>;
-  getMaterialsBySubject(subjectId: number): Promise<Material[]>;
-  createMaterial(data: InsertMaterial): Promise<Material>;
-  updateMaterial(id: number, data: Partial<InsertMaterial>): Promise<Material | undefined>;
-
-  getStudentSubjects(): Promise<StudentSubject[]>;
-  getStudentSubjectsByStudent(studentId: number): Promise<StudentSubject[]>;
-  createStudentSubject(data: InsertStudentSubject): Promise<StudentSubject>;
-  updateStudentSubject(id: number, data: Partial<InsertStudentSubject>): Promise<StudentSubject | undefined>;
+  getDates(): Promise<DateEntry[]>;
+  getDatesByTerm(term: number): Promise<DateEntry[]>;
 
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   createUserProfile(data: InsertUserProfile): Promise<UserProfile>;
@@ -52,23 +32,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getFamilies(): Promise<Family[]> {
-    return db.select().from(families);
-  }
-  async getFamily(id: number): Promise<Family | undefined> {
-    const [f] = await db.select().from(families).where(eq(families.id, id));
-    return f;
-  }
-  async createFamily(data: InsertFamily): Promise<Family> {
-    const [f] = await db.insert(families).values(data).returning();
-    return f;
-  }
-
   async getStudents(): Promise<Student[]> {
     return db.select().from(students);
-  }
-  async getStudentsByFamily(familyId: number): Promise<Student[]> {
-    return db.select().from(students).where(eq(students.familyId, familyId));
   }
   async getStudent(id: number): Promise<Student | undefined> {
     const [s] = await db.select().from(students).where(eq(students.id, id));
@@ -86,79 +51,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(students).where(eq(students.id, id));
   }
 
-  async getSubjects(): Promise<Subject[]> {
-    return db.select().from(subjects);
+  async getCourses(): Promise<Course[]> {
+    return db.select().from(courses);
   }
-  async getSubject(id: number): Promise<Subject | undefined> {
-    const [s] = await db.select().from(subjects).where(eq(subjects.id, id));
-    return s;
-  }
-  async createSubject(data: InsertSubject): Promise<Subject> {
-    const [s] = await db.insert(subjects).values(data).returning();
-    return s;
+  async getCourse(id: number): Promise<Course | undefined> {
+    const [c] = await db.select().from(courses).where(eq(courses.id, id));
+    return c;
   }
 
-  async getTerms(): Promise<Term[]> {
-    return db.select().from(terms);
-  }
-  async getTerm(id: number): Promise<Term | undefined> {
-    const [t] = await db.select().from(terms).where(eq(terms.id, id));
-    return t;
-  }
-  async createTerm(data: InsertTerm): Promise<Term> {
-    const [t] = await db.insert(terms).values(data).returning();
-    return t;
+  async getPaces(): Promise<Pace[]> {
+    return db.select().from(paces);
   }
 
-  async getGrades(): Promise<Grade[]> {
-    return db.select().from(grades);
+  async getPaceCourses(): Promise<PaceCourse[]> {
+    return db.select().from(paceCourses);
   }
-  async getGradesByStudent(studentId: number): Promise<Grade[]> {
-    return db.select().from(grades).where(eq(grades.studentId, studentId));
+  async getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]> {
+    return db.select().from(paceCourses).where(eq(paceCourses.paceId, paceId));
   }
-  async getGradesByStudentAndTerm(studentId: number, termId: number): Promise<Grade[]> {
-    return db.select().from(grades).where(and(eq(grades.studentId, studentId), eq(grades.termId, termId)));
-  }
-  async createGrade(data: InsertGrade): Promise<Grade> {
-    const [g] = await db.insert(grades).values(data).returning();
-    return g;
-  }
-  async updateGrade(id: number, data: Partial<InsertGrade>): Promise<Grade | undefined> {
-    const [g] = await db.update(grades).set(data).where(eq(grades.id, id)).returning();
-    return g;
-  }
-  async deleteGrade(id: number): Promise<void> {
-    await db.delete(grades).where(eq(grades.id, id));
+  async getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]> {
+    return db.select().from(paceCourses).where(eq(paceCourses.courseId, courseId));
   }
 
-  async getMaterials(): Promise<Material[]> {
-    return db.select().from(materials);
+  async getDates(): Promise<DateEntry[]> {
+    return db.select().from(dates);
   }
-  async getMaterialsBySubject(subjectId: number): Promise<Material[]> {
-    return db.select().from(materials).where(eq(materials.subjectId, subjectId));
-  }
-  async createMaterial(data: InsertMaterial): Promise<Material> {
-    const [m] = await db.insert(materials).values(data).returning();
-    return m;
-  }
-  async updateMaterial(id: number, data: Partial<InsertMaterial>): Promise<Material | undefined> {
-    const [m] = await db.update(materials).set(data).where(eq(materials.id, id)).returning();
-    return m;
-  }
-
-  async getStudentSubjects(): Promise<StudentSubject[]> {
-    return db.select().from(studentSubjects);
-  }
-  async getStudentSubjectsByStudent(studentId: number): Promise<StudentSubject[]> {
-    return db.select().from(studentSubjects).where(eq(studentSubjects.studentId, studentId));
-  }
-  async createStudentSubject(data: InsertStudentSubject): Promise<StudentSubject> {
-    const [ss] = await db.insert(studentSubjects).values(data).returning();
-    return ss;
-  }
-  async updateStudentSubject(id: number, data: Partial<InsertStudentSubject>): Promise<StudentSubject | undefined> {
-    const [ss] = await db.update(studentSubjects).set(data).where(eq(studentSubjects.id, id)).returning();
-    return ss;
+  async getDatesByTerm(term: number): Promise<DateEntry[]> {
+    return db.select().from(dates).where(eq(dates.term, term));
   }
 
   async getUserProfile(userId: string): Promise<UserProfile | undefined> {

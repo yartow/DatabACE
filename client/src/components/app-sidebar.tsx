@@ -16,7 +16,7 @@ const teacherItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Student Progress Chart", url: "/spc", icon: BarChart3 },
   { title: "Term Reports", url: "/reports", icon: FileText },
-  { title: "Materials & Exams", url: "/materials", icon: BookOpen },
+  { title: "Courses & PACEs", url: "/materials", icon: BookOpen },
   { title: "Students", url: "/students", icon: Users },
   { title: "Import Data", url: "/import", icon: Upload },
 ];
@@ -25,7 +25,7 @@ const parentItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Student Progress Chart", url: "/spc", icon: BarChart3 },
   { title: "Term Reports", url: "/reports", icon: FileText },
-  { title: "Materials & Exams", url: "/materials", icon: BookOpen },
+  { title: "Courses & PACEs", url: "/materials", icon: BookOpen },
 ];
 
 export function AppSidebar() {
