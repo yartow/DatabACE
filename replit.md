@@ -26,6 +26,8 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status
 - `dates` - School calendar with term/week info, holidays, weekends (10 columns)
 
+- `enrollments` - Student-course enrollments (studentId → students, courseId → courses, dateStarted, dateEnded, grade, remarks). Auto-generated ID.
+
 **Key constraint**: No direct FK between `paces` and `courses`. The relationship goes through `paceCourses` intermediary table.
 
 ## Key Files
@@ -36,7 +38,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `server/seed.ts` - Database seeding from Excel file (attached_assets/WORKBOOK_v0.3_1772895537061.xlsx)
 - `client/src/App.tsx` - Main app with auth flow and routing
 - `client/src/components/app-sidebar.tsx` - Navigation sidebar
-- `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, import)
+- `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, enrollments, import)
 
 ## Seeded Data
 - 22 students, 164 courses, 1357 PACEs, 1374 PaceCourses, 1622 dates
@@ -51,6 +53,10 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET /api/paces - PACE listing
 - GET /api/pace-courses?paceId=X&courseId=X - PaceCourse filtering
 - GET /api/dates?term=X - Date/calendar filtering
+- GET /api/enrollments?studentId=X - Get enrollments for a student
+- POST /api/enrollments - Create enrollment (teacher-only)
+- PATCH /api/enrollments/:id - Update enrollment (teacher-only)
+- DELETE /api/enrollments/:id - Delete enrollment (teacher-only)
 - GET /api/dashboard/stats - Dashboard statistics
 - POST /api/upload/excel - Excel file upload and parsing (teacher-only)
 
