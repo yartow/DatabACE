@@ -1,14 +1,14 @@
 # Ceder - School Grading Management System
 
 ## Overview
-A school grading management web application with role-based authentication for teachers and parents. Built with React + Express + Node.js + PostgreSQL.
+A school grading management web application for an ACE/PACE curriculum school. Built with React + Express + Node.js + PostgreSQL. Role-based authentication: teachers have full CRUD, parents have read-only access.
 
 ## Features
 - **Role-based authentication**: Teachers (full CRUD) and Parents (read-only access to their children)
-- **Student Progress Chart (SPC)**: Visual tracking of grades across subjects and terms with charts
-- **Term Reports**: Detailed term-by-term report cards with scores, grades, and comments
-- **Materials & Examinations**: Track course completion, exam status, and material ordering
-- **Excel Import**: Upload Excel files to bulk-import grade data
+- **Student Progress Chart (SPC)**: Visual tracking of PACE completion across subjects with bar charts
+- **Term Reports**: Term-based reports with schedule data and course progress by subject group
+- **Courses & PACEs**: Browse courses, PACEs, and PACE-Course links with filtering
+- **Excel Import**: Upload Excel files to preview data
 - **Family-based accounts**: One parent account can view all children in the same family
 
 ## Architecture
@@ -17,30 +17,42 @@ A school grading management web application with role-based authentication for t
 - **Database**: PostgreSQL with Drizzle ORM
 - **Auth**: Replit Auth integration (server/replit_integrations/auth/)
 
-## Data Model
+## Data Model (PACE Curriculum)
 - `users` / `sessions` - Auth tables (managed by Replit Auth integration)
 - `userProfiles` - Extends users with role (teacher/parent) and familyId
-- `families` - Groups parents and students
-- `students` - Individual students belonging to families
-- `subjects` - School subjects/courses
-- `terms` - School terms/semesters
-- `grades` - Scores per student per subject per term
-- `materials` - Books/equipment per subject with ordering status
-- `studentSubjects` - Enrollment linking students to subjects (tracks passed/examined)
+- `students` - Student records (id, surname, firstNames, callName, alias)
+- `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds (16 columns)
+- `paces` - Individual PACE booklets (12 columns). No direct FK to courses.
+- `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status
+- `dates` - School calendar with term/week info, holidays, weekends (10 columns)
+
+**Key constraint**: No direct FK between `paces` and `courses`. The relationship goes through `paceCourses` intermediary table.
 
 ## Key Files
 - `shared/schema.ts` - All Drizzle schemas, relations, insert schemas, and types
 - `shared/models/auth.ts` - Auth-specific schemas (users, sessions)
 - `server/routes.ts` - All API routes with auth middleware
 - `server/storage.ts` - Database storage interface and implementation
-- `server/seed.ts` - Database seeding with sample data
+- `server/seed.ts` - Database seeding from Excel file (attached_assets/WORKBOOK_v0.3_1772895537061.xlsx)
 - `client/src/App.tsx` - Main app with auth flow and routing
 - `client/src/components/app-sidebar.tsx` - Navigation sidebar
 - `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, import)
 
+## Seeded Data
+- 22 students, 164 courses, 1357 PACEs, 1374 PaceCourses, 1622 dates
+- Seeded from Excel file, gated to NODE_ENV !== "production"
+- Some PaceCourses skipped due to missing references or duplicate IDs in source data
+
 ## API Routes
 All routes prefixed with `/api/` and protected with `isAuthenticated` middleware.
-Teacher-only routes additionally check `profile.role === "teacher"`.
+- GET /api/profile, POST /api/profile - User profile management
+- GET /api/students, GET /api/students/:id, POST/PATCH/DELETE /api/students/:id - Student CRUD (write ops teacher-only)
+- GET /api/courses, GET /api/courses/:id - Course listing
+- GET /api/paces - PACE listing
+- GET /api/pace-courses?paceId=X&courseId=X - PaceCourse filtering
+- GET /api/dates?term=X - Date/calendar filtering
+- GET /api/dashboard/stats - Dashboard statistics
+- POST /api/upload/excel - Excel file upload and parsing (teacher-only)
 
 ## User Preferences
 - App name: "Ceder"
@@ -49,3 +61,4 @@ Teacher-only routes additionally check `profile.role === "teacher"`.
 - Excel import for initial data loading
 - User has Figma design for term report (desktop view) - to be refined later
 - SPC and materials view designs to be provided later by user
+- PACE = Packet of Accelerated Christian Education (ACE curriculum)
