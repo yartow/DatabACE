@@ -150,14 +150,24 @@ export default function SPCPage() {
 
     const groupMap = new Map<string, CourseTermData[]>();
     courseTermDataMap.forEach((ctd) => {
-      const groupName = ctd.course.subjectGroup || "Other";
-      const list = groupMap.get(groupName) || [];
-      list.push(ctd);
-      groupMap.set(groupName, list);
+      const courseName = (ctd.course.course || "").toLowerCase();
+      const isDutch = courseName.includes("dutch");
+      if (isDutch) {
+        const list = groupMap.get("Nederlands") || [];
+        list.push(ctd);
+        groupMap.set("Nederlands", list);
+      } else {
+        const rawGroup = ctd.course.subjectGroup || "Other";
+        const displayGroup = rawGroup === "Core Academic Studies" ? "Academic Studies" : rawGroup;
+        const list = groupMap.get(displayGroup) || [];
+        list.push(ctd);
+        groupMap.set(displayGroup, list);
+      }
     });
 
     const groupOrder = [
-      "Core Academic Studies",
+      "Academic Studies",
+      "Nederlands",
       "Christian Studies",
       "Core Expanded Studies",
       "Applied Studies",
