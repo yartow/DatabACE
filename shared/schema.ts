@@ -16,11 +16,23 @@ export const userProfiles = pgTable("user_profiles", {
 });
 
 export const students = pgTable("students", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   surname: text("surname").notNull(),
   firstNames: text("first_names"),
   callName: text("call_name").notNull(),
   alias: text("alias").notNull(),
+  isDyslexic: boolean("is_dyslexic").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  reasonInactive: text("reason_inactive"),
+  remarks: text("remarks"),
+});
+
+export const subjects = pgTable("subjects", {
+  id: integer("id").primaryKey(),
+  subject: text("subject").notNull(),
+  colorId: integer("color_id"),
+  color: text("color"),
+  colorCode: text("color_code"),
 });
 
 export const courses = pgTable("courses", {
@@ -82,6 +94,7 @@ export const dates = pgTable("dates", {
   term: integer("term"),
   termWeek: integer("term_week"),
   week: integer("week"),
+  yearTerm: text("year_term"),
 });
 
 export const enrollments = pgTable("enrollments", {
@@ -89,7 +102,7 @@ export const enrollments = pgTable("enrollments", {
   studentId: integer("student_id").notNull().references(() => students.id),
   courseId: integer("course_id").notNull().references(() => courses.id),
   number: integer("number").notNull(),
-  dateStarted: text("date_started").notNull(),
+  dateStarted: text("date_started"),
   dateEnded: text("date_ended"),
   grade: real("grade"),
   remarks: text("remarks"),
@@ -121,13 +134,14 @@ export const pacesRelations = relations(paces, ({ many }) => ({
   paceCourses: many(paceCourses),
 }));
 
-export const insertStudentSchema = createInsertSchema(students);
+export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
 export const insertCourseSchema = createInsertSchema(courses);
 export const insertPaceSchema = createInsertSchema(paces);
 export const insertPaceCourseSchema = createInsertSchema(paceCourses);
 export const insertDateSchema = createInsertSchema(dates);
 export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({ id: true });
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true });
+export const insertSubjectSchema = createInsertSchema(subjects);
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -143,3 +157,5 @@ export type Enrollment = typeof enrollments.$inferSelect;
 export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type Subject = typeof subjects.$inferSelect;
+export type InsertSubject = z.infer<typeof insertSubjectSchema>;
