@@ -1,0 +1,3704 @@
+Implement the following design in React. Use the following files generated from a Figma design as a specification and guide:
+
+```src/styles/YearReportDesktop.module.css
+@import "https://fonts.googleapis.com/css?family=Inter:0,400;0,700;1,400;1,700&display=swap";
+.YearReportDesktop_14_16 {
+  background: #fff;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 40px 48px;
+  display: flex;
+  overflow: hidden;
+}
+.Title_14_17 {
+  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1256px;
+  height: 137.606px;
+  padding: 13px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Logo_15_20 {
+  align-items: flex-start;
+  gap: 10px;
+  height: 111.606px;
+  padding: 12px 20px;
+  display: flex;
+  overflow: hidden;
+}
+.CederlogoBasicV2017_1_15_19 {
+  aspect-ratio: 272/87.61;
+  background: #d3d3d3 url(<path-to-image>) 50% / cover no-repeat;
+  width: 272px;
+  height: 87.606px;
+}
+.ReportAndSchoolName_16_24 {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  width: 352px;
+  height: 100px;
+  padding: 6px 13px;
+  display: flex;
+  overflow: hidden;
+}
+.YearReport_16_25 {
+  color: #000;
+  text-align: center;
+  font-family: Inter;
+  font-size: 46px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.SchoolName_16_26 {
+  color: #000;
+  text-align: center;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.ReportAndSchoolName_15_21 {
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  height: 97px;
+  padding: 6px 13px;
+  display: flex;
+  overflow: hidden;
+}
+.SchoolYear_15_22 {
+  color: #000;
+  font-family: Inter;
+  font-size: 46px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Terms_15_23 {
+  color: #000;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Info_14_18 {
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1256px;
+  height: 123px;
+  display: flex;
+  overflow: hidden;
+}
+.StudentInfo_17_6 {
+  background: #afffaf;
+  flex-direction: column;
+  flex: 1 0 0;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  height: 123px;
+  padding: 24px;
+  display: flex;
+  overflow: hidden;
+}
+.Row_1_18_13 {
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 45px;
+  padding: 8px 0;
+  display: flex;
+  overflow: hidden;
+}
+.Student_17_5 {
+  color: #000;
+  width: 97px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AndrewYong_18_20 {
+  color: #000;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Student_17_4 {
+  background: #afffaf;
+  align-items: center;
+  gap: 12px;
+  width: 217px;
+  height: 54px;
+  display: flex;
+  overflow: hidden;
+}
+.StudentName_18_19 {
+  background: #afffaf;
+  align-items: center;
+  gap: 10px;
+  width: 217px;
+  height: 54px;
+  padding: 1px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Row_2_18_27 {
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 29px;
+  display: flex;
+  overflow: hidden;
+}
+.Group_18_29 {
+  color: #000;
+  width: 97px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Seniors_18_31 {
+  color: #000;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Group_18_28,
+.GroupName_18_30 {
+  background: #afffaf;
+  align-items: center;
+  gap: 10px;
+  width: 217px;
+  height: 54px;
+  padding: 1px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.ReportInfo_19_47 {
+  background: #afffaf;
+  flex-direction: column;
+  flex: 1 0 0;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  height: 123px;
+  padding: 24px;
+  display: flex;
+  overflow: hidden;
+}
+.Row_1_19_48 {
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 45px;
+  padding: 8px 0;
+  display: flex;
+  overflow: hidden;
+}
+.ReportDate_19_49 {
+  color: #000;
+  width: 142px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.ReportDate_19_50 {
+  color: #000;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Student_19_51 {
+  background: #afffaf;
+  align-items: center;
+  gap: 12px;
+  width: 217px;
+  height: 54px;
+  display: flex;
+  overflow: hidden;
+}
+.StudentName_19_53 {
+  background: #afffaf;
+  align-items: center;
+  gap: 10px;
+  width: 217px;
+  height: 54px;
+  padding: 1px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Row_2_19_55 {
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 29px;
+  display: flex;
+  overflow: hidden;
+}
+.Supervisor_19_56 {
+  color: #000;
+  width: 142px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.SupervisorName_19_57 {
+  color: #000;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Group_19_58,
+.GroupName_19_60 {
+  background: #afffaf;
+  align-items: center;
+  gap: 10px;
+  width: 217px;
+  height: 54px;
+  padding: 1px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeader_31_202 {
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  display: flex;
+}
+.CategoryHeaderRow_31_203 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 62px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.BlackPlaceholderTopLeft_31_204 {
+  width: 257px;
+  height: 29px;
+}
+.Term_1_31_205 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.BlackPlaceholderTerm1Count_39_396 {
+  width: 28px;
+  height: 30px;
+  overflow: hidden;
+}
+.Term_2_31_206 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.BlackPlaceholderTerm2Count_39_402 {
+  width: 28px;
+  height: 30px;
+  overflow: hidden;
+}
+.Term_3_31_207 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.BlackPlaceholderTerm3Count_39_403 {
+  width: 28px;
+  height: 30px;
+  overflow: hidden;
+}
+.Term_4_31_208 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.BlackPlaceholderTerm4Count_39_404 {
+  width: 28px;
+  height: 30px;
+  overflow: hidden;
+}
+.Term_5_31_209 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.BlackPlaceholderTerm5Count_39_405 {
+  width: 28px;
+  height: 30px;
+  overflow: hidden;
+}
+.YearToDate_31_210 {
+  color: #000;
+  width: 145px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.CategoryBlock1_23_67 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 578px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderAcademicStudies_24_68 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 25.43%);
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 61px;
+  padding: 16px;
+  display: flex;
+  overflow: hidden;
+}
+.Category_24_70 {
+  color: #000;
+  width: 300px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Row_39_420 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course1_39_421 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term1Grade_39_422 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term1Count_39_423 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term2Grade_39_424 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term2Count_39_425 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term3Grade_39_426 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term3Count_39_427 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term4Grade_39_428 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term4Count_39_429 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term5Grade_39_430 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term5Count_39_431 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1YtdGrade_39_432 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1YtdCount_39_433 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Row_39_476 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course2_39_477 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term1Grade_39_478 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term1Count_39_479 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term2Grade_39_480 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term2Count_39_481 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term3Grade_39_482 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term3Count_39_483 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term4Grade_39_484 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term4Count_39_485 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term5Grade_39_486 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term5Count_39_487 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2YtdGrade_39_488 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2YtdCount_39_489 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Row_39_490 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.WordBuilding_39_491 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term1Grade_39_492 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term1Count_39_493 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term2Grade_39_494 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term2Count_39_495 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term3Grade_39_496 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term3Count_39_497 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term4Grade_39_498 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term4Count_39_499 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term5Grade_39_500 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term5Count_39_501 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3YtdGrade_39_502 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3YtdCount_39_503 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Row_34_326 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 90px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course4_34_327 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term1Grade_34_328 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term1Count_34_329 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term2Grade_34_330 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term2Count_34_331 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term3Grade_34_332 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term3Count_34_333 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term4Grade_34_334 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term4Count_34_335 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term5Grade_34_336 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term5Count_34_337 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4YtdGrade_34_338 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4YtdCount_34_339 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Row_39_504 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course5_39_505 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term1Grade_39_506 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term1Count_39_507 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term2Grade_39_508 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term2Count_39_509 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term3Grade_39_510 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term3Count_39_511 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term4Grade_39_512 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term4Count_39_513 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term5Grade_39_514 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term5Count_39_515 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5YtdGrade_39_516 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5YtdCount_39_517 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Row_39_518 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course6_39_519 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term1Grade_39_520 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term1Count_39_521 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term2Grade_39_522 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term2Count_39_523 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term3Grade_39_524 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term3Count_39_525 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term4Grade_39_526 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term4Count_39_527 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term5Grade_39_528 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6Term5Count_39_529 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6YtdGrade_39_530 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course6YtdCount_39_531 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Row_39_532 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course7_39_533 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term1Grade_39_534 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term1Count_39_535 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term2Grade_39_536 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term2Count_39_537 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term3Grade_39_538 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term3Count_39_539 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term4Grade_39_540 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term4Count_39_541 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term5Grade_39_542 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7Term5Count_39_543 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7YtdGrade_39_544 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course7YtdCount_39_545 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AverageTotal_39_406 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.AverageTotal_39_407 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgTerm1Grade_39_408 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalTerm1Count_39_409 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgTerm2Grade_39_410 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalTerm2Count_39_411 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgTerm3Grade_39_412 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalTerm3Count_39_413 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgTerm4Grade_39_414 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalTerm4Count_39_415 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgTerm5Grade_39_416 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalTerm5Count_39_417 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.AvgYtdGrade_39_418 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.TotalYtdCount_39_419 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankRow_39_661 {
+  flex-shrink: 0;
+  width: 1256px;
+  max-width: 1256px;
+  height: 30px;
+  overflow: hidden;
+}
+.CategoryBlock2_39_546 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 366px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderNederlands_39_547 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 25.43%);
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 61px;
+  padding: 16px;
+  display: flex;
+  overflow: hidden;
+}
+.Category_39_548 {
+  color: #000;
+  width: 300px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Row_39_549 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course1_39_550 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term1Grade_39_551 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_40_662 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term2Grade_39_553 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_40_663 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term3Grade_39_555 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_40_664 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term4Grade_39_557 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_40_665 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term5Grade_39_559 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_40_666 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1YtdGrade_39_561 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_40_667 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Row_40_668 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course2_40_669 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term1Grade_40_670 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_40_671 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term2Grade_40_672 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_40_673 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term3Grade_40_674 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_40_675 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term4Grade_40_676 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_40_677 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term5Grade_40_678 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_40_679 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2YtdGrade_40_680 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_40_681 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Row_40_682 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course3_40_683 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term1Grade_40_684 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_40_685 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term2Grade_40_686 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_40_687 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term3Grade_40_688 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_40_689 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term4Grade_40_690 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_40_691 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term5Grade_40_692 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_40_693 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3YtdGrade_40_694 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_40_695 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course4Row_39_633 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course4_39_634 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term1Grade_39_635 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term1Count_39_636 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term2Grade_39_637 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term2Count_39_638 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term3Grade_39_639 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term3Count_39_640 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term4Grade_39_641 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term4Count_39_642 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term5Grade_39_643 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4Term5Count_39_644 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4YtdGrade_39_645 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course4YtdCount_39_646 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Row_41_710 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course5_41_711 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term1Grade_41_712 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term1Count_41_713 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term2Grade_41_714 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term2Count_41_715 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term3Grade_41_716 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term3Count_41_717 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term4Grade_41_718 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term4Count_41_719 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term5Grade_41_720 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5Term5Count_41_721 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5YtdGrade_41_722 {
+  color: #000;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course5YtdCount_41_723 {
+  color: #000;
+  text-align: center;
+  width: 28px;
+  font-family: Inter;
+  font-size: 21px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankRow_41_797 {
+  flex-shrink: 0;
+  width: 1256px;
+  max-width: 1256px;
+  height: 30px;
+  overflow: hidden;
+}
+.CategoryBlock3_41_724 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 244px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderSupplementaryActivities_41_725 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 25.43%);
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 61px;
+  padding: 16px;
+  display: flex;
+  overflow: hidden;
+}
+.Category_41_726 {
+  color: #000;
+  width: 300px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Row_41_727 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course1_41_728 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term1Grade_41_729 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_41_730 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term2Grade_41_731 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_41_732 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term3Grade_41_733 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_41_734 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term4Grade_41_735 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_41_736 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term5Grade_41_737 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_41_738 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1YtdGrade_41_739 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_41_740 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Row_41_741 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course2_41_742 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course2Term1Grade_41_743 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_41_744 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term2Grade_41_745 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_41_746 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term3Grade_41_747 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_41_748 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term4Grade_41_749 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_41_750 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2Term5Grade_41_751 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_41_752 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course2YtdGrade_41_753 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_41_754 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Row_41_755 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course3_41_756 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course3Term1Grade_41_757 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_41_758 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term2Grade_41_759 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_41_760 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term3Grade_41_761 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_41_762 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term4Grade_41_763 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_41_764 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3Term5Grade_41_765 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_41_766 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course3YtdGrade_41_767 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_41_768 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.BlankRow_41_843 {
+  flex-shrink: 0;
+  width: 1256px;
+  max-width: 1256px;
+  height: 30px;
+  overflow: hidden;
+}
+.CategoryBlock4_41_798 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 122px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderAttendance_41_799 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 25.43%);
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 61px;
+  padding: 16px;
+  display: flex;
+  overflow: hidden;
+}
+.Category_41_800 {
+  color: #000;
+  width: 300px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Row_41_801 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Course1_41_802 {
+  color: #000;
+  width: 257px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Course1Term1Grade_41_803 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm1_41_804 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term2Grade_41_805 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm2_41_806 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term3Grade_41_807 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm3_41_808 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term4Grade_41_809 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm4_41_810 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1Term5Grade_41_811 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankTerm5_41_812 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.Course1YtdGrade_41_813 {
+  color: #000;
+  text-align: right;
+  width: 100px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankYtd_41_814 {
+  width: 28px;
+  height: 29px;
+  overflow: hidden;
+}
+.BlankRow_41_879 {
+  justify-content: center;
+  align-items: center;
+  width: 1256px;
+  max-width: 1256px;
+  height: 30px;
+  padding: 26.394px 0 0 1px;
+  display: flex;
+  overflow: hidden;
+}
+.Frame_1_41_880 {
+  flex-shrink: 0;
+  width: 1255px;
+  height: 391px;
+  overflow: hidden;
+}
+.RelationToWorkAndOthers_41_878 {
+  justify-content: center;
+  align-items: center;
+  gap: 36px;
+  width: 100%;
+  max-width: 1256px;
+  height: 453px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryBlock5_41_844 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  flex: 1 0 0;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 453px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderInRelationToWork_41_845 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 50.08%);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.InRelationToWork_41_846 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Term1_51_930,
+.Progress1Term2_51_931,
+.Progress1Term3_51_932,
+.Progress1Term4_51_933,
+.Progress1Term5_51_934 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Row_41_881 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress1_41_882 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Term1Grade_41_883,
+.Progress1Term2Grade_41_884,
+.Progress1Term3Grade_41_885,
+.Progress1Term4Grade_41_886,
+.Progress1Term5Grade_41_887 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress2Row_47_923 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress2_47_924 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress2Term1Grade_47_925,
+.Progress2Term2Grade_47_926,
+.Progress2Term3Grade_47_927,
+.Progress2Term4Grade_47_928,
+.Progress2Term5Grade_47_929 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress3Row_47_888 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress3_47_889 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress3Term1Grade_47_890,
+.Progress3Term2Grade_47_891,
+.Progress3Term3Grade_47_892,
+.Progress3Term4Grade_47_893,
+.Progress3Term5Grade_47_894 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress4Row_47_895 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress4_47_896 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress4Term1Grade_47_897,
+.Progress4Term2Grade_47_898,
+.Progress4Term3Grade_47_899,
+.Progress4Term4Grade_47_900,
+.Progress4Term5Grade_47_901 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress5Row_47_902 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress5_47_903 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress5Term1Grade_47_904,
+.Progress5Term2Grade_47_905,
+.Progress5Term3Grade_47_906,
+.Progress5Term4Grade_47_907,
+.Progress5Term5Grade_47_908 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress6Row_47_909 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress6_47_910 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress6Term1Grade_47_911,
+.Progress6Term2Grade_47_912,
+.Progress6Term3Grade_47_913,
+.Progress6Term4Grade_47_914,
+.Progress6Term5Grade_47_915 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress7Row_47_916 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress7_47_917 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress7Term1Grade_47_918,
+.Progress7Term2Grade_47_919,
+.Progress7Term3Grade_47_920,
+.Progress7Term4Grade_47_921,
+.Progress7Term5Grade_47_922 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.CategoryBlock6_51_936 {
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-direction: column;
+  flex: 1 0 0;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1256px;
+  height: 453px;
+  display: flex;
+  overflow: hidden;
+}
+.CategoryHeaderInRelationToOthers_51_937 {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 50.08%);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 61px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.InRelationToWork_51_938 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Term1_51_939,
+.Progress1Term2_51_940,
+.Progress1Term3_51_941,
+.Progress1Term4_51_942,
+.Progress1Term5_51_943 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Row_51_944 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress1_51_945 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress1Term1Grade_51_946,
+.Progress1Term2Grade_51_947,
+.Progress1Term3Grade_51_948,
+.Progress1Term4Grade_51_949,
+.Progress1Term5Grade_51_950 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress2Row_51_951 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress2_51_952 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress2Term1Grade_51_953,
+.Progress2Term2Grade_51_954,
+.Progress2Term3Grade_51_955,
+.Progress2Term4Grade_51_956,
+.Progress2Term5Grade_51_957 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress3Row_51_958 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress3_51_959 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress3Term1Grade_51_960,
+.Progress3Term2Grade_51_961,
+.Progress3Term3Grade_51_962,
+.Progress3Term4Grade_51_963,
+.Progress3Term5Grade_51_964 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress4Row_51_965 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress4_51_966 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress4Term1Grade_51_967,
+.Progress4Term2Grade_51_968,
+.Progress4Term3Grade_51_969,
+.Progress4Term4Grade_51_970,
+.Progress4Term5Grade_51_971 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress5Row_51_972 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress5_51_973 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress5Term1Grade_51_974,
+.Progress5Term2Grade_51_975,
+.Progress5Term3Grade_51_976,
+.Progress5Term4Grade_51_977,
+.Progress5Term5Grade_51_978 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress6Row_51_979 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress6_51_980 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress6Term1Grade_51_981,
+.Progress6Term2Grade_51_982,
+.Progress6Term3Grade_51_983,
+.Progress6Term4Grade_51_984,
+.Progress6Term5Grade_51_985 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress7Row_51_986 {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 56px;
+  padding: 16px 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Progress7_51_987 {
+  color: #000;
+  width: 277px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.Progress7Term1Grade_51_988,
+.Progress7Term2Grade_51_989,
+.Progress7Term3Grade_51_990,
+.Progress7Term4Grade_51_991,
+.Progress7Term5Grade_51_992 {
+  color: #000;
+  text-align: right;
+  width: 42px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.BlankRow_51_993 {
+  justify-content: center;
+  align-items: center;
+  width: 1256px;
+  max-width: 1256px;
+  height: 30px;
+  padding: 26.394px 0 0 1px;
+  display: flex;
+  overflow: hidden;
+}
+.Frame_1_51_994 {
+  flex-shrink: 0;
+  width: 1255px;
+  height: 391px;
+  overflow: hidden;
+}
+.Signatures_51_995 {
+  justify-content: center;
+  align-items: center;
+  gap: 103px;
+  width: 100%;
+  max-width: 1256px;
+  height: 100px;
+  display: flex;
+  overflow: hidden;
+}
+.SignaturePrincipal_51_1000 {
+  background: #d4d4d4;
+  align-items: flex-start;
+  width: 350px;
+  height: 100px;
+  padding: 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Principal_51_1003 {
+  color: #000;
+  flex-shrink: 0;
+  width: 159px;
+  height: 34px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.SignatureSupervisor_51_1001 {
+  background: #d4d4d4;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 350px;
+  height: 100px;
+  padding: 12px;
+  display: flex;
+  overflow: hidden;
+}
+.Supervisor_51_1004 {
+  color: #000;
+  flex-shrink: 0;
+  width: 159px;
+  height: 34px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+.SignatureParent_51_1002 {
+  background: #b6ffb6;
+  align-items: flex-start;
+  width: 350px;
+  height: 100px;
+  padding: 12px;
+  display: flex;
+  overflow: hidden;
+}
+.ParentGuardian_51_1005 {
+  color: #000;
+  flex-shrink: 0;
+  width: 231px;
+  height: 34px;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: normal;
+  display: inline-block;
+}
+
+```
+
+---
+
+```src/components/YearReportDesktop.tsx
+import React from 'react';
+import styles from '../styles/YearReportDesktop.module.css';
+
+
+export default function YearReportDesktop() {
+  return (
+    <div className={styles.YearReportDesktop_14_16}>
+      <div className={styles.Title_14_17}>
+        <div className={styles.Logo_15_20}>
+          <div className={styles.CederlogoBasicV2017_1_15_19}></div>
+        </div>
+        <div className={styles.ReportAndSchoolName_16_24}><span className={styles.YearReport_16_25}>Year Report</span><span className={styles.SchoolName_16_26}>ICS De Ceder &#x2013; Boskoop</span></div>
+        <div className={styles.ReportAndSchoolName_15_21}><span className={styles.SchoolYear_15_22}>2020 &#x2013; 2021</span><span className={styles.Terms_15_23}>Term 1 &#x2013; 5</span></div>
+      </div>
+      <div className={styles.Info_14_18}>
+        <div className={styles.StudentInfo_17_6}>
+          <div className={styles.Row_1_18_13}><span className={styles.Student_17_5}>Student:</span><span className={styles.AndrewYong_18_20}>Andrew Yong</span></div>
+          <div className={styles.Row_2_18_27}><span className={styles.Group_18_29}>Group:</span><span className={styles.Seniors_18_31}>Seniors</span></div>
+        </div>
+        <div className={styles.ReportInfo_19_47}>
+          <div className={styles.Row_1_19_48}><span className={styles.ReportDate_19_49}>Report date:</span><span className={styles.ReportDate_19_50}>6 March 2026</span></div>
+          <div className={styles.Row_2_19_55}><span className={styles.Supervisor_19_56}>Supervisor:</span><span className={styles.SupervisorName_19_57}>Mr S. Bezemer</span></div>
+        </div>
+      </div>
+      <div className={styles.CategoryHeader_31_202}>
+        <div className={styles.CategoryHeaderRow_31_203}>
+          <div className={styles.BlackPlaceholderTopLeft_31_204}></div><span className={styles.Term_1_31_205}>Term 1</span>
+          <div className={styles.BlackPlaceholderTerm1Count_39_396}></div><span className={styles.Term_2_31_206}>Term 2</span>
+          <div className={styles.BlackPlaceholderTerm2Count_39_402}></div><span className={styles.Term_3_31_207}>Term 3</span>
+          <div className={styles.BlackPlaceholderTerm3Count_39_403}></div><span className={styles.Term_4_31_208}>Term 4</span>
+          <div className={styles.BlackPlaceholderTerm4Count_39_404}></div><span className={styles.Term_5_31_209}>Term 5</span>
+          <div className={styles.BlackPlaceholderTerm5Count_39_405}></div><span className={styles.YearToDate_31_210}>Year to Date</span>
+        </div>
+      </div>
+      <div className={styles.CategoryBlock1_23_67}>
+        <div className={styles.CategoryHeaderAcademicStudies_24_68}><span className={styles.Category_24_70}>Academic Studies</span></div>
+        <div className={styles.Course1Row_39_420}><span className={styles.Course1_39_421}>Mathematics</span><span className={styles.Course1Term1Grade_39_422}>100.00%</span><span className={styles.Course1Term1Count_39_423}>1</span><span className={styles.Course1Term2Grade_39_424}>90.00%</span><span className={styles.Course1Term2Count_39_425}>1</span><span className={styles.Course1Term3Grade_39_426}>100.00%</span><span className={styles.Course1Term3Count_39_427}>1</span><span className={styles.Course1Term4Grade_39_428}>100.00%</span><span className={styles.Course1Term4Count_39_429}>1</span><span className={styles.Course1Term5Grade_39_430}>100.00%</span><span className={styles.Course1Term5Count_39_431}>1</span><span className={styles.Course1YtdGrade_39_432}>100.00%</span><span className={styles.Course1YtdCount_39_433}>1</span></div>
+        <div className={styles.Course2Row_39_476}><span className={styles.Course2_39_477}>English</span><span className={styles.Course2Term1Grade_39_478}>100.00%</span><span className={styles.Course2Term1Count_39_479}>1</span><span className={styles.Course2Term2Grade_39_480}>100.00%</span><span className={styles.Course2Term2Count_39_481}>1</span><span className={styles.Course2Term3Grade_39_482}>100.00%</span><span className={styles.Course2Term3Count_39_483}>1</span><span className={styles.Course2Term4Grade_39_484}>100.00%</span><span className={styles.Course2Term4Count_39_485}>1</span><span className={styles.Course2Term5Grade_39_486}>100.00%</span><span className={styles.Course2Term5Count_39_487}>1</span><span className={styles.Course2YtdGrade_39_488}>100.00%</span><span className={styles.Course2YtdCount_39_489}>1</span></div>
+        <div className={styles.Course3Row_39_490}><span className={styles.WordBuilding_39_491}>Word Building</span><span className={styles.Course3Term1Grade_39_492}>100.00%</span><span className={styles.Course3Term1Count_39_493}>1</span><span className={styles.Course3Term2Grade_39_494}>100.00%</span><span className={styles.Course3Term2Count_39_495}>1</span><span className={styles.Course3Term3Grade_39_496}>100.00%</span><span className={styles.Course3Term3Count_39_497}>1</span><span className={styles.Course3Term4Grade_39_498}>100.00%</span><span className={styles.Course3Term4Count_39_499}>1</span><span className={styles.Course3Term5Grade_39_500}>100.00%</span><span className={styles.Course3Term5Count_39_501}>1</span><span className={styles.Course3YtdGrade_39_502}>100.00%</span><span className={styles.Course3YtdCount_39_503}>1</span></div>
+        <div className={styles.Course4Row_34_326}><span className={styles.Course4_34_327}>Literature &#x26; Creative Writing</span><span className={styles.Course4Term1Grade_34_328}>100.00%</span><span className={styles.Course4Term1Count_34_329}>1</span><span className={styles.Course4Term2Grade_34_330}>100.00%</span><span className={styles.Course4Term2Count_34_331}>1</span><span className={styles.Course4Term3Grade_34_332}>100.00%</span><span className={styles.Course4Term3Count_34_333}>1</span><span className={styles.Course4Term4Grade_34_334}>100.00%</span><span className={styles.Course4Term4Count_34_335}>1</span><span className={styles.Course4Term5Grade_34_336}>100.00%</span><span className={styles.Course4Term5Count_34_337}>1</span><span className={styles.Course4YtdGrade_34_338}>100.00%</span><span className={styles.Course4YtdCount_34_339}>1</span></div>
+        <div className={styles.Course5Row_39_504}><span className={styles.Course5_39_505}>Science</span><span className={styles.Course5Term1Grade_39_506}>100.00%</span><span className={styles.Course5Term1Count_39_507}>1</span><span className={styles.Course5Term2Grade_39_508}>100.00%</span><span className={styles.Course5Term2Count_39_509}>1</span><span className={styles.Course5Term3Grade_39_510}>100.00%</span><span className={styles.Course5Term3Count_39_511}>1</span><span className={styles.Course5Term4Grade_39_512}>100.00%</span><span className={styles.Course5Term4Count_39_513}>1</span><span className={styles.Course5Term5Grade_39_514}>100.00%</span><span className={styles.Course5Term5Count_39_515}>1</span><span className={styles.Course5YtdGrade_39_516}>100.00%</span><span className={styles.Course5YtdCount_39_517}>1</span></div>
+        <div className={styles.Course6Row_39_518}><span className={styles.Course6_39_519}>Social Studies</span><span className={styles.Course6Term1Grade_39_520}>100.00%</span><span className={styles.Course6Term1Count_39_521}>1</span><span className={styles.Course6Term2Grade_39_522}>100.00%</span><span className={styles.Course6Term2Count_39_523}>1</span><span className={styles.Course6Term3Grade_39_524}>100.00%</span><span className={styles.Course6Term3Count_39_525}>1</span><span className={styles.Course6Term4Grade_39_526}>100.00%</span><span className={styles.Course6Term4Count_39_527}>1</span><span className={styles.Course6Term5Grade_39_528}>100.00%</span><span className={styles.Course6Term5Count_39_529}>1</span><span className={styles.Course6YtdGrade_39_530}>100.00%</span><span className={styles.Course6YtdCount_39_531}>1</span></div>
+        <div className={styles.Course7Row_39_532}><span className={styles.Course7_39_533}>NT Church History</span><span className={styles.Course7Term1Grade_39_534}>100.00%</span><span className={styles.Course7Term1Count_39_535}>1</span><span className={styles.Course7Term2Grade_39_536}>100.00%</span><span className={styles.Course7Term2Count_39_537}>1</span><span className={styles.Course7Term3Grade_39_538}>100.00%</span><span className={styles.Course7Term3Count_39_539}>1</span><span className={styles.Course7Term4Grade_39_540}>100.00%</span><span className={styles.Course7Term4Count_39_541}>1</span><span className={styles.Course7Term5Grade_39_542}>100.00%</span><span className={styles.Course7Term5Count_39_543}>1</span><span className={styles.Course7YtdGrade_39_544}>100.00%</span><span className={styles.Course7YtdCount_39_545}>1</span></div>
+        <div className={styles.AverageTotal_39_406}><span className={styles.AverageTotal_39_407}>average / total</span><span className={styles.AvgTerm1Grade_39_408}>98.50%</span><span className={styles.TotalTerm1Count_39_409}>7</span><span className={styles.AvgTerm2Grade_39_410}>98.50%</span><span className={styles.TotalTerm2Count_39_411}>11</span><span className={styles.AvgTerm3Grade_39_412}>98.50%</span><span className={styles.TotalTerm3Count_39_413}>13</span><span className={styles.AvgTerm4Grade_39_414}>98.50%</span><span className={styles.TotalTerm4Count_39_415}>10</span><span className={styles.AvgTerm5Grade_39_416}>98.50%</span><span className={styles.TotalTerm5Count_39_417}>8</span><span className={styles.AvgYtdGrade_39_418}>98.50%</span><span className={styles.TotalYtdCount_39_419}>49</span></div>
+      </div>
+      <div className={styles.BlankRow_39_661}></div>
+      <div className={styles.CategoryBlock2_39_546}>
+        <div className={styles.CategoryHeaderNederlands_39_547}><span className={styles.Category_39_548}>Nederlands</span></div>
+        <div className={styles.Course1Row_39_549}><span className={styles.Course1_39_550}>Taal</span><span className={styles.Course1Term1Grade_39_551}>8.5</span>
+          <div className={styles.BlankTerm1_40_662}></div><span className={styles.Course1Term2Grade_39_553}>9.5</span>
+          <div className={styles.BlankTerm2_40_663}></div><span className={styles.Course1Term3Grade_39_555}>9.3</span>
+          <div className={styles.BlankTerm3_40_664}></div><span className={styles.Course1Term4Grade_39_557}>8.7</span>
+          <div className={styles.BlankTerm4_40_665}></div><span className={styles.Course1Term5Grade_39_559}>5.6</span>
+          <div className={styles.BlankTerm5_40_666}></div><span className={styles.Course1YtdGrade_39_561}>10</span>
+          <div className={styles.BlankYtd_40_667}></div>
+        </div>
+        <div className={styles.Course2Row_40_668}><span className={styles.Course2_40_669}>Spelling</span><span className={styles.Course2Term1Grade_40_670}>8.5</span>
+          <div className={styles.BlankTerm1_40_671}></div><span className={styles.Course2Term2Grade_40_672}>9.9</span>
+          <div className={styles.BlankTerm2_40_673}></div><span className={styles.Course2Term3Grade_40_674}>8.7</span>
+          <div className={styles.BlankTerm3_40_675}></div><span className={styles.Course2Term4Grade_40_676}>7.2</span>
+          <div className={styles.BlankTerm4_40_677}></div><span className={styles.Course2Term5Grade_40_678}>3.4</span>
+          <div className={styles.BlankTerm5_40_679}></div><span className={styles.Course2YtdGrade_40_680}>9</span>
+          <div className={styles.BlankYtd_40_681}></div>
+        </div>
+        <div className={styles.Course3Row_40_682}><span className={styles.Course3_40_683}>Lezen</span><span className={styles.Course3Term1Grade_40_684}>8.5</span>
+          <div className={styles.BlankTerm1_40_685}></div><span className={styles.Course3Term2Grade_40_686}>9.3</span>
+          <div className={styles.BlankTerm2_40_687}></div><span className={styles.Course3Term3Grade_40_688}>9.3</span>
+          <div className={styles.BlankTerm3_40_689}></div><span className={styles.Course3Term4Grade_40_690}>9.8</span>
+          <div className={styles.BlankTerm4_40_691}></div><span className={styles.Course3Term5Grade_40_692}>2.5</span>
+          <div className={styles.BlankTerm5_40_693}></div><span className={styles.Course3YtdGrade_40_694}>3.5</span>
+          <div className={styles.BlankYtd_40_695}></div>
+        </div>
+        <div className={styles.Course4Row_39_633}><span className={styles.Course4_39_634}>Taal (PACE)</span><span className={styles.Course4Term1Grade_39_635}>100.00%</span><span className={styles.Course4Term1Count_39_636}>1</span><span className={styles.Course4Term2Grade_39_637}>100.00%</span><span className={styles.Course4Term2Count_39_638}>1</span><span className={styles.Course4Term3Grade_39_639}>100.00%</span><span className={styles.Course4Term3Count_39_640}>1</span><span className={styles.Course4Term4Grade_39_641}>100.00%</span><span className={styles.Course4Term4Count_39_642}>1</span><span className={styles.Course4Term5Grade_39_643}>100.00%</span><span className={styles.Course4Term5Count_39_644}>1</span><span className={styles.Course4YtdGrade_39_645}>100.00%</span><span className={styles.Course4YtdCount_39_646}>1</span></div>
+        <div className={styles.Course5Row_41_710}><span className={styles.Course5_41_711}>Spelling (PACE)</span><span className={styles.Course5Term1Grade_41_712}>100.00%</span><span className={styles.Course5Term1Count_41_713}>1</span><span className={styles.Course5Term2Grade_41_714}>100.00%</span><span className={styles.Course5Term2Count_41_715}>1</span><span className={styles.Course5Term3Grade_41_716}>100.00%</span><span className={styles.Course5Term3Count_41_717}>1</span><span className={styles.Course5Term4Grade_41_718}>100.00%</span><span className={styles.Course5Term4Count_41_719}>1</span><span className={styles.Course5Term5Grade_41_720}>100.00%</span><span className={styles.Course5Term5Count_41_721}>1</span><span className={styles.Course5YtdGrade_41_722}>100.00%</span><span className={styles.Course5YtdCount_41_723}>1</span></div>
+      </div>
+      <div className={styles.BlankRow_41_797}></div>
+      <div className={styles.CategoryBlock3_41_724}>
+        <div className={styles.CategoryHeaderSupplementaryActivities_41_725}><span className={styles.Category_41_726}>Supplementary activities</span></div>
+        <div className={styles.Course1Row_41_727}><span className={styles.Course1_41_728}>Music</span><span className={styles.Course1Term1Grade_41_729}>G</span>
+          <div className={styles.BlankTerm1_41_730}></div><span className={styles.Course1Term2Grade_41_731}>G</span>
+          <div className={styles.BlankTerm2_41_732}></div><span className={styles.Course1Term3Grade_41_733}>E</span>
+          <div className={styles.BlankTerm3_41_734}></div><span className={styles.Course1Term4Grade_41_735}>F</span>
+          <div className={styles.BlankTerm4_41_736}></div><span className={styles.Course1Term5Grade_41_737}>S</span>
+          <div className={styles.BlankTerm5_41_738}></div><span className={styles.Course1YtdGrade_41_739}>S</span>
+          <div className={styles.BlankYtd_41_740}></div>
+        </div>
+        <div className={styles.Course2Row_41_741}><span className={styles.Course2_41_742}>Physical Education</span><span className={styles.Course2Term1Grade_41_743}>G</span>
+          <div className={styles.BlankTerm1_41_744}></div><span className={styles.Course2Term2Grade_41_745}>G</span>
+          <div className={styles.BlankTerm2_41_746}></div><span className={styles.Course2Term3Grade_41_747}>G</span>
+          <div className={styles.BlankTerm3_41_748}></div><span className={styles.Course2Term4Grade_41_749}>G</span>
+          <div className={styles.BlankTerm4_41_750}></div><span className={styles.Course2Term5Grade_41_751}>S</span>
+          <div className={styles.BlankTerm5_41_752}></div><span className={styles.Course2YtdGrade_41_753}>E</span>
+          <div className={styles.BlankYtd_41_754}></div>
+        </div>
+        <div className={styles.Course3Row_41_755}><span className={styles.Course3_41_756}>Project</span><span className={styles.Course3Term1Grade_41_757}>8.5</span>
+          <div className={styles.BlankTerm1_41_758}></div><span className={styles.Course3Term2Grade_41_759}>9.3</span>
+          <div className={styles.BlankTerm2_41_760}></div><span className={styles.Course3Term3Grade_41_761}>9.3</span>
+          <div className={styles.BlankTerm3_41_762}></div><span className={styles.Course3Term4Grade_41_763}>9.8</span>
+          <div className={styles.BlankTerm4_41_764}></div><span className={styles.Course3Term5Grade_41_765}>2.5</span>
+          <div className={styles.BlankTerm5_41_766}></div><span className={styles.Course3YtdGrade_41_767}>3.5</span>
+          <div className={styles.BlankYtd_41_768}></div>
+        </div>
+      </div>
+      <div className={styles.BlankRow_41_843}></div>
+      <div className={styles.CategoryBlock4_41_798}>
+        <div className={styles.CategoryHeaderAttendance_41_799}><span className={styles.Category_41_800}>Attendance</span></div>
+        <div className={styles.Course1Row_41_801}><span className={styles.Course1_41_802}>Score</span><span className={styles.Course1Term1Grade_41_803}>100.00%</span>
+          <div className={styles.BlankTerm1_41_804}></div><span className={styles.Course1Term2Grade_41_805}>75.50%</span>
+          <div className={styles.BlankTerm2_41_806}></div><span className={styles.Course1Term3Grade_41_807}>98.50%</span>
+          <div className={styles.BlankTerm3_41_808}></div><span className={styles.Course1Term4Grade_41_809}>100.00%</span>
+          <div className={styles.BlankTerm4_41_810}></div><span className={styles.Course1Term5Grade_41_811}>94.80%</span>
+          <div className={styles.BlankTerm5_41_812}></div><span className={styles.Course1YtdGrade_41_813}>99.90%</span>
+          <div className={styles.BlankYtd_41_814}></div>
+        </div>
+      </div>
+      <div className={styles.BlankRow_41_879}>
+        <div className={styles.Frame_1_41_880}></div>
+      </div>
+      <div className={styles.RelationToWorkAndOthers_41_878}>
+        <div className={styles.CategoryBlock5_41_844}>
+          <div className={styles.CategoryHeaderInRelationToWork_41_845}><span className={styles.InRelationToWork_41_846}>In relation to work</span><span className={styles.Progress1Term1_51_930}>T1</span><span className={styles.Progress1Term2_51_931}>T2</span><span className={styles.Progress1Term3_51_932}>T3</span><span className={styles.Progress1Term4_51_933}>T4</span><span className={styles.Progress1Term5_51_934}>T5</span></div>
+          <div className={styles.Progress1Row_41_881}><span className={styles.Progress1_41_882}>Is committed</span><span className={styles.Progress1Term1Grade_41_883}>G</span><span className={styles.Progress1Term2Grade_41_884}>G</span><span className={styles.Progress1Term3Grade_41_885}>E</span><span className={styles.Progress1Term4Grade_41_886}>S</span><span className={styles.Progress1Term5Grade_41_887}>F</span></div>
+          <div className={styles.Progress2Row_47_923}><span className={styles.Progress2_47_924}>Ability to establish own goals</span><span className={styles.Progress2Term1Grade_47_925}>G</span><span className={styles.Progress2Term2Grade_47_926}>G</span><span className={styles.Progress2Term3Grade_47_927}>E</span><span className={styles.Progress2Term4Grade_47_928}>S</span><span className={styles.Progress2Term5Grade_47_929}>F</span></div>
+          <div className={styles.Progress3Row_47_888}><span className={styles.Progress3_47_889}>Works independently</span><span className={styles.Progress3Term1Grade_47_890}>G</span><span className={styles.Progress3Term2Grade_47_891}>G</span><span className={styles.Progress3Term3Grade_47_892}>E</span><span className={styles.Progress3Term4Grade_47_893}>S</span><span className={styles.Progress3Term5Grade_47_894}>F</span></div>
+          <div className={styles.Progress4Row_47_895}><span className={styles.Progress4_47_896}>Completes work required</span><span className={styles.Progress4Term1Grade_47_897}>G</span><span className={styles.Progress4Term2Grade_47_898}>G</span><span className={styles.Progress4Term3Grade_47_899}>E</span><span className={styles.Progress4Term4Grade_47_900}>S</span><span className={styles.Progress4Term5Grade_47_901}>F</span></div>
+          <div className={styles.Progress5Row_47_902}><span className={styles.Progress5_47_903}>Does work neatly</span><span className={styles.Progress5Term1Grade_47_904}>G</span><span className={styles.Progress5Term2Grade_47_905}>G</span><span className={styles.Progress5Term3Grade_47_906}>E</span><span className={styles.Progress5Term4Grade_47_907}>S</span><span className={styles.Progress5Term5Grade_47_908}>F</span></div>
+          <div className={styles.Progress6Row_47_909}><span className={styles.Progress6_47_910}>Does not disturb others</span><span className={styles.Progress6Term1Grade_47_911}>G</span><span className={styles.Progress6Term2Grade_47_912}>G</span><span className={styles.Progress6Term3Grade_47_913}>E</span><span className={styles.Progress6Term4Grade_47_914}>S</span><span className={styles.Progress6Term5Grade_47_915}>F</span></div>
+          <div className={styles.Progress7Row_47_916}><span className={styles.Progress7_47_917}>Ability to establish own goals</span><span className={styles.Progress7Term1Grade_47_918}>G</span><span className={styles.Progress7Term2Grade_47_919}>G</span><span className={styles.Progress7Term3Grade_47_920}>E</span><span className={styles.Progress7Term4Grade_47_921}>S</span><span className={styles.Progress7Term5Grade_47_922}>F</span></div>
+        </div>
+        <div className={styles.CategoryBlock6_51_936}>
+          <div className={styles.CategoryHeaderInRelationToOthers_51_937}><span className={styles.InRelationToWork_51_938}>In relation to others</span><span className={styles.Progress1Term1_51_939}>T1</span><span className={styles.Progress1Term2_51_940}>T2</span><span className={styles.Progress1Term3_51_941}>T3</span><span className={styles.Progress1Term4_51_942}>T4</span><span className={styles.Progress1Term5_51_943}>T5</span></div>
+          <div className={styles.Progress1Row_51_944}><span className={styles.Progress1_51_945}>Is committed</span><span className={styles.Progress1Term1Grade_51_946}>G</span><span className={styles.Progress1Term2Grade_51_947}>G</span><span className={styles.Progress1Term3Grade_51_948}>E</span><span className={styles.Progress1Term4Grade_51_949}>S</span><span className={styles.Progress1Term5Grade_51_950}>F</span></div>
+          <div className={styles.Progress2Row_51_951}><span className={styles.Progress2_51_952}>Ability to establish own goals</span><span className={styles.Progress2Term1Grade_51_953}>G</span><span className={styles.Progress2Term2Grade_51_954}>G</span><span className={styles.Progress2Term3Grade_51_955}>E</span><span className={styles.Progress2Term4Grade_51_956}>S</span><span className={styles.Progress2Term5Grade_51_957}>F</span></div>
+          <div className={styles.Progress3Row_51_958}><span className={styles.Progress3_51_959}>Works independently</span><span className={styles.Progress3Term1Grade_51_960}>G</span><span className={styles.Progress3Term2Grade_51_961}>G</span><span className={styles.Progress3Term3Grade_51_962}>E</span><span className={styles.Progress3Term4Grade_51_963}>S</span><span className={styles.Progress3Term5Grade_51_964}>F</span></div>
+          <div className={styles.Progress4Row_51_965}><span className={styles.Progress4_51_966}>Completes work required</span><span className={styles.Progress4Term1Grade_51_967}>G</span><span className={styles.Progress4Term2Grade_51_968}>G</span><span className={styles.Progress4Term3Grade_51_969}>E</span><span className={styles.Progress4Term4Grade_51_970}>S</span><span className={styles.Progress4Term5Grade_51_971}>F</span></div>
+          <div className={styles.Progress5Row_51_972}><span className={styles.Progress5_51_973}>Does work neatly</span><span className={styles.Progress5Term1Grade_51_974}>G</span><span className={styles.Progress5Term2Grade_51_975}>G</span><span className={styles.Progress5Term3Grade_51_976}>E</span><span className={styles.Progress5Term4Grade_51_977}>S</span><span className={styles.Progress5Term5Grade_51_978}>F</span></div>
+          <div className={styles.Progress6Row_51_979}><span className={styles.Progress6_51_980}>Does not disturb others</span><span className={styles.Progress6Term1Grade_51_981}>G</span><span className={styles.Progress6Term2Grade_51_982}>G</span><span className={styles.Progress6Term3Grade_51_983}>E</span><span className={styles.Progress6Term4Grade_51_984}>S</span><span className={styles.Progress6Term5Grade_51_985}>F</span></div>
+          <div className={styles.Progress7Row_51_986}><span className={styles.Progress7_51_987}>Ability to establish own goals</span><span className={styles.Progress7Term1Grade_51_988}>G</span><span className={styles.Progress7Term2Grade_51_989}>G</span><span className={styles.Progress7Term3Grade_51_990}>E</span><span className={styles.Progress7Term4Grade_51_991}>S</span><span className={styles.Progress7Term5Grade_51_992}>F</span></div>
+        </div>
+      </div>
+      <div className={styles.BlankRow_51_993}>
+        <div className={styles.Frame_1_51_994}></div>
+      </div>
+      <div className={styles.Signatures_51_995}>
+        <div className={styles.SignaturePrincipal_51_1000}><span className={styles.Principal_51_1003}>principal:</span></div>
+        <div className={styles.SignatureSupervisor_51_1001}><span className={styles.Supervisor_51_1004}>supervisor:</span></div>
+        <div className={styles.SignatureParent_51_1002}><span className={styles.ParentGuardian_51_1005}>parent / guardian:</span></div>
+      </div>
+    </div>
+  );
+}
+```
+
