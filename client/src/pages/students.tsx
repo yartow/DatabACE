@@ -3,7 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import type { Student, UserProfile } from "@shared/schema";
@@ -11,10 +15,26 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus } from "lucide-react";
 import { useQuery as useProfileQuery } from "@tanstack/react-query";
 
+interface StudentForm {
+  surname: string;
+  firstNames: string;
+  callName: string;
+  alias: string;
+  isDyslexic: boolean;
+  active: boolean;
+  reasonInactive: string;
+  remarks: string;
+}
+
+const INACTIVE_REASONS = ["Moved", "Graduated", "Left school early", "Expelled", "Other"];
+
 export default function StudentsPage() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ id: "", surname: "", firstNames: "", callName: "", alias: "" });
+  const [form, setForm] = useState<StudentForm>({
+    surname: "", firstNames: "", callName: "", alias: "",
+    isDyslexic: false, active: true, reasonInactive: "", remarks: "",
+  });
   const [search, setSearch] = useState("");
 
   const { data: students, isLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
@@ -25,18 +45,24 @@ export default function StudentsPage() {
   const createStudent = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/students", {
-        id: parseInt(form.id),
         surname: form.surname,
         firstNames: form.firstNames || null,
         callName: form.callName,
         alias: form.alias || `${form.callName} ${form.surname}`,
+        isDyslexic: form.isDyslexic,
+        active: form.active,
+        reasonInactive: !form.active && form.reasonInactive ? form.reasonInactive : null,
+        remarks: form.remarks || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       setOpen(false);
-      setForm({ id: "", surname: "", firstNames: "", callName: "", alias: "" });
+      setForm({
+        surname: "", firstNames: "", callName: "", alias: "",
+        isDyslexic: false, active: true, reasonInactive: "", remarks: "",
+      });
       toast({ title: "Student added successfully" });
     },
     onError: () => toast({ title: "Failed to add student", variant: "destructive" }),
@@ -77,20 +103,11 @@ export default function StudentsPage() {
                 Add Student
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>ID</Label>
-                  <Input
-                    type="number"
-                    value={form.id}
-                    onChange={e => setForm(p => ({ ...p, id: e.target.value }))}
-                    data-testid="input-student-id"
-                  />
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Surname</Label>
@@ -126,9 +143,53 @@ export default function StudentsPage() {
                     data-testid="input-alias"
                   />
                 </div>
+                <div className="flex items-center justify-between border rounded-md p-3">
+                  <Label htmlFor="is-dyslexic" className="cursor-pointer">Is dyslexic?</Label>
+                  <Switch
+                    id="is-dyslexic"
+                    checked={form.isDyslexic}
+                    onCheckedChange={v => setForm(p => ({ ...p, isDyslexic: v }))}
+                    data-testid="switch-dyslexic"
+                  />
+                </div>
+                <div className="flex items-center justify-between border rounded-md p-3">
+                  <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
+                  <Switch
+                    id="is-active"
+                    checked={form.active}
+                    onCheckedChange={v => setForm(p => ({ ...p, active: v, reasonInactive: v ? "" : p.reasonInactive }))}
+                    data-testid="switch-active"
+                  />
+                </div>
+                {!form.active && (
+                  <div className="space-y-2">
+                    <Label>Reason Inactive</Label>
+                    <Select value={form.reasonInactive} onValueChange={v => setForm(p => ({ ...p, reasonInactive: v }))}>
+                      <SelectTrigger data-testid="select-reason-inactive">
+                        <SelectValue placeholder="Select reason..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INACTIVE_REASONS.map(r => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Remarks</Label>
+                  <Textarea
+                    value={form.remarks}
+                    onChange={e => setForm(p => ({ ...p, remarks: e.target.value.slice(0, 1250) }))}
+                    maxLength={1250}
+                    placeholder="Remarks (max 1250 characters)..."
+                    className="min-h-[60px]"
+                    data-testid="input-remarks"
+                  />
+                </div>
                 <Button
                   onClick={() => createStudent.mutate()}
-                  disabled={!form.id || !form.surname || !form.callName || createStudent.isPending}
+                  disabled={!form.surname || !form.callName || createStudent.isPending}
                   className="w-full"
                   data-testid="button-submit-student"
                 >
@@ -152,50 +213,64 @@ export default function StudentsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm" data-testid="table-students">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Call Name</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Surname</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Full Names</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Alias</th>
-                {isTeacher && (
-                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => (
-                <tr key={student.id} className="border-b last:border-0" data-testid={`row-student-${student.id}`}>
-                  <td className="py-3 px-4 text-muted-foreground font-mono">{student.id}</td>
-                  <td className="py-3 px-4 font-medium">{student.callName}</td>
-                  <td className="py-3 px-4">{student.surname}</td>
-                  <td className="py-3 px-4 text-muted-foreground text-xs">{student.firstNames || "—"}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{student.alias}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="table-students">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Call Name</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Surname</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Full Names</th>
+                  <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
+                  <th className="text-center py-3 px-4 font-medium text-muted-foreground">Dyslexic</th>
                   {isTeacher && (
-                    <td className="py-3 px-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteStudent.mutate(student.id)}
-                        className="text-destructive"
-                        data-testid={`button-delete-${student.id}`}
-                      >
-                        Remove
-                      </Button>
-                    </td>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
                   )}
                 </tr>
-              )) : (
-                <tr>
-                  <td colSpan={isTeacher ? 6 : 5} className="text-center py-8 text-muted-foreground">
-                    {search ? "No students match your search." : "No students found."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => (
+                  <tr key={student.id} className="border-b last:border-0" data-testid={`row-student-${student.id}`}>
+                    <td className="py-3 px-4 text-muted-foreground font-mono">{student.id}</td>
+                    <td className="py-3 px-4 font-medium">{student.callName}</td>
+                    <td className="py-3 px-4">{student.surname}</td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs">{student.firstNames || "—"}</td>
+                    <td className="py-3 px-4 text-center">
+                      {student.active ? (
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" data-testid={`badge-active-${student.id}`}>Active</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" data-testid={`badge-inactive-${student.id}`}>
+                          {student.reasonInactive || "Inactive"}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center text-muted-foreground">
+                      {student.isDyslexic ? "Yes" : "—"}
+                    </td>
+                    {isTeacher && (
+                      <td className="py-3 px-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteStudent.mutate(student.id)}
+                          className="text-destructive"
+                          data-testid={`button-delete-${student.id}`}
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                    )}
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={isTeacher ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                      {search ? "No students match your search." : "No students found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>

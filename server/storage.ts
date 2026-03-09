@@ -1,6 +1,6 @@
 import {
-  students, courses, paces, paceCourses, dates, userProfiles, enrollments,
-  type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment,
+  students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
+  type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
 } from "@shared/schema";
 import { db } from "./db";
@@ -21,6 +21,8 @@ export interface IStorage {
   getPaceCourses(): Promise<PaceCourse[]>;
   getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]>;
   getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]>;
+
+  getSubjects(): Promise<Subject[]>;
 
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
@@ -80,6 +82,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]> {
     return db.select().from(paceCourses).where(eq(paceCourses.courseId, courseId));
+  }
+
+  async getSubjects(): Promise<Subject[]> {
+    return db.select().from(subjects);
   }
 
   async getDates(): Promise<DateEntry[]> {

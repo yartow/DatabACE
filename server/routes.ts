@@ -102,6 +102,11 @@ export async function registerRoutes(
     res.json(pc);
   });
 
+  app.get("/api/subjects", isAuthenticated, async (_req: any, res) => {
+    const result = await storage.getSubjects();
+    res.json(result);
+  });
+
   app.get("/api/dates", isAuthenticated, async (req: any, res) => {
     const { term } = req.query;
     if (term) {
@@ -126,14 +131,14 @@ export async function registerRoutes(
     const profile = await storage.getUserProfile(userId);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     const { studentId, courseId, dateStarted } = req.body;
-    if (!studentId || !courseId || !dateStarted) return res.status(400).json({ message: "studentId, courseId, and dateStarted are required" });
+    if (!studentId || !courseId) return res.status(400).json({ message: "studentId and courseId are required" });
     const numbers = await storage.getPaceNumbersByCourse(courseId);
     if (numbers.length === 0) return res.status(400).json({ message: "No PACEs found for this course" });
     const rows = numbers.map(num => ({
       studentId: parseInt(studentId),
       courseId: parseInt(courseId),
       number: num,
-      dateStarted,
+      dateStarted: dateStarted || null,
       dateEnded: null,
       grade: null,
       remarks: null,

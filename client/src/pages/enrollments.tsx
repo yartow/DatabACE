@@ -387,7 +387,7 @@ function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending 
 function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }: { studentId: number; existingCourseIds: number[]; onCreated: () => void; onCancel: () => void }) {
   const { toast } = useToast();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [dateStarted, setDateStarted] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [dateStarted, setDateStarted] = useState<string>("");
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -395,14 +395,14 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
       await apiRequest("POST", "/api/enrollments/course", {
         studentId,
         courseId: selectedCourse.id,
-        dateStarted,
+        dateStarted: dateStarted || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/enrollments", studentId.toString()] });
       toast({ title: "Course enrollment created" });
       setSelectedCourse(null);
-      setDateStarted(format(new Date(), "yyyy-MM-dd"));
+      setDateStarted("");
       onCreated();
     },
     onError: (err: Error) => toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" }),
@@ -428,13 +428,13 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        All PACE numbers for this course will be enrolled automatically with this start date. You can edit individual numbers after creation.
+        All PACE numbers for this course will be enrolled automatically. Start date is optional. You can edit individual numbers after creation.
       </p>
       <div className="flex items-center gap-2">
         <Button
           size="sm"
           onClick={() => createMutation.mutate()}
-          disabled={!selectedCourse || !dateStarted || createMutation.isPending}
+          disabled={!selectedCourse || createMutation.isPending}
           className="h-8 text-xs"
           data-testid="button-save-new-enrollment"
         >
