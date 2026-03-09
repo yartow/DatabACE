@@ -21,7 +21,10 @@ A school grading management web application for an ACE/PACE curriculum school. B
 ## Data Model (PACE Curriculum)
 - `users` / `sessions` - Auth tables (managed by Replit Auth integration)
 - `userProfiles` - Extends users with role (teacher/parent) and familyId
-- `students` - Student records (auto-generated ID, surname, firstNames, callName, alias, isDyslexic, active, reasonInactive, remarks)
+- `students` - Student records (auto-generated ID, surname, firstNames, callName, alias, isDyslexic, active, reasonInactive, remarks, dateOfBirth, familyId FK→families)
+- `families` - Family records (id, firstName, lastName, address max 120 chars, city, postalCode)
+- `personnel` - Staff records (id, firstName, lastName, group: Kindergarten/ABCs/Juniors/Seniors, type: Supervisor/Monitor/Intern/Secretary/Board Member/Principal)
+- `parents` - Parent records (id, firstName, lastName, phoneNumber stored as "+31624745057" format, familyId FK→families)
 - `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds. Includes `icceAlias` and `certificateName`. Has `subjectId` FK to subjects table.
 - `subjects` - Subject definitions with color info (id, subject, colorId, color, colorCode hex)
 - `paces` - Individual PACE booklets (12 columns). No direct FK to courses.
@@ -64,6 +67,9 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - PATCH /api/enrollments/:id - Update individual enrollment number (teacher-only)
 - DELETE /api/enrollments/course/:studentId/:courseId - Delete all enrollment rows for a student-course pair
 - DELETE /api/enrollments/:id - Delete single enrollment row (teacher-only)
+- GET/POST/PATCH/DELETE /api/personnel - Personnel CRUD (teacher-only writes)
+- GET/POST/PATCH/DELETE /api/families - Family CRUD (teacher-only writes)
+- GET/POST/PATCH/DELETE /api/parents - Parent CRUD (teacher-only writes, phone stripped on save)
 - GET /api/dashboard/stats - Dashboard statistics
 - POST /api/upload/excel - Excel file upload and parsing (teacher-only)
 
