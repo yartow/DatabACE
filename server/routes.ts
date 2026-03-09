@@ -121,14 +121,25 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  app.post("/api/enrollments", isAuthenticated, async (req: any, res) => {
+  app.post("/api/enrollments/course", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
-    const parsed = insertEnrollmentSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
-    const enrollment = await storage.createEnrollment(parsed.data);
-    res.json(enrollment);
+    const { studentId, courseId, dateStarted } = req.body;
+    if (!studentId || !courseId || !dateStarted) return res.status(400).json({ message: "studentId, courseId, and dateStarted are required" });
+    const numbers = await storage.getPaceNumbersByCourse(courseId);
+    if (numbers.length === 0) return res.status(400).json({ message: "No PACEs found for this course" });
+    const rows = numbers.map(num => ({
+      studentId: parseInt(studentId),
+      courseId: parseInt(courseId),
+      number: num,
+      dateStarted,
+      dateEnded: null,
+      grade: null,
+      remarks: null,
+    }));
+    const created = await storage.createEnrollments(rows);
+    res.json(created);
   });
 
   app.patch("/api/enrollments/:id", isAuthenticated, async (req: any, res) => {
@@ -140,6 +151,14 @@ export async function registerRoutes(
     const enrollment = await storage.updateEnrollment(parseInt(req.params.id), parsed.data);
     if (!enrollment) return res.status(404).json({ message: "Not found" });
     res.json(enrollment);
+  });
+
+  app.delete("/api/enrollments/course/:studentId/:courseId", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteEnrollmentsByCourse(parseInt(req.params.studentId), parseInt(req.params.courseId));
+    res.json({ success: true });
   });
 
   app.delete("/api/enrollments/:id", isAuthenticated, async (req: any, res) => {

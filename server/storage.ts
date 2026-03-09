@@ -28,8 +28,11 @@ export interface IStorage {
   getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
   getEnrollment(id: number): Promise<Enrollment | undefined>;
   createEnrollment(data: InsertEnrollment): Promise<Enrollment>;
+  createEnrollments(data: InsertEnrollment[]): Promise<Enrollment[]>;
   updateEnrollment(id: number, data: Partial<InsertEnrollment>): Promise<Enrollment | undefined>;
   deleteEnrollment(id: number): Promise<void>;
+  deleteEnrollmentsByCourse(studentId: number, courseId: number): Promise<void>;
+  getPaceNumbersByCourse(courseId: number): Promise<number[]>;
 
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   createUserProfile(data: InsertUserProfile): Promise<UserProfile>;
@@ -97,12 +100,24 @@ export class DatabaseStorage implements IStorage {
     const [e] = await db.insert(enrollments).values(data).returning();
     return e;
   }
+  async createEnrollments(data: InsertEnrollment[]): Promise<Enrollment[]> {
+    if (data.length === 0) return [];
+    return db.insert(enrollments).values(data).returning();
+  }
   async updateEnrollment(id: number, data: Partial<InsertEnrollment>): Promise<Enrollment | undefined> {
     const [e] = await db.update(enrollments).set(data).where(eq(enrollments.id, id)).returning();
     return e;
   }
   async deleteEnrollment(id: number): Promise<void> {
     await db.delete(enrollments).where(eq(enrollments.id, id));
+  }
+  async deleteEnrollmentsByCourse(studentId: number, courseId: number): Promise<void> {
+    await db.delete(enrollments).where(and(eq(enrollments.studentId, studentId), eq(enrollments.courseId, courseId)));
+  }
+  async getPaceNumbersByCourse(courseId: number): Promise<number[]> {
+    const rows = await db.select({ number: paceCourses.number }).from(paceCourses).where(eq(paceCourses.courseId, courseId));
+    const numbers = [...new Set(rows.map(r => r.number).filter((n): n is number => n !== null))].sort((a, b) => a - b);
+    return numbers;
   }
 
   async getUserProfile(userId: string): Promise<UserProfile | undefined> {
