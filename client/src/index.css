@@ -293,7 +293,7 @@
   font-family: Inter, sans-serif;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   max-width: 1256px;
   margin: 0 auto;
@@ -579,15 +579,15 @@
 
 .yr-signatures {
   display: flex;
-  justify-content: center;
-  gap: 103px;
+  justify-content: space-between;
+  gap: 24px;
   width: 100%;
   padding: 20px 0;
 }
 
 .yr-signature-box {
   background: #d4d4d4;
-  width: 250px;
+  flex: 1;
   height: 100px;
   padding: 12px;
   display: flex;
@@ -607,12 +607,6 @@
   }
   .yr-block-spacer {
     height: 10px;
-  }
-  .yr-signature-box {
-    width: 200px;
-  }
-  .yr-signatures {
-    gap: 50px;
   }
 }
 
@@ -682,11 +676,9 @@
     width: 32px;
   }
   .yr-signatures {
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 12px;
   }
   .yr-signature-box {
-    width: 150px;
     height: 70px;
   }
   .yr-category-header-row {
