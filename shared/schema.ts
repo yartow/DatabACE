@@ -15,6 +15,15 @@ export const userProfiles = pgTable("user_profiles", {
   familyId: integer("family_id"),
 });
 
+export const families = pgTable("families", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  address: text("address"),
+  city: text("city"),
+  postalCode: text("postal_code"),
+});
+
 export const students = pgTable("students", {
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   surname: text("surname").notNull(),
@@ -25,6 +34,24 @@ export const students = pgTable("students", {
   active: boolean("active").notNull().default(true),
   reasonInactive: text("reason_inactive"),
   remarks: text("remarks"),
+  dateOfBirth: text("date_of_birth"),
+  familyId: integer("family_id").references(() => families.id),
+});
+
+export const personnel = pgTable("personnel", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  group: text("group").notNull(),
+  type: text("type").notNull(),
+});
+
+export const parents = pgTable("parents", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phoneNumber: text("phone_number"),
+  familyId: integer("family_id").references(() => families.id),
 });
 
 export const subjects = pgTable("subjects", {
@@ -142,6 +169,9 @@ export const insertDateSchema = createInsertSchema(dates);
 export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({ id: true });
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true });
 export const insertSubjectSchema = createInsertSchema(subjects);
+export const insertPersonnelSchema = createInsertSchema(personnel).omit({ id: true });
+export const insertFamilySchema = createInsertSchema(families).omit({ id: true });
+export const insertParentSchema = createInsertSchema(parents).omit({ id: true });
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -159,3 +189,9 @@ export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type Subject = typeof subjects.$inferSelect;
 export type InsertSubject = z.infer<typeof insertSubjectSchema>;
+export type Personnel = typeof personnel.$inferSelect;
+export type InsertPersonnel = z.infer<typeof insertPersonnelSchema>;
+export type Family = typeof families.$inferSelect;
+export type InsertFamily = z.infer<typeof insertFamilySchema>;
+export type Parent = typeof parents.$inferSelect;
+export type InsertParent = z.infer<typeof insertParentSchema>;

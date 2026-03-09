@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { insertStudentSchema, insertEnrollmentSchema } from "@shared/schema";
+import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -63,6 +63,7 @@ export async function registerRoutes(
     const parsed = insertStudentSchema.partial().safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
     const student = await storage.updateStudent(parseInt(req.params.id), parsed.data);
+    if (!student) return res.status(404).json({ message: "Student not found" });
     res.json(student);
   });
 
@@ -171,6 +172,103 @@ export async function registerRoutes(
     const profile = await storage.getUserProfile(userId);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     await storage.deleteEnrollment(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/personnel", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getPersonnel());
+  });
+
+  app.post("/api/personnel", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPersonnelSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const validGroups = ["Kindergarten", "ABCs", "Juniors", "Seniors"];
+    const validTypes = ["Supervisor", "Monitor", "Intern", "Secretary", "Board Member", "Principal"];
+    if (!validGroups.includes(parsed.data.group)) return res.status(400).json({ message: "Invalid group" });
+    if (!validTypes.includes(parsed.data.type)) return res.status(400).json({ message: "Invalid type" });
+    res.json(await storage.createPersonnel(parsed.data));
+  });
+
+  app.patch("/api/personnel/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPersonnelSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const validGroups = ["Kindergarten", "ABCs", "Juniors", "Seniors"];
+    const validTypes = ["Supervisor", "Monitor", "Intern", "Secretary", "Board Member", "Principal"];
+    if (parsed.data.group && !validGroups.includes(parsed.data.group)) return res.status(400).json({ message: "Invalid group" });
+    if (parsed.data.type && !validTypes.includes(parsed.data.type)) return res.status(400).json({ message: "Invalid type" });
+    const result = await storage.updatePersonnel(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/personnel/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deletePersonnel(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/families", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getFamilies());
+  });
+
+  app.post("/api/families", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertFamilySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    res.json(await storage.createFamily(parsed.data));
+  });
+
+  app.patch("/api/families/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertFamilySchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updateFamily(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/families/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteFamily(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/parents", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getParents());
+  });
+
+  app.post("/api/parents", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertParentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    if (parsed.data.phoneNumber) parsed.data.phoneNumber = parsed.data.phoneNumber.replace(/[\s\-()]/g, "");
+    res.json(await storage.createParent(parsed.data));
+  });
+
+  app.patch("/api/parents/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertParentSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    if (parsed.data.phoneNumber) parsed.data.phoneNumber = parsed.data.phoneNumber.replace(/[\s\-()]/g, "");
+    const result = await storage.updateParent(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/parents/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteParent(parseInt(req.params.id));
     res.json({ success: true });
   });
 

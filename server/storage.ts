@@ -1,7 +1,10 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
+  personnel, families, parents,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
+  type Personnel, type Family, type Parent,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
+  type InsertPersonnel, type InsertFamily, type InsertParent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -40,6 +43,24 @@ export interface IStorage {
   createUserProfile(data: InsertUserProfile): Promise<UserProfile>;
   updateUserProfile(userId: string, data: Partial<InsertUserProfile>): Promise<UserProfile | undefined>;
   getAllUserProfiles(): Promise<UserProfile[]>;
+
+  getPersonnel(): Promise<Personnel[]>;
+  getPersonnelById(id: number): Promise<Personnel | undefined>;
+  createPersonnel(data: InsertPersonnel): Promise<Personnel>;
+  updatePersonnel(id: number, data: Partial<InsertPersonnel>): Promise<Personnel | undefined>;
+  deletePersonnel(id: number): Promise<void>;
+
+  getFamilies(): Promise<Family[]>;
+  getFamily(id: number): Promise<Family | undefined>;
+  createFamily(data: InsertFamily): Promise<Family>;
+  updateFamily(id: number, data: Partial<InsertFamily>): Promise<Family | undefined>;
+  deleteFamily(id: number): Promise<void>;
+
+  getParents(): Promise<Parent[]>;
+  getParent(id: number): Promise<Parent | undefined>;
+  createParent(data: InsertParent): Promise<Parent>;
+  updateParent(id: number, data: Partial<InsertParent>): Promise<Parent | undefined>;
+  deleteParent(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -140,6 +161,63 @@ export class DatabaseStorage implements IStorage {
   }
   async getAllUserProfiles(): Promise<UserProfile[]> {
     return db.select().from(userProfiles);
+  }
+
+  async getPersonnel(): Promise<Personnel[]> {
+    return db.select().from(personnel);
+  }
+  async getPersonnelById(id: number): Promise<Personnel | undefined> {
+    const [p] = await db.select().from(personnel).where(eq(personnel.id, id));
+    return p;
+  }
+  async createPersonnel(data: InsertPersonnel): Promise<Personnel> {
+    const [p] = await db.insert(personnel).values(data).returning();
+    return p;
+  }
+  async updatePersonnel(id: number, data: Partial<InsertPersonnel>): Promise<Personnel | undefined> {
+    const [p] = await db.update(personnel).set(data).where(eq(personnel.id, id)).returning();
+    return p;
+  }
+  async deletePersonnel(id: number): Promise<void> {
+    await db.delete(personnel).where(eq(personnel.id, id));
+  }
+
+  async getFamilies(): Promise<Family[]> {
+    return db.select().from(families);
+  }
+  async getFamily(id: number): Promise<Family | undefined> {
+    const [f] = await db.select().from(families).where(eq(families.id, id));
+    return f;
+  }
+  async createFamily(data: InsertFamily): Promise<Family> {
+    const [f] = await db.insert(families).values(data).returning();
+    return f;
+  }
+  async updateFamily(id: number, data: Partial<InsertFamily>): Promise<Family | undefined> {
+    const [f] = await db.update(families).set(data).where(eq(families.id, id)).returning();
+    return f;
+  }
+  async deleteFamily(id: number): Promise<void> {
+    await db.delete(families).where(eq(families.id, id));
+  }
+
+  async getParents(): Promise<Parent[]> {
+    return db.select().from(parents);
+  }
+  async getParent(id: number): Promise<Parent | undefined> {
+    const [p] = await db.select().from(parents).where(eq(parents.id, id));
+    return p;
+  }
+  async createParent(data: InsertParent): Promise<Parent> {
+    const [p] = await db.insert(parents).values(data).returning();
+    return p;
+  }
+  async updateParent(id: number, data: Partial<InsertParent>): Promise<Parent | undefined> {
+    const [p] = await db.update(parents).set(data).where(eq(parents.id, id)).returning();
+    return p;
+  }
+  async deleteParent(id: number): Promise<void> {
+    await db.delete(parents).where(eq(parents.id, id));
   }
 }
 
