@@ -286,3 +286,411 @@
     inset: -1px;
   }
 }
+
+.yr-page {
+  background: #fff;
+  color: #000;
+  font-family: Inter, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1256px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.yr-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 13px 12px;
+  min-height: 100px;
+}
+
+.yr-logo {
+  padding: 12px 20px;
+}
+
+.yr-logo-text {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: #2d8a4e;
+}
+
+.yr-report-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 13px;
+}
+
+.yr-report-heading {
+  font-size: 46px;
+  font-weight: 400;
+  text-align: center;
+}
+
+.yr-school-name {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.yr-report-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 13px;
+}
+
+.yr-year {
+  font-size: 46px;
+  font-weight: 400;
+}
+
+.yr-terms-label {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.yr-info {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.yr-info-panel {
+  background: #afffaf;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 24px;
+  min-height: 100px;
+}
+
+.yr-info-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.yr-info-row-sm {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.yr-info-label {
+  font-size: 24px;
+  font-weight: 400;
+  width: 97px;
+  flex-shrink: 0;
+}
+
+.yr-info-label-wide {
+  width: 142px;
+}
+
+.yr-info-value {
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.yr-category-header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 12px;
+}
+
+.yr-course-name-col {
+  width: 257px;
+  min-width: 257px;
+  font-size: 24px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yr-term-header-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.yr-term-label {
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 700;
+  width: 100px;
+  text-align: right;
+}
+
+.yr-count-header {
+  width: 28px;
+  text-align: center;
+}
+
+.yr-category-block {
+  border: 1px solid #000;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.yr-category-header {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 25.43%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 16px;
+}
+
+.yr-category-name {
+  font-size: 24px;
+  font-weight: 700;
+  width: 257px;
+  min-width: 200px;
+}
+
+.yr-course-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 12px;
+}
+
+.yr-course-row-alt {
+  background: #fafafa;
+}
+
+.yr-term-cell-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.yr-grade-cell {
+  font-size: 24px;
+  font-weight: 400;
+  width: 100px;
+  text-align: right;
+}
+
+.yr-grade-ytd {
+  font-weight: 700;
+}
+
+.yr-count-cell {
+  font-size: 21px;
+  font-weight: 400;
+  width: 28px;
+  text-align: center;
+}
+
+.yr-avg-row {
+  border-top: 1px solid #ccc;
+  background: #f5f5f5;
+}
+
+.yr-avg-label {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.yr-block-spacer {
+  width: 100%;
+  height: 20px;
+}
+
+.yr-empty {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 18px;
+  color: #888;
+}
+
+.yr-relation-row {
+  display: flex;
+  gap: 36px;
+  width: 100%;
+}
+
+.yr-relation-block {
+  flex: 1;
+  border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.yr-relation-block .yr-category-header {
+  background: linear-gradient(90deg, #afffaf 0%, #fff 50.08%);
+}
+
+.yr-relation-block .yr-category-name {
+  width: auto;
+  min-width: auto;
+  flex: 1;
+}
+
+.yr-progress-term-header {
+  font-size: 20px;
+  font-weight: 400;
+  width: 42px;
+  text-align: right;
+}
+
+.yr-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 12px;
+  min-height: 44px;
+}
+
+.yr-progress-label {
+  font-size: 20px;
+  font-weight: 400;
+  width: 277px;
+  min-width: 150px;
+  flex-shrink: 0;
+}
+
+.yr-progress-grade {
+  font-size: 20px;
+  font-weight: 400;
+  width: 42px;
+  text-align: right;
+}
+
+.yr-signatures {
+  display: flex;
+  justify-content: center;
+  gap: 103px;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.yr-signature-box {
+  background: #d4d4d4;
+  width: 250px;
+  height: 100px;
+  padding: 12px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.yr-signature-label {
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+}
+
+@media print {
+  .yr-page {
+    padding: 0;
+    max-width: none;
+  }
+  .yr-block-spacer {
+    height: 10px;
+  }
+  .yr-signature-box {
+    width: 200px;
+  }
+  .yr-signatures {
+    gap: 50px;
+  }
+}
+
+@media (max-width: 900px) {
+  .yr-title {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  .yr-report-right {
+    align-items: center;
+  }
+  .yr-info {
+    flex-direction: column;
+  }
+  .yr-report-heading {
+    font-size: 32px;
+  }
+  .yr-year {
+    font-size: 32px;
+  }
+  .yr-school-name,
+  .yr-terms-label,
+  .yr-info-label,
+  .yr-info-value,
+  .yr-course-name-col,
+  .yr-term-label,
+  .yr-grade-cell,
+  .yr-category-name {
+    font-size: 16px;
+  }
+  .yr-count-cell {
+    font-size: 14px;
+  }
+  .yr-course-name-col {
+    width: 150px;
+    min-width: 150px;
+  }
+  .yr-term-label {
+    width: 60px;
+  }
+  .yr-grade-cell {
+    width: 60px;
+  }
+  .yr-count-cell {
+    width: 20px;
+  }
+  .yr-info-label {
+    width: 80px;
+  }
+  .yr-info-label-wide {
+    width: 110px;
+  }
+  .yr-relation-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .yr-progress-label {
+    font-size: 16px;
+    width: auto;
+    min-width: 120px;
+    flex: 1;
+  }
+  .yr-progress-grade,
+  .yr-progress-term-header {
+    font-size: 16px;
+    width: 32px;
+  }
+  .yr-signatures {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .yr-signature-box {
+    width: 150px;
+    height: 70px;
+  }
+  .yr-category-header-row {
+    display: none;
+  }
+}
