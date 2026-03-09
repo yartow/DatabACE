@@ -36,7 +36,9 @@ export default function SPCPage() {
       const totalPaces = coursePCs.length;
       return {
         courseId: course.id,
-        name: course.course || course.aceAlias || `Course ${course.id}`,
+        aceAlias: course.aceAlias || course.course || `Course ${course.id}`,
+        icceAlias: course.icceAlias || null,
+        certificateName: course.certificateName || null,
         subject: course.subjectTemp || "Unknown",
         subjectAbb: course.subjectAbb || "?",
         level: course.level,
@@ -63,8 +65,6 @@ export default function SPCPage() {
       return { subject, totalPaces, activePaces };
     }).sort((a, b) => b.totalPaces - a.totalPaces);
   }, [courses, paceCourses]);
-
-  const student = students?.find(s => s.id === parseInt(selectedStudent));
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -157,7 +157,9 @@ export default function SPCPage() {
             <table className="w-full text-sm" data-testid="table-courses">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Course</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">ACE Name</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">ICCE Name</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Certificate Name</th>
                   <th className="text-center py-3 px-2 font-medium text-muted-foreground">Subject</th>
                   <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
                   <th className="text-center py-3 px-2 font-medium text-muted-foreground">PACE Range</th>
@@ -169,8 +171,10 @@ export default function SPCPage() {
               </thead>
               <tbody>
                 {courseStats.slice(0, 50).map(cs => (
-                  <tr key={cs.courseId} className="border-b last:border-0">
-                    <td className="py-3 px-2 font-medium">{cs.name}</td>
+                  <tr key={cs.courseId} className="border-b last:border-0" data-testid={`row-course-${cs.courseId}`}>
+                    <td className="py-3 px-2 font-medium">{cs.aceAlias}</td>
+                    <td className="py-3 px-2 text-muted-foreground">{cs.icceAlias && cs.icceAlias !== cs.aceAlias ? cs.icceAlias : "—"}</td>
+                    <td className="py-3 px-2 text-muted-foreground">{cs.certificateName && cs.certificateName !== cs.aceAlias ? cs.certificateName : "—"}</td>
                     <td className="text-center py-3 px-2">
                       <Badge variant="secondary">{cs.subjectAbb}</Badge>
                     </td>

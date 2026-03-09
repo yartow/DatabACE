@@ -99,6 +99,8 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
       !excludeSet.has(c.id) && (
         (c.course?.toLowerCase().includes(q)) ||
         (c.aceAlias?.toLowerCase().includes(q)) ||
+        (c.icceAlias?.toLowerCase().includes(q)) ||
+        (c.certificateName?.toLowerCase().includes(q)) ||
         (c.subjectTemp?.toLowerCase().includes(q)) ||
         (c.subjectAbb?.toLowerCase().includes(q))
       )
@@ -318,7 +320,7 @@ function EnrollmentRow({ enrollment, courseName, onUpdate, isPending }: Enrollme
   );
 }
 
-function NewEnrollmentRow({ studentId, existingCourseIds, onCreated }: { studentId: number; existingCourseIds: number[]; onCreated: () => void }) {
+function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }: { studentId: number; existingCourseIds: number[]; onCreated: () => void; onCancel: () => void }) {
   const { toast } = useToast();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [dateStarted, setDateStarted] = useState<string>(format(new Date(), "yyyy-MM-dd"));
@@ -352,8 +354,9 @@ function NewEnrollmentRow({ studentId, existingCourseIds, onCreated }: { student
   });
 
   return (
-    <tr className="border-b bg-accent/30" data-testid="row-new-enrollment">
-      <td className="py-3 px-3">
+    <div className="border rounded-lg bg-accent/30 p-4 space-y-4" data-testid="form-new-enrollment">
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Course</label>
         {selectedCourse ? (
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{selectedCourse.course || selectedCourse.aceAlias}</span>
@@ -362,37 +365,43 @@ function NewEnrollmentRow({ studentId, existingCourseIds, onCreated }: { student
         ) : (
           <CourseSearch onSelect={setSelectedCourse} exclude={existingCourseIds} />
         )}
-      </td>
-      <td className="py-3 px-2">
-        <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
-      </td>
-      <td className="py-3 px-2">
-        <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
-      </td>
-      <td className="py-3 px-2">
-        <Input
-          type="number"
-          step="0.1"
-          min="0"
-          max="100"
-          value={grade}
-          onChange={e => setGrade(e.target.value)}
-          className="w-[80px] h-9 text-xs"
-          placeholder="Grade"
-          data-testid="input-grade-new"
-        />
-      </td>
-      <td className="py-3 px-2">
+      </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Date Started</label>
+          <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Date Ended</label>
+          <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Grade</label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={grade}
+            onChange={e => setGrade(e.target.value)}
+            className="w-[80px] h-9 text-xs"
+            placeholder="Grade"
+            data-testid="input-grade-new"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Remarks</label>
         <Textarea
           value={remarks}
           onChange={e => setRemarks(e.target.value.slice(0, 1000))}
           maxLength={1000}
-          className="text-xs min-h-[36px] h-9 resize-none"
+          className="text-xs min-h-[60px] resize-none"
           placeholder="Remarks (max 1000 chars)..."
           data-testid="input-remarks-new"
         />
-      </td>
-      <td className="py-3 px-2 text-right">
+      </div>
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
           onClick={() => createMutation.mutate()}
@@ -402,8 +411,11 @@ function NewEnrollmentRow({ studentId, existingCourseIds, onCreated }: { student
         >
           {createMutation.isPending ? "Saving..." : "Save"}
         </Button>
-      </td>
-    </tr>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-new-enrollment">
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -523,26 +535,27 @@ export default function EnrollmentsPage() {
                       </td>
                     </tr>
                   ) : null}
-                  {showNewRow && (
-                    <NewEnrollmentRow
-                      studentId={selectedStudent.id}
-                      existingCourseIds={existingCourseIds}
-                      onCreated={() => setShowNewRow(false)}
-                    />
-                  )}
                 </tbody>
               </table>
             </div>
-            <div className="p-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setShowNewRow(true)}
-                disabled={showNewRow}
-                data-testid="button-add-enrollment"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add new enrollment
-              </Button>
+            <div className="p-4 border-t space-y-4">
+              {showNewRow ? (
+                <NewEnrollmentForm
+                  studentId={selectedStudent.id}
+                  existingCourseIds={existingCourseIds}
+                  onCreated={() => setShowNewRow(false)}
+                  onCancel={() => setShowNewRow(false)}
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNewRow(true)}
+                  data-testid="button-add-enrollment"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add new enrollment
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

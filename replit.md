@@ -21,7 +21,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `users` / `sessions` - Auth tables (managed by Replit Auth integration)
 - `userProfiles` - Extends users with role (teacher/parent) and familyId
 - `students` - Student records (id, surname, firstNames, callName, alias)
-- `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds (16 columns)
+- `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds. Includes `icceAlias` (ICCE course name) and `certificateName` (ICCE certificate name) — 25 courses have ICCE alias, 11 have certificate names
 - `paces` - Individual PACE booklets (12 columns). No direct FK to courses.
 - `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status
 - `dates` - School calendar with term/week info, holidays, weekends (10 columns)
