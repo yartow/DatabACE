@@ -26,7 +26,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status
 - `dates` - School calendar with term/week info, holidays, weekends (10 columns)
 
-- `enrollments` - Student-course enrollments (studentId → students, courseId → courses, dateStarted, dateEnded, grade, remarks). Auto-generated ID.
+- `enrollments` - Student-course enrollments with per-number tracking. Each enrollment row = one PACE number (studentId → students, courseId → courses, number, dateStarted, dateEnded, grade, remarks). When enrolling in a course, one row is created per PACE number from the `paces` table. Auto-generated ID.
 
 **Key constraint**: No direct FK between `paces` and `courses`. The relationship goes through `paceCourses` intermediary table.
 
@@ -53,10 +53,11 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET /api/paces - PACE listing
 - GET /api/pace-courses?paceId=X&courseId=X - PaceCourse filtering
 - GET /api/dates?term=X - Date/calendar filtering
-- GET /api/enrollments?studentId=X - Get enrollments for a student
-- POST /api/enrollments - Create enrollment (teacher-only)
-- PATCH /api/enrollments/:id - Update enrollment (teacher-only)
-- DELETE /api/enrollments/:id - Delete enrollment (teacher-only)
+- GET /api/enrollments?studentId=X - Get enrollments for a student (one row per PACE number)
+- POST /api/enrollments/course - Create enrollment for course (teacher-only). Creates one row per PACE number for the course.
+- PATCH /api/enrollments/:id - Update individual enrollment number (teacher-only)
+- DELETE /api/enrollments/course/:studentId/:courseId - Delete all enrollment rows for a student-course pair (teacher-only)
+- DELETE /api/enrollments/:id - Delete single enrollment row (teacher-only)
 - GET /api/dashboard/stats - Dashboard statistics
 - POST /api/upload/excel - Excel file upload and parsing (teacher-only)
 

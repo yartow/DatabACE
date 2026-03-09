@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { Student, Course, Enrollment } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CalendarIcon, Pencil, Plus, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { format, parse } from "date-fns";
 
 function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
@@ -189,19 +189,63 @@ function DatePicker({ value, onChange, placeholder }: { value: string | null | u
   );
 }
 
-interface EnrollmentRowProps {
-  enrollment: Enrollment;
-  courseName: string;
-  onUpdate: (id: number, data: any) => void;
-  isPending: boolean;
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    return format(parse(dateStr, "yyyy-MM-dd", new Date()), "dd MMM yyyy");
+  } catch {
+    return dateStr;
+  }
 }
 
-function EnrollmentRow({ enrollment, courseName, onUpdate, isPending }: EnrollmentRowProps) {
+interface CourseGroup {
+  courseId: number;
+  courseName: string;
+  enrollments: Enrollment[];
+  minDateStarted: string;
+  maxDateEnded: string | null;
+  avgGrade: number | null;
+}
+
+function groupEnrollmentsByCourse(enrollments: Enrollment[], courseMap: Map<number, Course>): CourseGroup[] {
+  const groups = new Map<number, Enrollment[]>();
+  for (const e of enrollments) {
+    const arr = groups.get(e.courseId) || [];
+    arr.push(e);
+    groups.set(e.courseId, arr);
+  }
+
+  return Array.from(groups.entries()).map(([courseId, rows]) => {
+    const course = courseMap.get(courseId);
+    const courseName = course?.course || course?.aceAlias || `Course #${courseId}`;
+    const sortedRows = rows.sort((a, b) => a.number - b.number);
+
+    const dates = sortedRows.map(r => r.dateStarted).filter(Boolean);
+    const minDateStarted = dates.length > 0 ? dates.sort()[0] : "";
+
+    const endDates = sortedRows.map(r => r.dateEnded).filter((d): d is string => !!d);
+    const maxDateEnded = endDates.length > 0 ? endDates.sort().reverse()[0] : null;
+
+    const grades = sortedRows.map(r => r.grade).filter((g): g is number => g !== null);
+    const avgGrade = grades.length > 0 ? grades.reduce((s, g) => s + g, 0) / grades.length : null;
+
+    return {
+      courseId,
+      courseName,
+      enrollments: sortedRows,
+      minDateStarted,
+      maxDateEnded,
+      avgGrade,
+    };
+  });
+}
+
+function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment; onUpdate: (id: number, data: any) => void; isPending: boolean }) {
   const [editing, setEditing] = useState(false);
-  const [grade, setGrade] = useState(enrollment.grade?.toString() || "");
-  const [remarks, setRemarks] = useState(enrollment.remarks || "");
   const [dateStarted, setDateStarted] = useState(enrollment.dateStarted);
   const [dateEnded, setDateEnded] = useState(enrollment.dateEnded);
+  const [grade, setGrade] = useState(enrollment.grade?.toString() || "");
+  const [remarks, setRemarks] = useState(enrollment.remarks || "");
 
   const handleSave = useCallback(() => {
     onUpdate(enrollment.id, {
@@ -213,35 +257,17 @@ function EnrollmentRow({ enrollment, courseName, onUpdate, isPending }: Enrollme
     setEditing(false);
   }, [enrollment.id, dateStarted, dateEnded, grade, remarks, onUpdate]);
 
-  const handleCoursePassed = useCallback(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    onUpdate(enrollment.id, {
-      dateEnded: enrollment.dateEnded || today,
-      grade: enrollment.grade,
-      remarks: enrollment.remarks,
-    });
-  }, [enrollment, onUpdate]);
-
-  const handleEndEnrollment = useCallback(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    onUpdate(enrollment.id, {
-      dateEnded: today,
-      grade: enrollment.grade,
-      remarks: enrollment.remarks,
-    });
-  }, [enrollment, onUpdate]);
-
   if (editing) {
     return (
-      <tr className="border-b bg-muted/20">
-        <td className="py-3 px-3 font-medium text-sm">{courseName}</td>
-        <td className="py-3 px-2">
+      <tr className="border-b bg-muted/20" data-testid={`row-number-edit-${enrollment.id}`}>
+        <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground">{enrollment.number}</td>
+        <td className="py-2 px-2">
           <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
         </td>
-        <td className="py-3 px-2">
+        <td className="py-2 px-2">
           <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
         </td>
-        <td className="py-3 px-2">
+        <td className="py-2 px-2">
           <Input
             type="number"
             step="0.1"
@@ -249,27 +275,27 @@ function EnrollmentRow({ enrollment, courseName, onUpdate, isPending }: Enrollme
             max="100"
             value={grade}
             onChange={e => setGrade(e.target.value)}
-            className="w-[80px] h-9 text-xs"
+            className="w-[80px] h-8 text-xs"
             placeholder="Grade"
             data-testid="input-grade-edit"
           />
         </td>
-        <td className="py-3 px-2">
+        <td className="py-2 px-2">
           <Textarea
             value={remarks}
             onChange={e => setRemarks(e.target.value.slice(0, 1000))}
             maxLength={1000}
-            className="text-xs min-h-[36px] h-9 resize-none"
+            className="text-xs min-h-[32px] h-8 resize-none"
             placeholder="Remarks..."
             data-testid="input-remarks-edit"
           />
         </td>
-        <td className="py-3 px-2 text-right">
+        <td className="py-2 px-2 text-right">
           <div className="flex items-center gap-1 justify-end">
-            <Button size="sm" variant="default" onClick={handleSave} disabled={isPending} className="h-8 text-xs" data-testid="button-save-enrollment">
+            <Button size="sm" variant="default" onClick={handleSave} disabled={isPending} className="h-7 text-xs" data-testid="button-save-number">
               Save
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-8 text-xs" data-testid="button-cancel-edit">
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">
               Cancel
             </Button>
           </div>
@@ -279,44 +305,82 @@ function EnrollmentRow({ enrollment, courseName, onUpdate, isPending }: Enrollme
   }
 
   return (
-    <tr className="border-b last:border-0" data-testid={`row-enrollment-${enrollment.id}`}>
-      <td className="py-3 px-3 font-medium text-sm">{courseName}</td>
-      <td className="py-3 px-2 text-sm text-muted-foreground">
-        {enrollment.dateStarted ? format(parse(enrollment.dateStarted, "yyyy-MM-dd", new Date()), "dd MMM yyyy") : "—"}
-      </td>
-      <td className="py-3 px-2 text-sm text-muted-foreground">
-        {enrollment.dateEnded ? format(parse(enrollment.dateEnded, "yyyy-MM-dd", new Date()), "dd MMM yyyy") : "—"}
-      </td>
-      <td className="py-3 px-2 text-sm text-center">
-        {enrollment.grade != null ? enrollment.grade : "—"}
-      </td>
-      <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px] truncate">
-        {enrollment.remarks || "—"}
-      </td>
-      <td className="py-3 px-2 text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-enrollment-${enrollment.id}`}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEditing(true)} data-testid="menu-edit">
-              <Pencil className="h-3.5 w-3.5 mr-2" />
-              Edit enrollment
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleCoursePassed} data-testid="menu-course-passed">
-              <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-emerald-500" />
-              Course passed
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleEndEnrollment} data-testid="menu-end-enrollment">
-              <XCircle className="h-3.5 w-3.5 mr-2 text-red-500" />
-              End enrollment
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <tr className="border-b last:border-0 hover:bg-muted/10" data-testid={`row-number-${enrollment.id}`}>
+      <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground">{enrollment.number}</td>
+      <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateStarted)}</td>
+      <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateEnded)}</td>
+      <td className="py-2 px-2 text-sm text-center">{enrollment.grade != null ? enrollment.grade : "—"}</td>
+      <td className="py-2 px-2 text-xs text-muted-foreground max-w-[200px] truncate">{enrollment.remarks || "—"}</td>
+      <td className="py-2 px-2 text-right">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(true)} data-testid={`button-edit-number-${enrollment.id}`}>
+          <Pencil className="h-3 w-3" />
+        </Button>
       </td>
     </tr>
+  );
+}
+
+function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending }: {
+  group: CourseGroup;
+  courseMap: Map<number, Course>;
+  onUpdate: (id: number, data: any) => void;
+  onDeleteCourse: (studentId: number, courseId: number) => void;
+  isPending: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const studentId = group.enrollments[0]?.studentId;
+
+  return (
+    <>
+      <tr
+        className="border-b bg-muted/5 cursor-pointer hover:bg-muted/20"
+        onClick={() => setExpanded(!expanded)}
+        data-testid={`row-course-group-${group.courseId}`}
+      >
+        <td className="py-3 px-3 font-medium text-sm">
+          <div className="flex items-center gap-2">
+            {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+            <span>{group.courseName}</span>
+            <span className="text-xs text-muted-foreground font-normal">({group.enrollments.length} numbers)</span>
+          </div>
+        </td>
+        <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.minDateStarted)}</td>
+        <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.maxDateEnded)}</td>
+        <td className="py-3 px-2 text-sm text-center">{group.avgGrade != null ? group.avgGrade.toFixed(1) : "—"}</td>
+        <td className="py-3 px-2"></td>
+        <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-actions-course-${group.courseId}`}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setExpanded(true)} data-testid="menu-expand">
+                <ChevronDown className="h-3.5 w-3.5 mr-2" />
+                Expand numbers
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDeleteCourse(studentId, group.courseId)}
+                className="text-red-600"
+                data-testid="menu-delete-course"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                Remove course enrollment
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </td>
+      </tr>
+      {expanded && group.enrollments.map(enrollment => (
+        <NumberRow
+          key={enrollment.id}
+          enrollment={enrollment}
+          onUpdate={onUpdate}
+          isPending={isPending}
+        />
+      ))}
+    </>
   );
 }
 
@@ -324,30 +388,21 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
   const { toast } = useToast();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [dateStarted, setDateStarted] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const [dateEnded, setDateEnded] = useState<string | null>(null);
-  const [grade, setGrade] = useState("");
-  const [remarks, setRemarks] = useState("");
 
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCourse) throw new Error("Select a course");
-      await apiRequest("POST", "/api/enrollments", {
+      await apiRequest("POST", "/api/enrollments/course", {
         studentId,
         courseId: selectedCourse.id,
         dateStarted,
-        dateEnded: dateEnded || null,
-        grade: grade ? parseFloat(grade) : null,
-        remarks: remarks || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/enrollments", studentId.toString()] });
-      toast({ title: "Enrollment created" });
+      toast({ title: "Course enrollment created" });
       setSelectedCourse(null);
       setDateStarted(format(new Date(), "yyyy-MM-dd"));
-      setDateEnded(null);
-      setGrade("");
-      setRemarks("");
       onCreated();
     },
     onError: (err: Error) => toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" }),
@@ -371,36 +426,10 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
           <label className="text-sm font-medium">Date Started</label>
           <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Date Ended</label>
-          <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Grade</label>
-          <Input
-            type="number"
-            step="0.1"
-            min="0"
-            max="100"
-            value={grade}
-            onChange={e => setGrade(e.target.value)}
-            className="w-[80px] h-9 text-xs"
-            placeholder="Grade"
-            data-testid="input-grade-new"
-          />
-        </div>
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Remarks</label>
-        <Textarea
-          value={remarks}
-          onChange={e => setRemarks(e.target.value.slice(0, 1000))}
-          maxLength={1000}
-          className="text-xs min-h-[60px] resize-none"
-          placeholder="Remarks (max 1000 chars)..."
-          data-testid="input-remarks-new"
-        />
-      </div>
+      <p className="text-xs text-muted-foreground">
+        All PACE numbers for this course will be enrolled automatically with this start date. You can edit individual numbers after creation.
+      </p>
       <div className="flex items-center gap-2">
         <Button
           size="sm"
@@ -409,7 +438,7 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
           className="h-8 text-xs"
           data-testid="button-save-new-enrollment"
         >
-          {createMutation.isPending ? "Saving..." : "Save"}
+          {createMutation.isPending ? "Creating..." : "Create enrollment"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-new-enrollment">
           Cancel
@@ -440,6 +469,11 @@ export default function EnrollmentsPage() {
     return new Map(courses?.map(c => [c.id, c]) || []);
   }, [courses]);
 
+  const courseGroups = useMemo(() => {
+    if (!enrollments) return [];
+    return groupEnrollmentsByCourse(enrollments, courseMap);
+  }, [enrollments, courseMap]);
+
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       await apiRequest("PATCH", `/api/enrollments/${id}`, data);
@@ -453,13 +487,30 @@ export default function EnrollmentsPage() {
     onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
   });
 
+  const deleteCourseEnrollmentMutation = useMutation({
+    mutationFn: async ({ studentId, courseId }: { studentId: number; courseId: number }) => {
+      await apiRequest("DELETE", `/api/enrollments/course/${studentId}/${courseId}`);
+    },
+    onSuccess: () => {
+      if (selectedStudent) {
+        queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
+      }
+      toast({ title: "Course enrollment removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
+  });
+
   const handleUpdate = useCallback((id: number, data: any) => {
     updateMutation.mutate({ id, data });
   }, [updateMutation]);
 
+  const handleDeleteCourse = useCallback((studentId: number, courseId: number) => {
+    deleteCourseEnrollmentMutation.mutate({ studentId, courseId });
+  }, [deleteCourseEnrollmentMutation]);
+
   const existingCourseIds = useMemo(() => {
-    return enrollments?.map(e => e.courseId) || [];
-  }, [enrollments]);
+    return courseGroups.map(g => g.courseId);
+  }, [courseGroups]);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -493,7 +544,7 @@ export default function EnrollmentsPage() {
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <CardTitle className="text-base">
               Course Enrollments
-              {enrollments && <span className="text-muted-foreground font-normal ml-2">({enrollments.length})</span>}
+              {courseGroups.length > 0 && <span className="text-muted-foreground font-normal ml-2">({courseGroups.length} courses)</span>}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -501,7 +552,7 @@ export default function EnrollmentsPage() {
               <table className="w-full text-sm" data-testid="table-enrollments">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground min-w-[200px]">Course</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground min-w-[200px]">Course / Number</th>
                     <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date Started</th>
                     <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date Ended</th>
                     <th className="text-center py-3 px-2 font-medium text-muted-foreground">Grade</th>
@@ -514,24 +565,21 @@ export default function EnrollmentsPage() {
                     <tr>
                       <td colSpan={6} className="text-center py-8 text-muted-foreground">Loading enrollments...</td>
                     </tr>
-                  ) : enrollments && enrollments.length > 0 ? (
-                    enrollments.map(enrollment => {
-                      const course = courseMap.get(enrollment.courseId);
-                      const courseName = course?.course || course?.aceAlias || `Course #${enrollment.courseId}`;
-                      return (
-                        <EnrollmentRow
-                          key={enrollment.id}
-                          enrollment={enrollment}
-                          courseName={courseName}
-                          onUpdate={handleUpdate}
-                          isPending={updateMutation.isPending}
-                        />
-                      );
-                    })
+                  ) : courseGroups.length > 0 ? (
+                    courseGroups.map(group => (
+                      <CourseGroupRow
+                        key={group.courseId}
+                        group={group}
+                        courseMap={courseMap}
+                        onUpdate={handleUpdate}
+                        onDeleteCourse={handleDeleteCourse}
+                        isPending={updateMutation.isPending}
+                      />
+                    ))
                   ) : !showNewRow ? (
                     <tr>
                       <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No enrollments yet. Click "Add new enrollment" to get started.
+                        No enrollments yet. Click "Add enrollment for course" to get started.
                       </td>
                     </tr>
                   ) : null}
@@ -553,7 +601,7 @@ export default function EnrollmentsPage() {
                   data-testid="button-add-enrollment"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add new enrollment
+                  Add enrollment for course
                 </Button>
               )}
             </div>
