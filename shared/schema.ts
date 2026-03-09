@@ -26,6 +26,8 @@ export const students = pgTable("students", {
 export const courses = pgTable("courses", {
   id: integer("id").primaryKey(),
   aceAlias: text("ace_alias"),
+  icceAlias: text("icce_alias"),
+  certificateName: text("certificate_name"),
   level: integer("level"),
   paceNrStart: integer("pace_nr_start"),
   paceNrEnd: integer("pace_nr_end"),

@@ -52,12 +52,29 @@ export async function seedDatabase() {
     });
   }
 
-  const courseData = XLSX.utils.sheet_to_json(workbook.Sheets["Course"]) as any[];
-  console.log(`Importing ${courseData.length} courses...`);
+  const courseSheet = workbook.Sheets["Course"];
+  const courseData = XLSX.utils.sheet_to_json(courseSheet) as any[];
+  const icceMap = new Map<number, { icceAlias: string | null; certificateName: string | null }>();
+  const courseRange = XLSX.utils.decode_range(courseSheet["!ref"]!);
+  for (let r = 1; r <= courseRange.e.r; r++) {
+    const idCell = courseSheet[XLSX.utils.encode_cell({ r, c: 0 })];
+    if (!idCell || idCell.v === undefined) continue;
+    const cellC = courseSheet[XLSX.utils.encode_cell({ r, c: 2 })];
+    const cellD = courseSheet[XLSX.utils.encode_cell({ r, c: 3 })];
+    const icceAlias = cellC && cellC.v && cellC.v !== 0 ? String(cellC.v) : null;
+    const certName = cellD && cellD.v && cellD.v !== 0 ? String(cellD.v) : null;
+    if (icceAlias || certName) {
+      icceMap.set(Number(idCell.v), { icceAlias, certificateName: certName });
+    }
+  }
+  console.log(`Importing ${courseData.length} courses (${icceMap.size} with ICCE names)...`);
   for (const row of courseData) {
+    const icceInfo = icceMap.get(row.ID);
     await db.insert(courses).values({
       id: row.ID,
       aceAlias: safeStr(row.ACE_Alias),
+      icceAlias: icceInfo?.icceAlias || null,
+      certificateName: icceInfo?.certificateName || null,
       level: safeInt(row.Level),
       paceNrStart: safeInt(row.PaceNrStart),
       paceNrEnd: safeInt(row.PaceNrEnd),
