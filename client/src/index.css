@@ -313,11 +313,10 @@
   padding: 12px 20px;
 }
 
-.yr-logo-text {
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: -1px;
-  color: #2d8a4e;
+.yr-logo-img {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
 }
 
 .yr-report-center {

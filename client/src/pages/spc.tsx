@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
 import type { Student, Course, Enrollment, DateEntry } from "@shared/schema";
+import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 
 const TERMS = [1, 2, 3, 4, 5];
 const SCHOOL_NAME = "Ceder Academy";
@@ -274,7 +275,7 @@ export default function SPCPage() {
           {/* Title Section */}
           <div className="yr-title" data-testid="yr-title">
             <div className="yr-logo">
-              <span className="yr-logo-text" data-testid="text-logo">Ceder</span>
+              <img src={cederLogoPath} alt="de Ceder" className="yr-logo-img" data-testid="text-logo" />
             </div>
             <div className="yr-report-center">
               <span className="yr-report-heading" data-testid="text-report-title">Year Report</span>
