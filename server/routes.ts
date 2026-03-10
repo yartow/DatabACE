@@ -8,6 +8,18 @@ import crypto from "crypto";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+type ImportSessionRow = { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null };
+type ImportConflict = { excelRow: ImportSessionRow; dbId: number };
+type ImportSession = { newRows: ImportSessionRow[]; conflicts: ImportConflict[]; skippedIdentical: number; createdAt: number };
+const importSessions = new Map<string, ImportSession>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, session] of importSessions) {
+    if (now - session.createdAt > 30 * 60 * 1000) importSessions.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -404,7 +416,8 @@ export async function registerRoutes(
       }
 
       const errors: string[] = [];
-      const validRows: { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null }[] = [];
+      type ValidRow = { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null };
+      const validRows: ValidRow[] = [];
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -470,15 +483,152 @@ export async function registerRoutes(
         return res.status(400).json({ message: "No valid rows to import", errors });
       }
 
-      const created = await storage.createEnrollments(validRows);
+      const existingEnrollments = await storage.getAllEnrollments();
+      const existingMap = new Map<string, typeof existingEnrollments[0]>();
+      existingEnrollments.forEach(e => {
+        existingMap.set(`${e.studentId}-${e.courseId}-${e.number}`, e);
+      });
+
+      const newRows: ValidRow[] = [];
+      const skippedIdentical: number[] = [];
+      const conflictList: ImportConflict[] = [];
+      const seenKeys = new Set<string>();
+      const skippedDuplicates: number[] = [];
+
+      for (let i = 0; i < validRows.length; i++) {
+        const row = validRows[i];
+        const key = `${row.studentId}-${row.courseId}-${row.number}`;
+
+        if (seenKeys.has(key)) {
+          skippedDuplicates.push(i);
+          continue;
+        }
+        seenKeys.add(key);
+
+        const existing = existingMap.get(key);
+
+        if (!existing) {
+          newRows.push(row);
+        } else {
+          const sameData =
+            (existing.dateStarted || null) === (row.dateStarted || null) &&
+            (existing.dateEnded || null) === (row.dateEnded || null) &&
+            (existing.grade ?? null) === (row.grade ?? null) &&
+            (existing.remarks || null) === (row.remarks || null);
+
+          if (sameData) {
+            skippedIdentical.push(i);
+          } else {
+            conflictList.push({ excelRow: row, dbId: existing.id });
+          }
+        }
+      }
+
+      if (skippedDuplicates.length > 0) {
+        errors.push(`${skippedDuplicates.length} duplicate row(s) within the file were skipped`);
+      }
+
+      if (conflictList.length > 0) {
+        const sessionId = crypto.randomUUID();
+        importSessions.set(sessionId, {
+          newRows,
+          conflicts: conflictList,
+          skippedIdentical: skippedIdentical.length,
+          createdAt: Date.now(),
+        });
+
+        const conflictDetails = await Promise.all(conflictList.map(async c => {
+          const dbRow = await storage.getEnrollment(c.dbId);
+          return {
+            excelRow: c.excelRow,
+            dbRow: dbRow ? {
+              id: dbRow.id,
+              studentId: dbRow.studentId,
+              courseId: dbRow.courseId,
+              number: dbRow.number,
+              dateStarted: dbRow.dateStarted,
+              dateEnded: dbRow.dateEnded,
+              grade: dbRow.grade,
+              remarks: dbRow.remarks,
+            } : null,
+          };
+        }));
+
+        return res.json({
+          status: "conflicts",
+          sessionId,
+          newRowCount: newRows.length,
+          skippedIdentical: skippedIdentical.length,
+          conflicts: conflictDetails.filter(c => c.dbRow !== null),
+          errors: errors.length > 0 ? errors : undefined,
+        });
+      }
+
+      let imported = 0;
+      if (newRows.length > 0) {
+        const created = await storage.createEnrollments(newRows);
+        imported = created.length;
+      }
 
       res.json({
-        imported: created.length,
-        skipped: rows.length - validRows.length,
+        status: "done",
+        imported,
+        skipped: skippedIdentical.length + skippedDuplicates.length + (rows.length - validRows.length),
         errors: errors.length > 0 ? errors : undefined,
       });
     } catch (error: any) {
       res.status(400).json({ message: "Failed to process import: " + error.message });
+    }
+  });
+
+  app.post("/api/enrollments/import/resolve", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+
+    try {
+      const { sessionId, choices } = req.body;
+
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({ message: "Missing sessionId" });
+      }
+
+      const session = importSessions.get(sessionId);
+      if (!session) {
+        return res.status(400).json({ message: "Import session expired or not found. Please re-upload the file." });
+      }
+
+      importSessions.delete(sessionId);
+
+      if (!Array.isArray(choices) || choices.length !== session.conflicts.length) {
+        return res.status(400).json({ message: "Invalid choices array. Must match number of conflicts." });
+      }
+
+      let imported = 0;
+      let updated = 0;
+
+      if (session.newRows.length > 0) {
+        const created = await storage.createEnrollments(session.newRows);
+        imported = created.length;
+      }
+
+      for (let i = 0; i < session.conflicts.length; i++) {
+        const choice = choices[i];
+        if (choice === "excel") {
+          const conflict = session.conflicts[i];
+          await storage.updateEnrollment(conflict.dbId, {
+            dateStarted: conflict.excelRow.dateStarted,
+            dateEnded: conflict.excelRow.dateEnded,
+            grade: conflict.excelRow.grade,
+            remarks: conflict.excelRow.remarks,
+          });
+          updated++;
+        }
+      }
+
+      res.json({ status: "done", imported, updated, skipped: session.skippedIdentical });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to apply resolutions: " + error.message });
     }
   });
 
