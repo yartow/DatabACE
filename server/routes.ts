@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema, insertCourseSchema, insertPaceCourseSchema } from "@shared/schema";
 import multer from "multer";
+import crypto from "crypto";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -22,17 +23,11 @@ export async function registerRoutes(
 
   app.post("/api/profile", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
-    const { role, familyId } = req.body;
-    if (!role || !["teacher", "parent"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
     const existing = await storage.getUserProfile(userId);
     if (existing) {
-      const updated = await storage.updateUserProfile(userId, { role, familyId: familyId || null });
-      return res.json(updated);
+      return res.status(400).json({ message: "Profile already exists. Use an invitation link to create a new account." });
     }
-    const profile = await storage.createUserProfile({ userId, role, familyId: familyId || null });
-    res.json(profile);
+    return res.status(403).json({ message: "Account creation requires an invitation. Please contact your school administrator." });
   });
 
   app.get("/api/students", isAuthenticated, async (req: any, res) => {
@@ -534,6 +529,101 @@ export async function registerRoutes(
     } catch (error: any) {
       res.status(400).json({ message: "Failed to parse Excel file: " + error.message });
     }
+  });
+
+  app.get("/api/invitations", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const all = await storage.getInvitations();
+    res.json(all);
+  });
+
+  app.post("/api/invitations", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const { role, familyId, email } = req.body;
+    if (!role || !["teacher", "parent"].includes(role)) return res.status(400).json({ message: "Invalid role" });
+    if (role === "parent" && !familyId) return res.status(400).json({ message: "Family is required for parent invitations" });
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const inv = await storage.createInvitation({
+      token,
+      role,
+      familyId: familyId || null,
+      email: email || null,
+      createdBy: req.user.claims.sub,
+      expiresAt,
+    });
+    res.json(inv);
+  });
+
+  app.delete("/api/invitations/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    await storage.deleteInvitation(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/invitations/redeem/:token", async (req, res) => {
+    const inv = await storage.getInvitationByToken(req.params.token);
+    if (!inv) return res.status(404).json({ message: "Invitation not found" });
+    const expired = new Date() > inv.expiresAt;
+    const family = inv.familyId ? await storage.getFamily(inv.familyId) : null;
+    res.json({
+      role: inv.role,
+      familyId: inv.familyId,
+      familyName: family ? `${family.firstName} ${family.lastName}` : null,
+      email: inv.email,
+      expired,
+      used: !!inv.usedBy,
+    });
+  });
+
+  app.post("/api/invitations/redeem/:token", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const existing = await storage.getUserProfile(userId);
+    if (existing) return res.status(400).json({ message: "You already have an account" });
+    const inv = await storage.getInvitationByToken(req.params.token);
+    if (!inv) return res.status(404).json({ message: "Invitation not found" });
+    if (inv.usedBy) return res.status(400).json({ message: "This invitation has already been used" });
+    if (new Date() > inv.expiresAt) return res.status(400).json({ message: "This invitation has expired" });
+    const marked = await storage.markInvitationUsed(req.params.token, userId);
+    if (!marked) return res.status(400).json({ message: "This invitation has already been used" });
+    const profile = await storage.createUserProfile({
+      userId,
+      role: inv.role,
+      familyId: inv.familyId || null,
+      isAdmin: false,
+    });
+    res.json(profile);
+  });
+
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const users = await storage.getAllUserProfilesWithUsers();
+    res.json(users);
+  });
+
+  app.patch("/api/admin/users/:userId", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const targetUserId = req.params.userId;
+    if (targetUserId === req.user.claims.sub) return res.status(400).json({ message: "Cannot modify your own admin status" });
+    const { isAdmin } = req.body;
+    if (typeof isAdmin !== "boolean") return res.status(400).json({ message: "isAdmin must be a boolean" });
+    const updated = await storage.updateUserProfile(targetUserId, { isAdmin });
+    if (!updated) return res.status(404).json({ message: "User not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/users/:userId", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const targetUserId = req.params.userId;
+    if (targetUserId === req.user.claims.sub) return res.status(400).json({ message: "Cannot delete your own account" });
+    await storage.deleteUserProfile(targetUserId);
+    res.json({ success: true });
   });
 
   return httpServer;

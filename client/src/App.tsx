@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,7 +17,9 @@ import StudentsPage from "@/pages/students";
 import ImportPage from "@/pages/import";
 import EnrollmentsPage from "@/pages/enrollments";
 import ExportPage from "@/pages/export";
+import AdminPage from "@/pages/admin";
 import SetupProfilePage from "@/pages/setup-profile";
+import InvitePage from "@/pages/invite";
 import type { UserProfile } from "@shared/schema";
 
 function AuthenticatedRouter() {
@@ -31,6 +33,7 @@ function AuthenticatedRouter() {
       <Route path="/enrollments" component={EnrollmentsPage} />
       <Route path="/import" component={ImportPage} />
       <Route path="/export" component={ExportPage} />
+      <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -53,7 +56,7 @@ function AuthenticatedLayout() {
   }
 
   if (!profile) {
-    return <SetupProfilePage onComplete={() => window.location.reload()} />;
+    return <SetupProfilePage />;
   }
 
   const sidebarStyle = {
@@ -80,6 +83,22 @@ function AuthenticatedLayout() {
 
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  const inviteMatch = location.match(/^\/invite\/(.+)$/);
+  if (inviteMatch) {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="space-y-4 text-center">
+            <Skeleton className="h-8 w-48 mx-auto" />
+            <Skeleton className="h-4 w-32 mx-auto" />
+          </div>
+        </div>
+      );
+    }
+    return <InvitePage />;
+  }
 
   if (isLoading) {
     return (
