@@ -39,30 +39,32 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Students", value: stats?.totalStudents, icon: Users, color: "text-chart-1" },
-          { label: "Courses", value: stats?.totalCourses, icon: BookOpen, color: "text-chart-2" },
-          { label: "PACEs", value: stats?.totalPaces, icon: BarChart3, color: "text-chart-3" },
-          { label: "PACE-Courses", value: stats?.totalPaceCourses, icon: Calendar, color: "text-chart-4" },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-              <stat.icon className={`w-4 h-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <p className="text-2xl font-bold" data-testid={`text-stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
-                  {stat.value ?? 0}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {isTeacher && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Students", value: stats?.totalStudents, icon: Users, color: "text-chart-1" },
+            { label: "Courses", value: stats?.totalCourses, icon: BookOpen, color: "text-chart-2" },
+            { label: "PACEs", value: stats?.totalPaces, icon: BarChart3, color: "text-chart-3" },
+            { label: "PACE-Courses", value: stats?.totalPaceCourses, icon: Calendar, color: "text-chart-4" },
+          ].map((stat) => (
+            <Card key={stat.label}>
+              <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <p className="text-2xl font-bold" data-testid={`text-stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+                    {stat.value ?? 0}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
@@ -87,7 +89,7 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Students</CardTitle>
+            <CardTitle className="text-base">{isTeacher ? "Students" : "Your Children"}</CardTitle>
           </CardHeader>
           <CardContent>
             {students && students.length > 0 ? (
@@ -100,7 +102,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
-                {students.length > 8 && (
+                {isTeacher && students.length > 8 && (
                   <Link href="/students">
                     <p className="text-sm text-muted-foreground text-center pt-2 cursor-pointer">
                       View all {students.length} students

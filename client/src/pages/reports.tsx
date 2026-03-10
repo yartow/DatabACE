@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo } from "react";
-import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity } from "@shared/schema";
+import { useState, useMemo, useEffect } from "react";
+import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity, UserProfile } from "@shared/schema";
 import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 
 const TERMS = [1, 2, 3, 4, 5];
@@ -48,6 +48,7 @@ interface CategoryBlock {
 export default function ReportsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
 
+  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
   const { data: allDates } = useQuery<DateEntry[]>({ queryKey: ["/api/dates"] });
@@ -242,10 +243,22 @@ export default function ReportsPage() {
   const sortedStudents = useMemo(() => {
     if (!students) return [];
     return [...students].sort((a, b) => {
+      if (profile?.role === "parent") {
+        if (a.dateOfBirth && b.dateOfBirth) return a.dateOfBirth.localeCompare(b.dateOfBirth);
+        if (a.dateOfBirth) return -1;
+        if (b.dateOfBirth) return 1;
+        return a.callName.localeCompare(b.callName);
+      }
       if (a.active !== b.active) return a.active ? -1 : 1;
       return a.callName.localeCompare(b.callName);
     });
-  }, [students]);
+  }, [students, profile]);
+
+  useEffect(() => {
+    if (!selectedStudentId && sortedStudents.length > 0 && profile?.role === "parent") {
+      setSelectedStudentId(String(sortedStudents[0].id));
+    }
+  }, [sortedStudents, selectedStudentId, profile]);
 
   const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
