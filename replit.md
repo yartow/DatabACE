@@ -70,6 +70,8 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET/POST/PATCH/DELETE /api/personnel - Personnel CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/families - Family CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/parents - Parent CRUD (teacher-only writes, phone stripped on save)
+- GET /api/enrollments/template - Download Excel enrollment import template (.xlsx)
+- POST /api/enrollments/import - Bulk import enrollments from Excel (teacher-only, validates student/course existence)
 - GET /api/dashboard/stats - Dashboard statistics
 - POST /api/upload/excel - Excel file upload and parsing (teacher-only)
 

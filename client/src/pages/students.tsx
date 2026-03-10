@@ -208,17 +208,11 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
             </div>
             <div className="space-y-2">
               <Label>Family</Label>
-              <Select value={form.familyId} onValueChange={v => setForm(p => ({ ...p, familyId: v }))}>
-                <SelectTrigger data-testid="select-family">
-                  <SelectValue placeholder="Select family..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">No family</SelectItem>
-                  {familiesList?.map(f => (
-                    <SelectItem key={f.id} value={String(f.id)}>{f.firstName} {f.lastName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FamilyAutocomplete
+                value={form.familyId ? parseInt(form.familyId) : null}
+                onChange={id => setForm(p => ({ ...p, familyId: id ? String(id) : "" }))}
+                families={familiesList || []}
+              />
             </div>
             <div className="flex items-center justify-between border rounded-md p-3">
               <Label htmlFor="is-dyslexic" className="cursor-pointer">Is dyslexic?</Label>
@@ -582,6 +576,7 @@ function FamilyAutocomplete({ value, onChange, families }: { value: number | nul
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newFamily, setNewFamily] = useState({ firstName: "", lastName: "" });
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const { toast } = useToast();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -606,6 +601,32 @@ function FamilyAutocomplete({ value, onChange, families }: { value: number | nul
     return `${f.firstName} ${f.lastName}`.toLowerCase().includes(q);
   });
 
+  const totalItems = filtered.length + 1;
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!showDropdown) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev + 1) % totalItems);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev - 1 + totalItems) % totalItems);
+    } else if (e.key === "Enter" && highlightIndex >= 0) {
+      e.preventDefault();
+      if (highlightIndex === 0) {
+        setShowDropdown(false);
+        setShowCreateDialog(true);
+      } else {
+        const fam = filtered[highlightIndex - 1];
+        if (fam) { onChange(fam.id); setShowDropdown(false); }
+      }
+      setHighlightIndex(-1);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setHighlightIndex(-1);
+    }
+  }
+
   const createFamily = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/families", {
@@ -628,8 +649,9 @@ function FamilyAutocomplete({ value, onChange, families }: { value: number | nul
     <div className="relative" ref={ref}>
       <Input
         value={inputVal}
-        onChange={e => { setInputVal(e.target.value); setShowDropdown(true); if (!e.target.value) onChange(null); }}
+        onChange={e => { setInputVal(e.target.value); setShowDropdown(true); setHighlightIndex(-1); if (!e.target.value) onChange(null); }}
         onFocus={() => setShowDropdown(true)}
+        onKeyDown={handleKeyDown}
         placeholder="Add to family..."
         data-testid="input-family-search"
       />
@@ -637,17 +659,17 @@ function FamilyAutocomplete({ value, onChange, families }: { value: number | nul
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
           <button
             type="button"
-            className="w-full px-3 py-2 text-left text-sm font-medium text-primary hover:bg-accent"
+            className={`w-full px-3 py-2 text-left text-sm font-medium text-primary hover:bg-accent ${highlightIndex === 0 ? "bg-accent" : ""}`}
             onClick={() => { setShowDropdown(false); setShowCreateDialog(true); }}
             data-testid="button-create-new-family"
           >
             + Create new family
           </button>
-          {filtered.map(f => (
+          {filtered.map((f, i) => (
             <button
               key={f.id}
               type="button"
-              className={`w-full px-3 py-2 text-left text-sm hover:bg-accent ${f.id === value ? "bg-accent" : ""}`}
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-accent ${highlightIndex === i + 1 ? "bg-accent" : ""} ${f.id === value ? "font-medium" : ""}`}
               onClick={() => { onChange(f.id); setShowDropdown(false); }}
               data-testid={`option-family-${f.id}`}
             >
