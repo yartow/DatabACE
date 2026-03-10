@@ -86,6 +86,29 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - POST /api/enrollments/import - Bulk import enrollments from Excel (teacher-only, validates student/course existence)
 - GET /api/dashboard/stats - Dashboard statistics
 - POST /api/upload/excel - Excel file upload and parsing (teacher-only)
+- GET /api/invitations - List all invitations (admin-only)
+- POST /api/invitations - Create invitation with role/familyId/email (admin-only)
+- DELETE /api/invitations/:id - Revoke invitation (admin-only)
+- GET /api/invitations/redeem/:token - Validate invitation token (public)
+- POST /api/invitations/redeem/:token - Redeem invitation, create profile (authenticated)
+- GET /api/admin/users - List all user profiles with user info (admin-only)
+- PATCH /api/admin/users/:userId - Update isAdmin flag (admin-only, can't modify self)
+- DELETE /api/admin/users/:userId - Remove user profile (admin-only, can't delete self)
+
+## Invitation System
+- Account creation requires an invitation from an admin teacher
+- Self-service role selection has been removed from the setup profile page
+- Admin teachers can create invite links (valid 7 days) for parents and teachers
+- Invite flow: Admin creates invite → copies link → shares with invitee → invitee clicks link → logs in via Replit Auth → profile auto-created with pre-configured role and family
+- Admin page (/admin) accessible only to admin teachers, shows invitations tab and users tab
+- Admin teachers can promote/demote other teachers to admin, delete user profiles
+
+### Making the First Admin
+Since admin status is managed manually, the first admin must be set via SQL:
+```sql
+UPDATE user_profiles SET is_admin = true WHERE user_id = 'YOUR_USER_ID';
+```
+Find your user_id by running: `SELECT * FROM user_profiles;`
 
 ## User Preferences
 - App name: "Ceder"
