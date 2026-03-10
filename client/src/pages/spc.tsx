@@ -90,11 +90,14 @@ export default function SPCPage() {
     const map = new Map<number, number[]>();
     paceCourses?.forEach(pc => {
       if (pc.number !== null && pc.number !== undefined) {
-        const existing = map.get(pc.courseId) || [];
-        if (!existing.includes(pc.number)) {
-          existing.push(pc.number);
+        const num = typeof pc.number === "string" ? parseInt(pc.number, 10) : pc.number;
+        if (!isNaN(num)) {
+          const existing = map.get(pc.courseId) || [];
+          if (!existing.includes(num)) {
+            existing.push(num);
+          }
+          map.set(pc.courseId, existing);
         }
-        map.set(pc.courseId, existing);
       }
     });
     map.forEach((nums, key) => map.set(key, nums.sort((a, b) => a - b)));
