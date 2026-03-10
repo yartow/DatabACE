@@ -60,6 +60,8 @@ export const personnel = pgTable("personnel", {
   group: text("group").notNull(),
   type: text("type").notNull(),
   rank: integer("rank"),
+  email: text("email"),
+  isAdmin: boolean("is_admin").default(false).notNull(),
 });
 
 export const parents = pgTable("parents", {

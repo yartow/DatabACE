@@ -318,19 +318,19 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { firstName: "", lastName: "", group: "", type: "", rank: "" };
+  const emptyForm = { firstName: "", lastName: "", group: "", type: "", rank: "", email: "", isAdmin: false };
   const [form, setForm] = useState(emptyForm);
 
   const { data: personnelList } = useQuery<Personnel[]>({ queryKey: ["/api/personnel"] });
 
   const create = useMutation({
-    mutationFn: async () => { await apiRequest("POST", "/api/personnel", { ...form, rank: form.rank ? parseInt(form.rank) : null }); },
+    mutationFn: async () => { await apiRequest("POST", "/api/personnel", { ...form, rank: form.rank ? parseInt(form.rank) : null, email: form.email || null }); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/personnel"] }); setOpen(false); setForm(emptyForm); toast({ title: "Personnel added" }); },
     onError: () => toast({ title: "Failed to add personnel", variant: "destructive" }),
   });
 
   const update = useMutation({
-    mutationFn: async () => { if (!editId) return; await apiRequest("PATCH", `/api/personnel/${editId}`, { ...form, rank: form.rank ? parseInt(form.rank) : null }); },
+    mutationFn: async () => { if (!editId) return; await apiRequest("PATCH", `/api/personnel/${editId}`, { ...form, rank: form.rank ? parseInt(form.rank) : null, email: form.email || null }); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/personnel"] }); setOpen(false); setEditId(null); setForm(emptyForm); toast({ title: "Personnel updated" }); },
     onError: () => toast({ title: "Failed to update", variant: "destructive" }),
   });
@@ -341,7 +341,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
   });
 
   function openEdit(p: Personnel) {
-    setEditId(p.id); setForm({ firstName: p.firstName, lastName: p.lastName, group: p.group, type: p.type, rank: p.rank?.toString() || "" }); setOpen(true);
+    setEditId(p.id); setForm({ firstName: p.firstName, lastName: p.lastName, group: p.group, type: p.type, rank: p.rank?.toString() || "", email: p.email || "", isAdmin: p.isAdmin }); setOpen(true);
   }
 
   const filtered = personnelList?.filter(p => {
@@ -398,6 +398,14 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
               <Label>Rank</Label>
               <Input type="number" min="1" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} placeholder="e.g. 1" data-testid="input-rank" />
             </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" data-testid="input-email" />
+            </div>
+            <div className="flex items-center justify-between border rounded-md p-3">
+              <Label htmlFor="is-admin-personnel" className="cursor-pointer">Admin</Label>
+              <Switch id="is-admin-personnel" checked={form.isAdmin} onCheckedChange={v => setForm(p => ({ ...p, isAdmin: v }))} data-testid="switch-admin" />
+            </div>
             <Button
               onClick={() => editId ? update.mutate() : create.mutate()}
               disabled={!form.firstName || !form.lastName || !form.group || !form.type || create.isPending || update.isPending}
@@ -417,9 +425,11 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">First Name</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Last Name</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Email</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Group</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Rank</th>
+                  <th className="text-center py-3 px-4 font-medium text-muted-foreground">Admin</th>
                   {isTeacher && <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
@@ -428,9 +438,11 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                   <tr key={p.id} className="border-b last:border-0" data-testid={`row-personnel-${p.id}`}>
                     <td className="py-3 px-4 font-medium">{p.firstName}</td>
                     <td className="py-3 px-4">{p.lastName}</td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs" data-testid={`text-email-${p.id}`}>{p.email || "—"}</td>
                     <td className="py-3 px-4"><Badge variant="secondary">{p.group}</Badge></td>
                     <td className="py-3 px-4"><Badge variant="outline">{p.type}</Badge></td>
                     <td className="py-3 px-4">{p.rank ?? "—"}</td>
+                    <td className="py-3 px-4 text-center" data-testid={`text-admin-${p.id}`}>{p.isAdmin ? <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Admin</Badge> : "—"}</td>
                     {isTeacher && (
                       <td className="py-3 px-4 text-right space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(p)} data-testid={`button-edit-${p.id}`}><Pencil className="w-3.5 h-3.5" /></Button>
@@ -439,7 +451,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                     )}
                   </tr>
                 )) : (
-                  <tr><td colSpan={isTeacher ? 6 : 5} className="text-center py-8 text-muted-foreground">{search ? "No matches." : "No personnel found."}</td></tr>
+                  <tr><td colSpan={isTeacher ? 8 : 7} className="text-center py-8 text-muted-foreground">{search ? "No matches." : "No personnel found."}</td></tr>
                 )}
               </tbody>
             </table>
