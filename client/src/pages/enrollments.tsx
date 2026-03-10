@@ -5,15 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import type { Student, Course, Enrollment } from "@shared/schema";
+import type { Student, Course, Enrollment, SupplementaryActivity } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music } from "lucide-react";
 import { format, parse } from "date-fns";
+
+const SUPP_ACTIVITIES = ["Music", "Physical Education", "Project", "Other"];
 
 function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
   const [query, setQuery] = useState("");
@@ -505,6 +508,172 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
   );
 }
 
+function SuppActivityRow({ sa, onDelete, studentId }: { sa: SupplementaryActivity; onDelete: () => void; studentId: number }) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [term, setTerm] = useState(sa.term?.toString() || "");
+  const [grade, setGrade] = useState(sa.grade || "");
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PATCH", `/api/supplementary-activities/${sa.id}`, {
+        term: term ? parseInt(term) : null,
+        grade: grade || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", studentId.toString()] });
+      toast({ title: "Activity updated" });
+      setEditing(false);
+    },
+    onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
+  });
+
+  if (editing) {
+    return (
+      <tr className="border-b bg-muted/20" data-testid={`row-supp-edit-${sa.id}`}>
+        <td className="py-2 px-4 font-medium">{sa.activity}</td>
+        <td className="py-2 px-4">
+          <Select value={term} onValueChange={setTerm}>
+            <SelectTrigger className="h-8 w-[80px]" data-testid="select-supp-term"><SelectValue placeholder="Term" /></SelectTrigger>
+            <SelectContent>
+              {[1,2,3,4,5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="py-2 px-4">
+          <Input
+            value={grade}
+            onChange={e => setGrade(e.target.value.slice(0, 4))}
+            maxLength={4}
+            className="h-8 w-[70px] text-xs"
+            placeholder="Grade"
+            data-testid="input-supp-grade"
+          />
+        </td>
+        <td className="py-2 px-4 text-right">
+          <div className="flex items-center gap-1 justify-end">
+            <Button size="sm" variant="default" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="h-7 text-xs" data-testid="button-save-supp">Save</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">Cancel</Button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="border-b last:border-0" data-testid={`row-supp-${sa.id}`}>
+      <td className="py-2 px-4 font-medium">{sa.activity}</td>
+      <td className="py-2 px-4 text-muted-foreground">{sa.term ? `T${sa.term}` : "—"}</td>
+      <td className="py-2 px-4 text-muted-foreground">{sa.grade || "—"}</td>
+      <td className="py-2 px-4 text-right">
+        <div className="flex items-center gap-1 justify-end">
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(true)} data-testid={`button-edit-supp-${sa.id}`}>
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete} data-testid={`button-delete-supp-${sa.id}`}>
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function NewSuppActivityForm({ studentId, onCreated, onCancel }: { studentId: number; onCreated: () => void; onCancel: () => void }) {
+  const { toast } = useToast();
+  const [selectedActivity, setSelectedActivity] = useState<string>("");
+  const [customActivity, setCustomActivity] = useState("");
+  const [term, setTerm] = useState("");
+  const [grade, setGrade] = useState("");
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const activity = selectedActivity === "Other" ? customActivity : selectedActivity;
+      if (!activity) throw new Error("Select an activity");
+      await apiRequest("POST", "/api/supplementary-activities", {
+        studentId,
+        activity,
+        term: term ? parseInt(term) : null,
+        grade: grade || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", studentId.toString()] });
+      toast({ title: "Supplementary activity enrollment created" });
+      setSelectedActivity("");
+      setCustomActivity("");
+      setTerm("");
+      setGrade("");
+      onCreated();
+    },
+    onError: (err: Error) => toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" }),
+  });
+
+  const activityName = selectedActivity === "Other" ? customActivity : selectedActivity;
+
+  return (
+    <div className="border rounded-lg bg-accent/30 p-4 space-y-4" data-testid="form-new-supp-activity">
+      <div className="space-y-2">
+        <Label>Activity</Label>
+        <Select value={selectedActivity} onValueChange={v => { setSelectedActivity(v); if (v !== "Other") setCustomActivity(""); }}>
+          <SelectTrigger data-testid="select-supp-activity"><SelectValue placeholder="Select activity..." /></SelectTrigger>
+          <SelectContent>
+            {SUPP_ACTIVITIES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      {selectedActivity === "Other" && (
+        <div className="space-y-2">
+          <Label>Activity Name</Label>
+          <Input
+            value={customActivity}
+            onChange={e => setCustomActivity(e.target.value)}
+            placeholder="Enter activity name..."
+            data-testid="input-custom-activity"
+          />
+        </div>
+      )}
+      <div className="flex gap-4">
+        <div className="space-y-2">
+          <Label>Term (optional)</Label>
+          <Select value={term} onValueChange={setTerm}>
+            <SelectTrigger className="w-[100px]" data-testid="select-new-supp-term"><SelectValue placeholder="Term" /></SelectTrigger>
+            <SelectContent>
+              {[1,2,3,4,5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Grade (optional)</Label>
+          <Input
+            value={grade}
+            onChange={e => setGrade(e.target.value.slice(0, 4))}
+            maxLength={4}
+            className="w-[100px]"
+            placeholder="e.g. A"
+            data-testid="input-new-supp-grade"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          onClick={() => createMutation.mutate()}
+          disabled={!activityName || createMutation.isPending}
+          className="h-8 text-xs"
+          data-testid="button-save-supp-activity"
+        >
+          {createMutation.isPending ? "Creating..." : "Create enrollment"}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-supp-activity">
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
@@ -620,6 +789,7 @@ export default function EnrollmentsPage() {
   const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showNewRow, setShowNewRow] = useState(false);
+  const [showNewSuppRow, setShowNewSuppRow] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
@@ -633,6 +803,27 @@ export default function EnrollmentsPage() {
   });
 
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
+
+  const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
+    queryKey: ["/api/supplementary-activities", selectedStudent?.id?.toString() || ""],
+    queryFn: async () => {
+      const res = await fetch(`/api/supplementary-activities?studentId=${selectedStudent!.id}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch supplementary activities");
+      return res.json();
+    },
+    enabled: !!selectedStudent,
+  });
+
+  const deleteSuppMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
+    onSuccess: () => {
+      if (selectedStudent) {
+        queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", selectedStudent.id.toString()] });
+      }
+      toast({ title: "Supplementary activity removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
+  });
 
   const courseMap = useMemo(() => {
     return new Map(courses?.map(c => [c.id, c]) || []);
@@ -785,6 +976,53 @@ export default function EnrollmentsPage() {
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add enrollment for course
+                </Button>
+              )}
+            </div>
+
+            {suppActivities && suppActivities.length > 0 && (
+              <div className="border-t">
+                <div className="px-4 py-3">
+                  <h3 className="text-sm font-medium text-muted-foreground">Supplementary Activities</h3>
+                </div>
+                <table className="w-full text-sm" data-testid="table-supp-activities">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Activity</th>
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Term</th>
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Grade</th>
+                      <th className="text-right py-2 px-4 font-medium text-muted-foreground w-[100px]"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppActivities.map(sa => (
+                      <SuppActivityRow
+                        key={sa.id}
+                        sa={sa}
+                        onDelete={() => deleteSuppMutation.mutate(sa.id)}
+                        studentId={selectedStudent.id}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="p-4 border-t">
+              {showNewSuppRow ? (
+                <NewSuppActivityForm
+                  studentId={selectedStudent.id}
+                  onCreated={() => setShowNewSuppRow(false)}
+                  onCancel={() => setShowNewSuppRow(false)}
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNewSuppRow(true)}
+                  data-testid="button-add-supp-activity"
+                >
+                  <Music className="h-4 w-4 mr-2" />
+                  Add enrollment for supplementary activity
                 </Button>
               )}
             </div>

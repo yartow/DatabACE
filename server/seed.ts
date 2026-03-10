@@ -1,5 +1,6 @@
 import { db } from "./db";
-import { students, courses, paces, paceCourses, dates } from "@shared/schema";
+import { students, courses, paces, paceCourses, dates, subjectGroups, subjects } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 
@@ -26,10 +27,33 @@ function excelSerialToDateStr(serial: number): string {
   return d.toISOString().split("T")[0];
 }
 
+function computeYearTerm(excelDateSerial: number): string {
+  const utcDays = Math.floor(excelDateSerial - 25569);
+  const d = new Date(utcDays * 86400 * 1000);
+  const month = d.getUTCMonth();
+  const year = d.getUTCFullYear();
+  const startYear = month >= 7 ? year : year - 1;
+  const endYear = startYear + 1;
+  const s = String(startYear).slice(-2);
+  const e = String(endYear).slice(-2);
+  return `${s}\u2013${e}`;
+}
+
 export async function seedDatabase() {
   const existingStudents = await db.select().from(students);
   if (existingStudents.length > 0) {
     console.log("Database already seeded, skipping...");
+
+    const existingSg = await db.select().from(subjectGroups);
+    if (existingSg.length === 0) {
+      await seedSubjectGroups();
+    }
+
+    const checkDates = await db.select().from(dates);
+    if (checkDates.length > 0 && !checkDates[0].yearTerm) {
+      await backfillYearTerm();
+    }
+
     return;
   }
 
@@ -154,9 +178,57 @@ export async function seedDatabase() {
       term: safeInt(row.Term),
       termWeek: safeInt(row.TermWeek),
       week: safeInt(row.Week),
+      yearTerm: row.Date ? computeYearTerm(row.Date) : null,
     }));
     await db.insert(dates).values(batch);
   }
 
+  await seedSubjectGroups();
+
   console.log("Database seeded successfully from Excel file!");
+}
+
+async function seedSubjectGroups() {
+  const XLSX = await import("xlsx");
+  const filePath = path.join(process.cwd(), "attached_assets", "WORKBOOK_v0.3_1772895537061.xlsx");
+  const fileBuffer = fs.readFileSync(filePath);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+
+  const courseData = XLSX.utils.sheet_to_json(workbook.Sheets["Course"]) as any[];
+
+  const sgMap = new Map<number, string>();
+  courseData.forEach((r: any) => {
+    if (r.SubjectGroupID != null && r.SubjectGroup__ != null) {
+      sgMap.set(r.SubjectGroupID, r.SubjectGroup__);
+    }
+  });
+
+  console.log(`Seeding ${sgMap.size} subject groups...`);
+  for (const [id, name] of sgMap) {
+    await db.insert(subjectGroups).values({ id, subjectGroup: name }).onConflictDoNothing();
+  }
+
+  const subjectSgMap = new Map<number, number>();
+  courseData.forEach((r: any) => {
+    if (r.SubjectID != null && r.SubjectGroupID != null && !subjectSgMap.has(r.SubjectID)) {
+      subjectSgMap.set(r.SubjectID, r.SubjectGroupID);
+    }
+  });
+
+  console.log(`Updating ${subjectSgMap.size} subjects with subjectGroupId...`);
+  for (const [subjectId, sgId] of subjectSgMap) {
+    await db.update(subjects).set({ subjectGroupId: sgId }).where(eq(subjects.id, subjectId));
+  }
+}
+
+async function backfillYearTerm() {
+  console.log("Backfilling yearTerm for dates...");
+  const allDates = await db.select().from(dates);
+  for (const d of allDates) {
+    if (d.date) {
+      const yt = computeYearTerm(d.date);
+      await db.update(dates).set({ yearTerm: yt }).where(eq(dates.id, d.id));
+    }
+  }
+  console.log("YearTerm backfill complete.");
 }

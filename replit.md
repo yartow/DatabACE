@@ -6,11 +6,11 @@ A school grading management web application for an ACE/PACE curriculum school. B
 ## Features
 - **Role-based authentication**: Teachers (full CRUD) and Parents (read-only access to their children)
 - **Student Progress Chart (SPC page, /spc)**: Per-student PACE progress view with colored/grey stars showing pass/fail per PACE number, grades, and term labels. Subject color coding from subjects table.
-- **Term Reports (/reports)**: Formal Year Report view matching Figma design — title header (Ceder logo/school/year), green info panels, category blocks with per-course term grades + PACE counts + YTD totals, behavioral assessment (In Relation to Work/Others), signature boxes. Weighted averages for category totals. Print support. Dynamic data from enrollments grouped by subjectGroup. Dutch courses → "Nederlands" block; "Core Academic Studies" → "Academic Studies".
+- **Term Reports (/reports)**: Formal Year Report view matching Figma design — title header (Ceder logo/school/year), green info panels (student name+group top-left, supervisor+report date top-right), three category blocks (Academic Studies, Nederlands, Supplementary Activities), behavioral assessment (In Relation to Work/Others), signature boxes. Supervisor derived from personnel table (rank 1 for student's group). Print support.
 - **Courses & PACEs**: Browse courses, PACEs, and PACE-Course links with filtering
 - **Excel Import**: Upload Excel files to preview data
 - **Family-based accounts**: One parent account can view all children in the same family
-- **Enrollment management**: Course-based enrollment with optional start dates; individual PACE number tracking
+- **Enrollment management**: Course-based enrollment with optional start dates; individual PACE number tracking; supplementary activity enrollment (Music, Physical Education, Project, Other)
 
 ## Architecture
 - **Frontend**: React + Tailwind CSS + Shadcn UI + Wouter routing
@@ -21,22 +21,29 @@ A school grading management web application for an ACE/PACE curriculum school. B
 ## Data Model (PACE Curriculum)
 - `users` / `sessions` - Auth tables (managed by Replit Auth integration)
 - `userProfiles` - Extends users with role (teacher/parent) and familyId
-- `students` - Student records (auto-generated ID, surname, firstNames, callName, alias, isDyslexic, active, reasonInactive, remarks, dateOfBirth, familyId FK→families)
+- `students` - Student records (auto-generated ID, surname, firstNames, callName, alias, isDyslexic, active, reasonInactive, remarks, dateOfBirth, familyId FK→families, group: Kindergarten/ABCs/Juniors/Seniors)
 - `families` - Family records (id, firstName, lastName, address max 120 chars, city, postalCode)
-- `personnel` - Staff records (id, firstName, lastName, group: Kindergarten/ABCs/Juniors/Seniors, type: Supervisor/Monitor/Intern/Secretary/Board Member/Principal)
+- `personnel` - Staff records (id, firstName, lastName, group: Kindergarten/ABCs/Juniors/Seniors, type: Supervisor/Monitor/Intern/Secretary/Board Member/Principal, rank: integer)
 - `parents` - Parent records (id, firstName, lastName, phoneNumber stored as "+31624745057" format, familyId FK→families)
+- `subjectGroups` - Subject group definitions (id, subjectGroup, remarks varchar(1200))
+- `subjects` - Subject definitions with color info (id, subject, colorId, color, colorCode hex, subjectGroupId FK→subjectGroups)
 - `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds. Includes `icceAlias` and `certificateName`. Has `subjectId` FK to subjects table.
-- `subjects` - Subject definitions with color info (id, subject, colorId, color, colorCode hex)
 - `paces` - Individual PACE booklets (12 columns). No direct FK to courses.
 - `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status
-- `dates` - School calendar with term/week info, holidays, weekends, yearTerm (e.g. "25–26")
+- `dates` - School calendar with term/week info, holidays, weekends, yearTerm (e.g. "25–26", computed from date)
 - `enrollments` - Student-course enrollments with per-number tracking. Each enrollment row = one PACE number (studentId, courseId, number, dateStarted nullable, dateEnded, grade, remarks). Auto-generated ID.
+- `supplementaryActivities` - Supplementary activity enrollments (id auto, studentId FK→students, yearTerm, term, grade varchar(4), activity text)
 
 **Key constraint**: No direct FK between `paces` and `courses`. The relationship goes through `paceCourses` intermediary table.
 
 **Pass thresholds**: >= 80% for most courses; Word Building = 90% except dyslexic students get 80%.
 
 **Subject colors**: Maths=yellow(#FFD700), Language=red(#FF0000), Word Building=purple(#800080), Literature=dark red(#8B0000), Science=blue(#0000FF), Social Studies=green(#008000), Biblical Studies=sandy orange(#F4A460), Art Electives=purple(#800080), Technology Electives=dark grey(#404040), Supplementary=white(#FFFFFF), Electives=grey(#808080)
+
+**Report category blocks**:
+- Block 1 "Academic Studies": All enrolled courses except Nederlands courses
+- Block 2 "Nederlands": Only courses named "Taal", "Spelling", "Lezen", "Taal (PACE)", "Spelling (PACE)"
+- Block 3 "Supplementary Activities": From supplementary_activities table (Music, Physical Education, Project, etc.), no averages
 
 ## Key Files
 - `shared/schema.ts` - All Drizzle schemas, relations, insert schemas, and types
@@ -49,8 +56,10 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, enrollments, import)
 
 ## Seeded Data
-- 22 students, 164 courses, 1357 PACEs, 1374 PaceCourses, 1622 dates, 11 subjects
-- 513 dates have yearTerm values
+- 22 students, 164 courses, 1357 PACEs, 1374 PaceCourses, 1622 dates, 11 subjects, 5 subject groups
+- All dates have yearTerm values (computed from date serial: school year starts August, e.g. "22–23")
+- Subject groups seeded from Course sheet SubjectGroup column
+- Subjects updated with subjectGroupId from Course sheet
 - Seeded from Excel file, gated to NODE_ENV !== "production"
 
 ## API Routes
@@ -61,6 +70,7 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET /api/paces - PACE listing
 - GET /api/pace-courses?paceId=X&courseId=X - PaceCourse filtering
 - GET /api/subjects - All subjects with colors
+- GET /api/subject-groups - All subject groups
 - GET /api/dates?term=X - Date/calendar filtering
 - GET /api/enrollments?studentId=X - Get enrollments for a student
 - POST /api/enrollments/course - Create enrollment for course (teacher-only, dateStarted optional)
@@ -70,6 +80,8 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET/POST/PATCH/DELETE /api/personnel - Personnel CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/families - Family CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/parents - Parent CRUD (teacher-only writes, phone stripped on save)
+- GET /api/supplementary-activities?studentId=X - Get supplementary activities for a student
+- POST/PATCH/DELETE /api/supplementary-activities - Supplementary activity CRUD (teacher-only writes)
 - GET /api/enrollments/template - Download Excel enrollment import template (.xlsx)
 - POST /api/enrollments/import - Bulk import enrollments from Excel (teacher-only, validates student/course existence)
 - GET /api/dashboard/stats - Dashboard statistics

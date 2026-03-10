@@ -1,10 +1,10 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
-  personnel, families, parents,
+  personnel, families, parents, supplementaryActivities, subjectGroups,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
-  type Personnel, type Family, type Parent,
+  type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
-  type InsertPersonnel, type InsertFamily, type InsertParent,
+  type InsertPersonnel, type InsertFamily, type InsertParent, type InsertSupplementaryActivity,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -26,6 +26,8 @@ export interface IStorage {
   getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]>;
 
   getSubjects(): Promise<Subject[]>;
+
+  getSubjectGroups(): Promise<SubjectGroup[]>;
 
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
@@ -61,6 +63,11 @@ export interface IStorage {
   createParent(data: InsertParent): Promise<Parent>;
   updateParent(id: number, data: Partial<InsertParent>): Promise<Parent | undefined>;
   deleteParent(id: number): Promise<void>;
+
+  getSupplementaryActivitiesByStudent(studentId: number): Promise<SupplementaryActivity[]>;
+  createSupplementaryActivity(data: InsertSupplementaryActivity): Promise<SupplementaryActivity>;
+  updateSupplementaryActivity(id: number, data: Partial<InsertSupplementaryActivity>): Promise<SupplementaryActivity | undefined>;
+  deleteSupplementaryActivity(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,6 +114,10 @@ export class DatabaseStorage implements IStorage {
 
   async getSubjects(): Promise<Subject[]> {
     return db.select().from(subjects);
+  }
+
+  async getSubjectGroups(): Promise<SubjectGroup[]> {
+    return db.select().from(subjectGroups);
   }
 
   async getDates(): Promise<DateEntry[]> {
@@ -218,6 +229,21 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteParent(id: number): Promise<void> {
     await db.delete(parents).where(eq(parents.id, id));
+  }
+
+  async getSupplementaryActivitiesByStudent(studentId: number): Promise<SupplementaryActivity[]> {
+    return db.select().from(supplementaryActivities).where(eq(supplementaryActivities.studentId, studentId));
+  }
+  async createSupplementaryActivity(data: InsertSupplementaryActivity): Promise<SupplementaryActivity> {
+    const [sa] = await db.insert(supplementaryActivities).values(data).returning();
+    return sa;
+  }
+  async updateSupplementaryActivity(id: number, data: Partial<InsertSupplementaryActivity>): Promise<SupplementaryActivity | undefined> {
+    const [sa] = await db.update(supplementaryActivities).set(data).where(eq(supplementaryActivities.id, id)).returning();
+    return sa;
+  }
+  async deleteSupplementaryActivity(id: number): Promise<void> {
+    await db.delete(supplementaryActivities).where(eq(supplementaryActivities.id, id));
   }
 }
 
