@@ -31,13 +31,25 @@ export async function registerRoutes(
   });
 
   app.get("/api/students", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (profile?.role === "parent") {
+      if (!profile.familyId) return res.json([]);
+      const allStudents = await storage.getStudents();
+      return res.json(allStudents.filter(s => s.familyId === profile.familyId));
+    }
     const allStudents = await storage.getStudents();
     res.json(allStudents);
   });
 
-  app.get("/api/students/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/students/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
     const student = await storage.getStudent(parseInt(req.params.id));
     if (!student) return res.status(404).json({ message: "Not found" });
+    if (profile?.role === "parent" && student.familyId !== profile.familyId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     res.json(student);
   });
 
@@ -293,13 +305,19 @@ export async function registerRoutes(
   });
 
   app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
     const allStudents = await storage.getStudents();
     const allCourses = await storage.getCourses();
     const allPaces = await storage.getPaces();
     const allPaceCourses = await storage.getPaceCourses();
 
+    const studentCount = profile?.role === "parent"
+      ? (profile.familyId ? allStudents.filter(s => s.familyId === profile.familyId).length : 0)
+      : allStudents.length;
+
     res.json({
-      totalStudents: allStudents.length,
+      totalStudents: studentCount,
       totalCourses: allCourses.length,
       totalPaces: allPaces.length,
       totalPaceCourses: allPaceCourses.length,

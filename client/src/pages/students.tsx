@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { Student, UserProfile, Personnel, Family, Parent } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type ViewType = "students" | "personnel" | "parents" | "families";
 
@@ -68,6 +69,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const emptyForm = {
     surname: "", firstNames: "", callName: "", alias: "",
     isDyslexic: false, active: true, reasonInactive: "", remarks: "",
@@ -161,6 +163,8 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
   }
 
   const filteredStudents = students?.filter(s => {
+    if (statusFilter === "active" && !s.active) return false;
+    if (statusFilter === "inactive" && s.active) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return s.surname.toLowerCase().includes(q) || s.callName.toLowerCase().includes(q) ||
@@ -179,7 +183,19 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
         )}
       </div>
 
-      <Input placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" data-testid="input-search" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <Input placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" data-testid="input-search" />
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "active" | "inactive" | "all")}>
+          <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active only</SelectItem>
+            <SelectItem value="inactive">Inactive only</SelectItem>
+            <SelectItem value="all">All students</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditId(null); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -257,6 +273,17 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
             >
               {(createStudent.isPending || updateStudent.isPending) ? "Saving..." : editId ? "Save Changes" : "Add Student"}
             </Button>
+            {editId && isTeacher && (
+              <Button
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive"
+                onClick={() => { deleteStudent.mutate(editId); setOpen(false); setEditId(null); }}
+                disabled={deleteStudent.isPending}
+                data-testid="button-delete-student-dialog"
+              >
+                {deleteStudent.isPending ? "Removing..." : "Remove Student"}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -267,43 +294,56 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
             <table className="w-full text-sm" data-testid="table-students">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Call Name</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Surname</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Full Names</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date of Birth</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Group</th>
                   <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
                   <th className="text-center py-3 px-4 font-medium text-muted-foreground">Dyslexic</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Remarks</th>
                   {isTeacher && <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => (
                   <tr key={student.id} className="border-b last:border-0" data-testid={`row-student-${student.id}`}>
-                    <td className="py-3 px-4 text-muted-foreground font-mono">{student.id}</td>
                     <td className="py-3 px-4 font-medium">{student.callName}</td>
                     <td className="py-3 px-4">{student.surname}</td>
                     <td className="py-3 px-4 text-muted-foreground text-xs">{student.firstNames || "—"}</td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs" data-testid={`text-dob-${student.id}`}>{student.dateOfBirth || "—"}</td>
                     <td className="py-3 px-4">{student.group ? <Badge variant="secondary">{student.group}</Badge> : "—"}</td>
                     <td className="py-3 px-4 text-center">
                       {student.active ? (
                         <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" data-testid={`badge-active-${student.id}`}>Active</Badge>
                       ) : (
-                        <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" data-testid={`badge-inactive-${student.id}`}>{student.reasonInactive || "Inactive"}</Badge>
+                        <span className="inline-flex items-center gap-1">
+                          <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" data-testid={`badge-inactive-${student.id}`}>Inactive</Badge>
+                          {student.reasonInactive && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" data-testid={`icon-inactive-reason-${student.id}`} />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{student.reasonInactive}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-center text-muted-foreground">{student.isDyslexic ? "Yes" : "—"}</td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs max-w-[200px] truncate" data-testid={`text-remarks-${student.id}`} title={student.remarks || ""}>{student.remarks || "—"}</td>
                     {isTeacher && (
-                      <td className="py-3 px-4 text-right space-x-1">
+                      <td className="py-3 px-4 text-right">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(student)} data-testid={`button-edit-${student.id}`}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => deleteStudent.mutate(student.id)} className="text-destructive" data-testid={`button-delete-${student.id}`}>Remove</Button>
                       </td>
                     )}
                   </tr>
                 )) : (
-                  <tr><td colSpan={isTeacher ? 8 : 7} className="text-center py-8 text-muted-foreground">{search ? "No students match your search." : "No students found."}</td></tr>
+                  <tr><td colSpan={isTeacher ? 9 : 8} className="text-center py-8 text-muted-foreground">{search ? "No students match your search." : "No students found."}</td></tr>
                 )}
               </tbody>
             </table>
