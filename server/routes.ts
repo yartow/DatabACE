@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema } from "@shared/schema";
+import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema, insertCourseSchema, insertPaceCourseSchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -86,6 +86,16 @@ export async function registerRoutes(
     res.json(c);
   });
 
+  app.patch("/api/courses/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertCourseSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updateCourse(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
   app.get("/api/paces", isAuthenticated, async (req, res) => {
     const p = await storage.getPaces();
     res.json(p);
@@ -101,6 +111,16 @@ export async function registerRoutes(
     }
     const pc = await storage.getPaceCourses();
     res.json(pc);
+  });
+
+  app.patch("/api/pace-courses/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPaceCourseSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updatePaceCourse(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
   });
 
   app.get("/api/subjects", isAuthenticated, async (_req: any, res) => {
@@ -123,7 +143,12 @@ export async function registerRoutes(
     if (!profile) return res.status(403).json({ message: "Forbidden" });
     const { studentId } = req.query;
     if (!studentId) return res.status(400).json({ message: "studentId query parameter required" });
-    const result = await storage.getEnrollmentsByStudent(parseInt(studentId));
+    const sid = parseInt(studentId);
+    if (profile.role === "parent") {
+      const student = await storage.getStudent(sid);
+      if (!student || student.familyId !== profile.familyId) return res.status(403).json({ message: "Forbidden" });
+    }
+    const result = await storage.getEnrollmentsByStudent(sid);
     res.json(result);
   });
 
@@ -444,9 +469,17 @@ export async function registerRoutes(
   });
 
   app.get("/api/supplementary-activities", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile) return res.status(403).json({ message: "Forbidden" });
     const { studentId } = req.query;
     if (!studentId) return res.status(400).json({ message: "studentId query parameter required" });
-    res.json(await storage.getSupplementaryActivitiesByStudent(parseInt(studentId)));
+    const sid = parseInt(studentId);
+    if (profile.role === "parent") {
+      const student = await storage.getStudent(sid);
+      if (!student || student.familyId !== profile.familyId) return res.status(403).json({ message: "Forbidden" });
+    }
+    res.json(await storage.getSupplementaryActivitiesByStudent(sid));
   });
 
   app.post("/api/supplementary-activities", isAuthenticated, async (req: any, res) => {

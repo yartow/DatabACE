@@ -1,30 +1,190 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
-import type { Course, Pace, PaceCourse } from "@shared/schema";
-import { BookOpen, Package, CheckCircle2, XCircle } from "lucide-react";
+import type { Course, Pace, PaceCourse, UserProfile } from "@shared/schema";
+import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+function EditableCourseRow({ c, onCancel, onSaved }: { c: Course; onCancel: () => void; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [course, setCourse] = useState(c.course || "");
+  const [level, setLevel] = useState(c.level?.toString() || "");
+  const [starValue, setStarValue] = useState(c.starValue?.toString() || "");
+  const [passThreshold, setPassThreshold] = useState(c.passThreshold != null ? Math.round(c.passThreshold * 100).toString() : "");
+  const [courseType, setCourseType] = useState(c.courseType || "");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PATCH", `/api/courses/${c.id}`, {
+        course: course || null,
+        level: level ? parseInt(level) : null,
+        starValue: starValue ? parseInt(starValue) : null,
+        passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
+        courseType: courseType || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      toast({ title: "Course updated" });
+      onSaved();
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  return (
+    <tr className="border-b bg-muted/20" data-testid={`row-course-edit-${c.id}`}>
+      <td className="py-2 px-2">
+        <Input value={course} onChange={e => setCourse(e.target.value)} className="h-7 text-xs" data-testid="input-edit-course-name" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Badge variant="secondary">{c.subjectAbb || "—"}</Badge>
+      </td>
+      <td className="text-center py-2 px-2 text-muted-foreground text-xs">{c.subjectGroup || "—"}</td>
+      <td className="text-center py-2 px-2">
+        <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-level" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Input value={courseType} onChange={e => setCourseType(e.target.value)} className="h-7 w-20 text-xs text-center mx-auto" data-testid="input-edit-course-type" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Input value={starValue} onChange={e => setStarValue(e.target.value)} className="h-7 w-14 text-xs text-center mx-auto" data-testid="input-edit-course-stars" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-pass" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <div className="flex items-center gap-1 justify-center">
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-course">
+            <Check className="h-3 w-3 text-emerald-600" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-course">
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; courseMap: Map<number, Course>; onCancel: () => void; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [creditValue, setCreditValue] = useState(pc.creditValuePace?.toString() || "");
+  const [passThreshold, setPassThreshold] = useState(pc.passThreshold != null ? Math.round(pc.passThreshold * 100).toString() : "");
+  const [active, setActive] = useState(pc.active?.toString() || "1");
+
+  const course = courseMap.get(pc.courseId);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PATCH", `/api/pace-courses/${pc.id}`, {
+        creditValuePace: creditValue ? parseFloat(creditValue) : null,
+        passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
+        active: parseInt(active),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
+      toast({ title: "PACE-Course updated" });
+      onSaved();
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  return (
+    <tr className="border-b bg-muted/20" data-testid={`row-pc-edit-${pc.id}`}>
+      <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
+      <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
+      <td className="py-2 px-2 font-medium text-xs">{course?.course || course?.aceAlias || `#${pc.courseId}`}</td>
+      <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
+      <td className="text-center py-2 px-2">
+        <Input value={creditValue} onChange={e => setCreditValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-pc-credit" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-pc-pass" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Select value={active} onValueChange={setActive}>
+          <SelectTrigger className="h-7 w-24 text-xs mx-auto" data-testid="select-edit-pc-active"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Active</SelectItem>
+            <SelectItem value="0">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="text-center py-2 px-2">
+        <div className="flex items-center gap-1 justify-center">
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-pc">
+            <Check className="h-3 w-3 text-emerald-600" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-pc">
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function MaterialsPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
+  const [levelFilter, setLevelFilter] = useState("");
+  const [groupFilter, setGroupFilter] = useState("");
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [editingPcId, setEditingPcId] = useState<number | null>(null);
 
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
   const { data: allPaces } = useQuery<Pace[]>({ queryKey: ["/api/paces"] });
   const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
+  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
+
+  const isTeacher = profile?.role === "teacher";
 
   const uniqueSubjects = useMemo(() => {
     if (!courses) return [];
     return [...new Set(courses.filter(c => c.subjectTemp).map(c => c.subjectTemp!))].sort();
   }, [courses]);
 
+  const uniqueLevels = useMemo(() => {
+    if (!courses) return [];
+    return [...new Set(courses.filter(c => c.level != null).map(c => c.level!))].sort((a, b) => a - b);
+  }, [courses]);
+
+  const uniqueGroups = useMemo(() => {
+    if (!courses) return [];
+    return [...new Set(courses.filter(c => c.subjectGroup).map(c => c.subjectGroup!))].sort();
+  }, [courses]);
+
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
-    if (selectedSubject === "all") return courses;
-    return courses.filter(c => c.subjectTemp === selectedSubject);
-  }, [courses, selectedSubject]);
+    let result = courses;
+    if (selectedSubject !== "all") {
+      result = result.filter(c => c.subjectTemp === selectedSubject);
+    }
+    if (subjectSearch) {
+      const search = subjectSearch.toLowerCase();
+      result = result.filter(c =>
+        (c.course || "").toLowerCase().includes(search) ||
+        (c.aceAlias || "").toLowerCase().includes(search) ||
+        (c.subjectAbb || "").toLowerCase().includes(search) ||
+        (c.subjectTemp || "").toLowerCase().includes(search)
+      );
+    }
+    if (levelFilter) {
+      result = result.filter(c => c.level?.toString() === levelFilter);
+    }
+    if (groupFilter) {
+      result = result.filter(c => c.subjectGroup === groupFilter);
+    }
+    return result;
+  }, [courses, selectedSubject, subjectSearch, levelFilter, groupFilter]);
 
   const activePaceCourses = useMemo(() => {
     if (!paceCourses) return [];
@@ -40,14 +200,11 @@ export default function MaterialsPage() {
     return new Map(courses?.map(c => [c.id, c]) || []);
   }, [courses]);
 
-  const paceMap = useMemo(() => {
-    return new Map(allPaces?.map(p => [p.id, p]) || []);
-  }, [allPaces]);
-
   const displayPaceCourses = useMemo(() => {
     if (!paceCourses) return [];
     let filtered = paceCourses;
-    if (selectedSubject !== "all") {
+    const hasFilters = selectedSubject !== "all" || subjectSearch || levelFilter || groupFilter;
+    if (hasFilters) {
       const courseIds = new Set(filteredCourses.map(c => c.id));
       filtered = filtered.filter(pc => courseIds.has(pc.courseId));
     }
@@ -55,7 +212,13 @@ export default function MaterialsPage() {
       filtered = filtered.filter(pc => pc.courseId === parseInt(selectedCourse));
     }
     return filtered;
-  }, [paceCourses, selectedSubject, selectedCourse, filteredCourses]);
+  }, [paceCourses, selectedSubject, selectedCourse, filteredCourses, subjectSearch, levelFilter, groupFilter]);
+
+  const filteredSubjects = useMemo(() => {
+    if (!subjectSearch) return uniqueSubjects;
+    const search = subjectSearch.toLowerCase();
+    return uniqueSubjects.filter(s => s.toLowerCase().includes(search));
+  }, [uniqueSubjects, subjectSearch]);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -105,6 +268,16 @@ export default function MaterialsPage() {
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-1.5">
+          <label className="text-sm font-medium">Search</label>
+          <Input
+            value={subjectSearch}
+            onChange={e => setSubjectSearch(e.target.value)}
+            placeholder="Type to search..."
+            className="w-[200px]"
+            data-testid="input-search-courses"
+          />
+        </div>
+        <div className="space-y-1.5">
           <label className="text-sm font-medium">Subject</label>
           <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v); setSelectedCourse("all"); }}>
             <SelectTrigger className="w-[180px]" data-testid="select-subject">
@@ -112,8 +285,36 @@ export default function MaterialsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Subjects</SelectItem>
-              {uniqueSubjects.map(s => (
+              {(subjectSearch ? filteredSubjects : uniqueSubjects).map(s => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Level</label>
+          <Select value={levelFilter || "all"} onValueChange={v => setLevelFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[120px]" data-testid="select-level">
+              <SelectValue placeholder="All levels" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              {uniqueLevels.map(l => (
+                <SelectItem key={l} value={l.toString()}>Level {l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Group</label>
+          <Select value={groupFilter || "all"} onValueChange={v => setGroupFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[200px]" data-testid="select-group">
+              <SelectValue placeholder="All groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              {uniqueGroups.map(g => (
+                <SelectItem key={g} value={g}>{g}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -161,13 +362,17 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Credit</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
+                      {isTeacher && <th className="text-center py-3 px-2 font-medium text-muted-foreground w-[50px]"></th>}
                     </tr>
                   </thead>
                   <tbody>
                     {displayPaceCourses.slice(0, 100).map(pc => {
+                      if (editingPcId === pc.id) {
+                        return <EditablePcRow key={pc.id} pc={pc} courseMap={courseMap} onCancel={() => setEditingPcId(null)} onSaved={() => setEditingPcId(null)} />;
+                      }
                       const course = courseMap.get(pc.courseId);
                       return (
-                        <tr key={pc.id} className="border-b last:border-0">
+                        <tr key={pc.id} className="border-b last:border-0" data-testid={`row-pc-${pc.id}`}>
                           <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
                           <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
                           <td className="py-2 px-2 font-medium text-xs">
@@ -183,6 +388,13 @@ export default function MaterialsPage() {
                               {pc.active === 1 ? "Active" : "Inactive"}
                             </Badge>
                           </td>
+                          {isTeacher && (
+                            <td className="text-center py-2 px-2">
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPcId(pc.id)} data-testid={`button-edit-pc-${pc.id}`}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -215,24 +427,37 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
+                      {isTeacher && <th className="text-center py-3 px-2 font-medium text-muted-foreground w-[50px]"></th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCourses.map(c => (
-                      <tr key={c.id} className="border-b last:border-0">
-                        <td className="py-3 px-2 font-medium">{c.course || c.aceAlias || `Course ${c.id}`}</td>
-                        <td className="text-center py-3 px-2">
-                          <Badge variant="secondary">{c.subjectAbb || "—"}</Badge>
-                        </td>
-                        <td className="text-center py-3 px-2 text-muted-foreground text-xs">{c.subjectGroup || "—"}</td>
-                        <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
-                        <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
-                        <td className="text-center py-3 px-2">{c.starValue ?? "—"}</td>
-                        <td className="text-center py-3 px-2 text-muted-foreground">
-                          {c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredCourses.map(c => {
+                      if (editingCourseId === c.id) {
+                        return <EditableCourseRow key={c.id} c={c} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
+                      }
+                      return (
+                        <tr key={c.id} className="border-b last:border-0" data-testid={`row-course-${c.id}`}>
+                          <td className="py-3 px-2 font-medium">{c.course || c.aceAlias || `Course ${c.id}`}</td>
+                          <td className="text-center py-3 px-2">
+                            <Badge variant="secondary">{c.subjectAbb || "—"}</Badge>
+                          </td>
+                          <td className="text-center py-3 px-2 text-muted-foreground text-xs">{c.subjectGroup || "—"}</td>
+                          <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
+                          <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
+                          <td className="text-center py-3 px-2">{c.starValue ?? "—"}</td>
+                          <td className="text-center py-3 px-2 text-muted-foreground">
+                            {c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}
+                          </td>
+                          {isTeacher && (
+                            <td className="text-center py-3 px-2">
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingCourseId(c.id)} data-testid={`button-edit-course-${c.id}`}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
