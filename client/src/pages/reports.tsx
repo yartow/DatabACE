@@ -1,192 +1,447 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
-import type { Student, Course, DateEntry, PaceCourse } from "@shared/schema";
-import { GraduationCap, Calendar } from "lucide-react";
+import type { Student, Course, Enrollment, DateEntry } from "@shared/schema";
+import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
+
+const TERMS = [1, 2, 3, 4, 5];
+const SCHOOL_NAME = "Ceder Academy";
+
+function formatGrade(grade: number | null | undefined): string {
+  if (grade === null || grade === undefined) return "";
+  if (Number.isInteger(grade)) return `${grade}%`;
+  return `${parseFloat(grade.toFixed(1))}%`;
+}
+
+function excelDateToKey(excelDate: number): string {
+  const msPerDay = 86400000;
+  const excelEpochMs = Date.UTC(1899, 11, 30);
+  const utcMs = excelEpochMs + excelDate * msPerDay;
+  const d = new Date(utcMs);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+interface TermData {
+  avgGrade: number | null;
+  count: number;
+}
+
+interface CourseTermData {
+  course: Course;
+  terms: Record<number, TermData>;
+  termGradeSum: Record<number, number>;
+  ytd: TermData;
+  ytdGradeSum: number;
+}
+
+interface CategoryBlock {
+  name: string;
+  courses: CourseTermData[];
+  avgTerms: Record<number, TermData>;
+  avgYtd: TermData;
+}
 
 export default function ReportsPage() {
-  const [selectedStudent, setSelectedStudent] = useState<string>("");
-  const [selectedTerm, setSelectedTerm] = useState<string>("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
 
-  const { data: students } = useQuery<Student[]>({ queryKey: ["/api/students"] });
+  const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
-  const { data: dates } = useQuery<DateEntry[]>({ queryKey: ["/api/dates"] });
-  const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
+  const { data: allDates } = useQuery<DateEntry[]>({ queryKey: ["/api/dates"] });
 
-  const student = students?.find(s => s.id === parseInt(selectedStudent));
+  const selectedStudent = useMemo(() => {
+    if (!selectedStudentId || !students) return null;
+    return students.find(s => s.id === parseInt(selectedStudentId)) || null;
+  }, [selectedStudentId, students]);
 
-  const uniqueTerms = useMemo(() => {
-    if (!dates) return [];
-    const terms = [...new Set(dates.filter(d => d.term != null).map(d => d.term!))];
-    return terms.sort((a, b) => a - b);
-  }, [dates]);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
+    queryKey: ["/api/enrollments", selectedStudentId],
+    queryFn: async () => {
+      const res = await fetch(`/api/enrollments?studentId=${selectedStudentId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!selectedStudentId,
+  });
 
-  const termDates = useMemo(() => {
-    if (!dates || !selectedTerm) return [];
-    return dates.filter(d => d.term === parseInt(selectedTerm));
-  }, [dates, selectedTerm]);
-
-  const termInfo = useMemo(() => {
-    if (termDates.length === 0) return null;
-    const schoolDays = termDates.filter(d => !d.dayOff);
-    const holidays = termDates.filter(d => d.holiday && !d.weekend);
-    const weekends = termDates.filter(d => d.weekend);
-    const weeks = [...new Set(termDates.map(d => d.termWeek).filter(w => w != null))];
-    return {
-      totalDays: termDates.length,
-      schoolDays: schoolDays.length,
-      holidays: holidays.length,
-      weekends: weekends.length,
-      weeks: weeks.length,
-    };
-  }, [termDates]);
-
-  const subjectGroups = useMemo(() => {
-    if (!courses || !paceCourses) return [];
-    const groups = [...new Set(courses.filter(c => c.subjectGroup).map(c => c.subjectGroup!))];
-    return groups.map(group => {
-      const groupCourses = courses.filter(c => c.subjectGroup === group);
-      const totalPaces = groupCourses.reduce((sum, c) => {
-        return sum + paceCourses.filter(pc => pc.courseId === c.id).length;
-      }, 0);
-      const activePaces = groupCourses.reduce((sum, c) => {
-        return sum + paceCourses.filter(pc => pc.courseId === c.id && pc.active === 1).length;
-      }, 0);
-      return { group, courses: groupCourses.length, totalPaces, activePaces };
+  const datesMap = useMemo(() => {
+    const map = new Map<string, DateEntry>();
+    allDates?.forEach(d => {
+      if (d.date !== null && d.date !== undefined) {
+        map.set(excelDateToKey(d.date), d);
+      }
     });
-  }, [courses, paceCourses]);
+    return map;
+  }, [allDates]);
+
+  const courseMap = useMemo(() => {
+    const map = new Map<number, Course>();
+    courses?.forEach(c => map.set(c.id, c));
+    return map;
+  }, [courses]);
+
+  const yearTerm = useMemo(() => {
+    if (!allDates) return "25\u201326";
+    const withYt = allDates.find(d => d.yearTerm);
+    return withYt?.yearTerm || "25\u201326";
+  }, [allDates]);
+
+  const categoryBlocks = useMemo((): CategoryBlock[] => {
+    if (!enrollments || !courses) return [];
+
+    const getTermForEnrollment = (e: Enrollment): number | null => {
+      if (!e.dateStarted) return null;
+      const dateEntry = datesMap.get(e.dateStarted);
+      return dateEntry?.term ?? null;
+    };
+
+    const courseEnrollments = new Map<number, Enrollment[]>();
+    enrollments.forEach(e => {
+      const list = courseEnrollments.get(e.courseId) || [];
+      list.push(e);
+      courseEnrollments.set(e.courseId, list);
+    });
+
+    const courseTermDataMap = new Map<number, CourseTermData>();
+    courseEnrollments.forEach((enrs, courseId) => {
+      const course = courseMap.get(courseId);
+      if (!course) return;
+
+      const termBuckets: Record<number, number[]> = {};
+      TERMS.forEach(t => { termBuckets[t] = []; });
+      const allGrades: number[] = [];
+      let totalCount = 0;
+
+      enrs.forEach(e => {
+        const term = getTermForEnrollment(e);
+        if (e.grade !== null && e.grade !== undefined) {
+          allGrades.push(e.grade);
+          totalCount++;
+          if (term && termBuckets[term]) {
+            termBuckets[term].push(e.grade);
+          }
+        }
+      });
+
+      const terms: Record<number, TermData> = {};
+      const termGradeSum: Record<number, number> = {};
+      TERMS.forEach(t => {
+        const grades = termBuckets[t];
+        const sum = grades.reduce((a, b) => a + b, 0);
+        termGradeSum[t] = sum;
+        terms[t] = {
+          avgGrade: grades.length > 0 ? sum / grades.length : null,
+          count: grades.length,
+        };
+      });
+
+      const ytdSum = allGrades.reduce((a, b) => a + b, 0);
+      courseTermDataMap.set(courseId, {
+        course,
+        terms,
+        termGradeSum,
+        ytd: {
+          avgGrade: allGrades.length > 0 ? ytdSum / allGrades.length : null,
+          count: totalCount,
+        },
+        ytdGradeSum: ytdSum,
+      });
+    });
+
+    const groupMap = new Map<string, CourseTermData[]>();
+    courseTermDataMap.forEach((ctd) => {
+      const courseName = (ctd.course.course || "").toLowerCase();
+      const isDutch = courseName.includes("dutch");
+      if (isDutch) {
+        const list = groupMap.get("Nederlands") || [];
+        list.push(ctd);
+        groupMap.set("Nederlands", list);
+      } else {
+        const rawGroup = ctd.course.subjectGroup || "Other";
+        const displayGroup = rawGroup === "Core Academic Studies" ? "Academic Studies" : rawGroup;
+        const list = groupMap.get(displayGroup) || [];
+        list.push(ctd);
+        groupMap.set(displayGroup, list);
+      }
+    });
+
+    const groupOrder = [
+      "Academic Studies",
+      "Nederlands",
+      "Christian Studies",
+      "Core Expanded Studies",
+      "Applied Studies",
+      "Coursework",
+    ];
+
+    const blocks: CategoryBlock[] = [];
+    const processedGroups = new Set<string>();
+
+    function buildBlock(groupName: string, coursesInGroup: CourseTermData[]): CategoryBlock {
+      coursesInGroup.sort((a, b) => (a.course.level ?? 0) - (b.course.level ?? 0));
+
+      const avgTerms: Record<number, TermData> = {};
+      TERMS.forEach(t => {
+        const totalGradeSum = coursesInGroup.reduce((sum, c) => sum + c.termGradeSum[t], 0);
+        const totalCount = coursesInGroup.reduce((sum, c) => sum + c.terms[t].count, 0);
+        avgTerms[t] = {
+          avgGrade: totalCount > 0 ? totalGradeSum / totalCount : null,
+          count: totalCount,
+        };
+      });
+
+      const ytdGradeSum = coursesInGroup.reduce((sum, c) => sum + c.ytdGradeSum, 0);
+      const ytdCount = coursesInGroup.reduce((sum, c) => sum + c.ytd.count, 0);
+
+      return {
+        name: groupName,
+        courses: coursesInGroup,
+        avgTerms,
+        avgYtd: {
+          avgGrade: ytdCount > 0 ? ytdGradeSum / ytdCount : null,
+          count: ytdCount,
+        },
+      };
+    }
+
+    groupOrder.forEach(groupName => {
+      const coursesInGroup = groupMap.get(groupName);
+      if (!coursesInGroup || coursesInGroup.length === 0) return;
+      processedGroups.add(groupName);
+      blocks.push(buildBlock(groupName, coursesInGroup));
+    });
+
+    groupMap.forEach((coursesInGroup, groupName) => {
+      if (processedGroups.has(groupName)) return;
+      blocks.push(buildBlock(groupName, coursesInGroup));
+    });
+
+    return blocks;
+  }, [enrollments, courses, courseMap, datesMap]);
+
+  const sortedStudents = useMemo(() => {
+    if (!students) return [];
+    return [...students].sort((a, b) => {
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      return a.callName.localeCompare(b.callName);
+    });
+  }, [students]);
+
+  const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+
+  if (studentsLoading) {
+    return (
+      <div className="yr-page">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-12 w-64" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Term Reports</h1>
-        <p className="text-muted-foreground mt-1">View term schedules and course progress reports.</p>
+    <div className="p-4 md:p-6 space-y-4" data-testid="reports-page">
+      <div className="flex items-center gap-4 flex-wrap print:hidden">
+        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+          <SelectTrigger className="w-[280px]" data-testid="select-student">
+            <SelectValue placeholder="Choose a student..." />
+          </SelectTrigger>
+          <SelectContent>
+            {sortedStudents.map(s => (
+              <SelectItem key={s.id} value={String(s.id)} data-testid={`option-student-${s.id}`}>
+                {s.callName} {s.surname}{!s.active ? " (inactive)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedStudent && (
+          <button
+            className="text-sm text-muted-foreground underline hover:text-foreground print:hidden"
+            onClick={() => window.print()}
+            data-testid="button-print"
+          >
+            Print Report
+          </button>
+        )}
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Student</label>
-          <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-            <SelectTrigger className="w-[220px]" data-testid="select-student">
-              <SelectValue placeholder="Select a student" />
-            </SelectTrigger>
-            <SelectContent>
-              {students?.map(s => (
-                <SelectItem key={s.id} value={s.id.toString()}>
-                  {s.callName} {s.surname}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {!selectedStudent && (
+        <div className="yr-page">
+          <p className="text-center text-muted-foreground py-20 text-lg">Select a student above to view their Year Report.</p>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Term</label>
-          <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger className="w-[180px]" data-testid="select-term">
-              <SelectValue placeholder="Select a term" />
-            </SelectTrigger>
-            <SelectContent>
-              {uniqueTerms.map(t => (
-                <SelectItem key={t} value={t.toString()}>Term {t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      )}
+
+      {selectedStudent && enrollmentsLoading && (
+        <div className="yr-page">
+          <Skeleton className="h-[100px] w-full" />
+          <Skeleton className="h-[100px] w-full mt-4" />
+          <Skeleton className="h-[300px] w-full mt-4" />
+          <Skeleton className="h-[200px] w-full mt-4" />
         </div>
-      </div>
+      )}
 
-      {!selectedStudent || !selectedTerm ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <p className="text-muted-foreground">Select a student and term to view the report.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6" id="report-container">
-          <Card>
-            <CardContent className="p-8">
-              <div className="text-center space-y-2 mb-8">
-                <div className="flex justify-center mb-4">
-                  <GraduationCap className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-xl font-serif font-bold" data-testid="text-report-title">
-                  Term {selectedTerm} Report
-                </h2>
-                <p className="text-muted-foreground text-sm">School Year Overview</p>
+      {selectedStudent && enrollments && !enrollmentsLoading && (
+        <div className="yr-page" data-testid="year-report">
+          <div className="yr-title" data-testid="yr-title">
+            <div className="yr-logo">
+              <img src={cederLogoPath} alt="de Ceder" className="yr-logo-img" data-testid="text-logo" />
+            </div>
+            <div className="yr-report-center">
+              <span className="yr-report-heading" data-testid="text-report-title">Year Report</span>
+              <span className="yr-school-name" data-testid="text-school-name">{SCHOOL_NAME}</span>
+            </div>
+            <div className="yr-report-right">
+              <span className="yr-year" data-testid="text-year">{yearTerm}</span>
+              <span className="yr-terms-label" data-testid="text-terms">Terms 1–5</span>
+            </div>
+          </div>
+
+          <div className="yr-info" data-testid="yr-info">
+            <div className="yr-info-panel">
+              <div className="yr-info-row">
+                <span className="yr-info-label">Student</span>
+                <span className="yr-info-value" data-testid="text-student-name">{selectedStudent.callName} {selectedStudent.surname}</span>
               </div>
-
-              <Separator className="my-6" />
-
-              <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground w-24">Student:</span>
-                    <span className="font-medium" data-testid="text-report-student">
-                      {student?.firstNames || student?.callName} {student?.surname}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground w-24">Call Name:</span>
-                    <span className="font-medium">{student?.callName}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {termInfo && (
-                    <>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">School Days:</span>
-                        <span className="font-medium">{termInfo.schoolDays}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Term Weeks:</span>
-                        <span className="font-medium">{termInfo.weeks}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
+              <div className="yr-info-row-sm">
+                <span className="yr-info-label">Group</span>
+                <span className="yr-info-value" data-testid="text-group">—</span>
               </div>
+            </div>
+            <div className="yr-info-panel">
+              <div className="yr-info-row">
+                <span className="yr-info-label yr-info-label-wide">Report Date</span>
+                <span className="yr-info-value" data-testid="text-report-date">{today}</span>
+              </div>
+              <div className="yr-info-row-sm">
+                <span className="yr-info-label yr-info-label-wide">Supervisor</span>
+                <span className="yr-info-value" data-testid="text-supervisor">—</span>
+              </div>
+            </div>
+          </div>
 
-              <h3 className="font-semibold mb-4">Course Progress by Subject Group</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" data-testid="table-report">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left py-3 px-4 font-semibold">Subject Group</th>
-                      <th className="text-center py-3 px-4 font-semibold">Courses</th>
-                      <th className="text-center py-3 px-4 font-semibold">Total PACEs</th>
-                      <th className="text-center py-3 px-4 font-semibold">Active PACEs</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subjectGroups.map(sg => (
-                      <tr key={sg.group} className="border-b last:border-0">
-                        <td className="py-3 px-4 font-medium">{sg.group}</td>
-                        <td className="text-center py-3 px-4">{sg.courses}</td>
-                        <td className="text-center py-3 px-4">{sg.totalPaces}</td>
-                        <td className="text-center py-3 px-4">
-                          <Badge variant={sg.activePaces > 0 ? "default" : "secondary"}>
-                            {sg.activePaces}
-                          </Badge>
-                        </td>
-                      </tr>
+          <div className="yr-category-header-row" data-testid="yr-header-row">
+            <div className="yr-course-name-col">&nbsp;</div>
+            {TERMS.map(t => (
+              <div key={t} className="yr-term-header-group">
+                <span className="yr-term-label">Term {t}</span>
+                <span className="yr-count-header">&nbsp;</span>
+              </div>
+            ))}
+            <div className="yr-term-header-group">
+              <span className="yr-term-label">Year to Date</span>
+              <span className="yr-count-header">&nbsp;</span>
+            </div>
+          </div>
+
+          {categoryBlocks.length === 0 && (
+            <div className="yr-empty" data-testid="yr-empty">
+              No enrollments found for {selectedStudent.callName}. Add enrollments on the Enrollments page first.
+            </div>
+          )}
+
+          {categoryBlocks.map((block, blockIdx) => (
+            <div key={blockIdx}>
+              <div className="yr-category-block" data-testid={`yr-block-${blockIdx}`}>
+                <div className="yr-category-header">
+                  <span className="yr-category-name" data-testid={`text-category-${blockIdx}`}>{block.name}</span>
+                </div>
+
+                {block.courses.map((ctd, courseIdx) => (
+                  <div
+                    key={ctd.course.id}
+                    className={`yr-course-row ${courseIdx % 2 === 1 ? "yr-course-row-alt" : ""}`}
+                    data-testid={`yr-course-${ctd.course.id}`}
+                  >
+                    <div className="yr-course-name-col" title={ctd.course.aceAlias || ctd.course.course || ""}>
+                      {ctd.course.certificateName || ctd.course.icceAlias || ctd.course.aceAlias || ctd.course.course || `Course ${ctd.course.id}`}
+                    </div>
+                    {TERMS.map(t => (
+                      <div key={t} className="yr-term-cell-group">
+                        <span className="yr-grade-cell" data-testid={`grade-${ctd.course.id}-t${t}`}>
+                          {formatGrade(ctd.terms[t]?.avgGrade)}
+                        </span>
+                        <span className="yr-count-cell" data-testid={`count-${ctd.course.id}-t${t}`}>
+                          {ctd.terms[t]?.count > 0 ? ctd.terms[t].count : ""}
+                        </span>
+                      </div>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-muted/30 font-semibold">
-                      <td className="py-3 px-4">Total</td>
-                      <td className="text-center py-3 px-4">{subjectGroups.reduce((s, g) => s + g.courses, 0)}</td>
-                      <td className="text-center py-3 px-4">{subjectGroups.reduce((s, g) => s + g.totalPaces, 0)}</td>
-                      <td className="text-center py-3 px-4">{subjectGroups.reduce((s, g) => s + g.activePaces, 0)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    <div className="yr-term-cell-group">
+                      <span className="yr-grade-cell yr-grade-ytd" data-testid={`grade-${ctd.course.id}-ytd`}>
+                        {formatGrade(ctd.ytd.avgGrade)}
+                      </span>
+                      <span className="yr-count-cell" data-testid={`count-${ctd.course.id}-ytd`}>
+                        {ctd.ytd.count > 0 ? ctd.ytd.count : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="yr-course-row yr-avg-row" data-testid={`yr-avg-${blockIdx}`}>
+                  <div className="yr-course-name-col yr-avg-label">Average / Total</div>
+                  {TERMS.map(t => (
+                    <div key={t} className="yr-term-cell-group">
+                      <span className="yr-grade-cell">{formatGrade(block.avgTerms[t]?.avgGrade)}</span>
+                      <span className="yr-count-cell">{block.avgTerms[t]?.count > 0 ? block.avgTerms[t].count : ""}</span>
+                    </div>
+                  ))}
+                  <div className="yr-term-cell-group">
+                    <span className="yr-grade-cell yr-grade-ytd">{formatGrade(block.avgYtd.avgGrade)}</span>
+                    <span className="yr-count-cell">{block.avgYtd.count > 0 ? block.avgYtd.count : ""}</span>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="yr-block-spacer" />
+            </div>
+          ))}
+
+          <div className="yr-relation-row" data-testid="yr-relation">
+            <div className="yr-relation-block">
+              <div className="yr-category-header">
+                <span className="yr-category-name">In Relation to Work</span>
+                {TERMS.map(t => (
+                  <span key={t} className="yr-progress-term-header">T{t}</span>
+                ))}
+              </div>
+              {["Goal setting", "Effort / diligence", "Responsibility", "Initiative", "Character", "Time management", "Quality of work"].map((item, i) => (
+                <div key={i} className="yr-progress-row">
+                  <span className="yr-progress-label">{item}</span>
+                  {TERMS.map(t => (
+                    <span key={t} className="yr-progress-grade" data-testid={`work-${i}-t${t}`}>&nbsp;</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className="yr-relation-block">
+              <div className="yr-category-header">
+                <span className="yr-category-name">In Relation to Others</span>
+                {TERMS.map(t => (
+                  <span key={t} className="yr-progress-term-header">T{t}</span>
+                ))}
+              </div>
+              {["Cooperation", "Respect for authority", "Respect for others", "Self-control", "Helpfulness", "Courtesy", "Honesty"].map((item, i) => (
+                <div key={i} className="yr-progress-row">
+                  <span className="yr-progress-label">{item}</span>
+                  {TERMS.map(t => (
+                    <span key={t} className="yr-progress-grade" data-testid={`others-${i}-t${t}`}>&nbsp;</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="yr-block-spacer" />
+
+          <div className="yr-signatures" data-testid="yr-signatures">
+            <div className="yr-signature-box">
+              <span className="yr-signature-label">Principal</span>
+            </div>
+            <div className="yr-signature-box">
+              <span className="yr-signature-label">Supervisor</span>
+            </div>
+            <div className="yr-signature-box">
+              <span className="yr-signature-label">Parent / Guardian</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

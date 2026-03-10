@@ -5,8 +5,8 @@ A school grading management web application for an ACE/PACE curriculum school. B
 
 ## Features
 - **Role-based authentication**: Teachers (full CRUD) and Parents (read-only access to their children)
-- **Year Report (SPC page)**: Formal Year Report view matching Figma design — title header (logo/school/year), green info panels, category blocks with per-course term grades + PACE counts + YTD totals, behavioral assessment (In Relation to Work/Others), signature boxes. Weighted averages for category totals. Print support. Dynamic data from enrollments grouped by subjectGroup.
-- **Term Reports**: Term-based reports with schedule data and course progress by subject group
+- **Student Progress Chart (SPC page, /spc)**: Per-student PACE progress view with colored/grey stars showing pass/fail per PACE number, grades, and term labels. Subject color coding from subjects table.
+- **Term Reports (/reports)**: Formal Year Report view matching Figma design — title header (Ceder logo/school/year), green info panels, category blocks with per-course term grades + PACE counts + YTD totals, behavioral assessment (In Relation to Work/Others), signature boxes. Weighted averages for category totals. Print support. Dynamic data from enrollments grouped by subjectGroup. Dutch courses → "Nederlands" block; "Core Academic Studies" → "Academic Studies".
 - **Courses & PACEs**: Browse courses, PACEs, and PACE-Course links with filtering
 - **Excel Import**: Upload Excel files to preview data
 - **Family-based accounts**: One parent account can view all children in the same family
