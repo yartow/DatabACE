@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo } from "react";
-import type { Student, Course, Enrollment, Subject, DateEntry, PaceCourse } from "@shared/schema";
+import { useState, useMemo, useEffect } from "react";
+import type { Student, Course, Enrollment, Subject, DateEntry, PaceCourse, UserProfile } from "@shared/schema";
 import { Star } from "lucide-react";
 
 function formatGrade(grade: number | null): string {
@@ -42,6 +42,7 @@ function getTermLabel(dateStarted: string | null, datesMap: Map<string, DateEntr
 export default function SPCPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
 
+  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
   const { data: subjects } = useQuery<Subject[]>({ queryKey: ["/api/subjects"] });
@@ -141,10 +142,22 @@ export default function SPCPage() {
   const sortedStudents = useMemo(() => {
     if (!students) return [];
     return [...students].sort((a, b) => {
+      if (profile?.role === "parent") {
+        if (a.dateOfBirth && b.dateOfBirth) return a.dateOfBirth.localeCompare(b.dateOfBirth);
+        if (a.dateOfBirth) return -1;
+        if (b.dateOfBirth) return 1;
+        return a.callName.localeCompare(b.callName);
+      }
       if (a.active !== b.active) return a.active ? -1 : 1;
       return a.callName.localeCompare(b.callName);
     });
-  }, [students]);
+  }, [students, profile]);
+
+  useEffect(() => {
+    if (!selectedStudentId && sortedStudents.length > 0 && profile?.role === "parent") {
+      setSelectedStudentId(String(sortedStudents[0].id));
+    }
+  }, [sortedStudents, selectedStudentId, profile]);
 
   if (studentsLoading) {
     return (
