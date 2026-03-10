@@ -1,7 +1,7 @@
 export * from "./models/auth";
 
 import { relations } from "drizzle-orm";
-import { pgTable, text, integer, real, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, boolean, pgEnum, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
@@ -36,6 +36,7 @@ export const students = pgTable("students", {
   remarks: text("remarks"),
   dateOfBirth: text("date_of_birth"),
   familyId: integer("family_id").references(() => families.id),
+  group: text("group"),
 });
 
 export const personnel = pgTable("personnel", {
@@ -44,6 +45,7 @@ export const personnel = pgTable("personnel", {
   lastName: text("last_name").notNull(),
   group: text("group").notNull(),
   type: text("type").notNull(),
+  rank: integer("rank"),
 });
 
 export const parents = pgTable("parents", {
@@ -54,12 +56,19 @@ export const parents = pgTable("parents", {
   familyId: integer("family_id").references(() => families.id),
 });
 
+export const subjectGroups = pgTable("subject_groups", {
+  id: integer("id").primaryKey(),
+  subjectGroup: text("subject_group").notNull(),
+  remarks: varchar("remarks", { length: 1200 }),
+});
+
 export const subjects = pgTable("subjects", {
   id: integer("id").primaryKey(),
   subject: text("subject").notNull(),
   colorId: integer("color_id"),
   color: text("color"),
   colorCode: text("color_code"),
+  subjectGroupId: integer("subject_group_id").references(() => subjectGroups.id),
 });
 
 export const courses = pgTable("courses", {
@@ -135,6 +144,15 @@ export const enrollments = pgTable("enrollments", {
   remarks: text("remarks"),
 });
 
+export const supplementaryActivities = pgTable("supplementary_activities", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  studentId: integer("student_id").notNull().references(() => students.id),
+  yearTerm: text("year_term"),
+  term: integer("term"),
+  grade: varchar("grade", { length: 4 }),
+  activity: text("activity").notNull(),
+});
+
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   student: one(students, { fields: [enrollments.studentId], references: [students.id] }),
   course: one(courses, { fields: [enrollments.courseId], references: [courses.id] }),
@@ -142,6 +160,11 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
 
 export const studentsRelations = relations(students, ({ many }) => ({
   enrollments: many(enrollments),
+  supplementaryActivities: many(supplementaryActivities),
+}));
+
+export const supplementaryActivitiesRelations = relations(supplementaryActivities, ({ one }) => ({
+  student: one(students, { fields: [supplementaryActivities.studentId], references: [students.id] }),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -172,6 +195,8 @@ export const insertSubjectSchema = createInsertSchema(subjects);
 export const insertPersonnelSchema = createInsertSchema(personnel).omit({ id: true });
 export const insertFamilySchema = createInsertSchema(families).omit({ id: true });
 export const insertParentSchema = createInsertSchema(parents).omit({ id: true });
+export const insertSubjectGroupSchema = createInsertSchema(subjectGroups);
+export const insertSupplementaryActivitySchema = createInsertSchema(supplementaryActivities).omit({ id: true });
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -195,3 +220,7 @@ export type Family = typeof families.$inferSelect;
 export type InsertFamily = z.infer<typeof insertFamilySchema>;
 export type Parent = typeof parents.$inferSelect;
 export type InsertParent = z.infer<typeof insertParentSchema>;
+export type SubjectGroup = typeof subjectGroups.$inferSelect;
+export type InsertSubjectGroup = z.infer<typeof insertSubjectGroupSchema>;
+export type SupplementaryActivity = typeof supplementaryActivities.$inferSelect;
+export type InsertSupplementaryActivity = z.infer<typeof insertSupplementaryActivitySchema>;

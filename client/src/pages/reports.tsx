@@ -2,11 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
-import type { Student, Course, Enrollment, DateEntry } from "@shared/schema";
+import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity } from "@shared/schema";
 import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 
 const TERMS = [1, 2, 3, 4, 5];
 const SCHOOL_NAME = "Ceder Academy";
+
+const NEDERLANDS_COURSES = ["Taal", "Spelling", "Lezen", "Taal (PACE)", "Spelling (PACE)"];
 
 function formatGrade(grade: number | null | undefined): string {
   if (grade === null || grade === undefined) return "";
@@ -40,6 +42,7 @@ interface CategoryBlock {
   courses: CourseTermData[];
   avgTerms: Record<number, TermData>;
   avgYtd: TermData;
+  showAverages: boolean;
 }
 
 export default function ReportsPage() {
@@ -48,6 +51,7 @@ export default function ReportsPage() {
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
   const { data: allDates } = useQuery<DateEntry[]>({ queryKey: ["/api/dates"] });
+  const { data: personnelList } = useQuery<Personnel[]>({ queryKey: ["/api/personnel"] });
 
   const selectedStudent = useMemo(() => {
     if (!selectedStudentId || !students) return null;
@@ -58,6 +62,16 @@ export default function ReportsPage() {
     queryKey: ["/api/enrollments", selectedStudentId],
     queryFn: async () => {
       const res = await fetch(`/api/enrollments?studentId=${selectedStudentId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!selectedStudentId,
+  });
+
+  const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
+    queryKey: ["/api/supplementary-activities", selectedStudentId],
+    queryFn: async () => {
+      const res = await fetch(`/api/supplementary-activities?studentId=${selectedStudentId}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -85,6 +99,11 @@ export default function ReportsPage() {
     const withYt = allDates.find(d => d.yearTerm);
     return withYt?.yearTerm || "25\u201326";
   }, [allDates]);
+
+  const supervisor = useMemo(() => {
+    if (!selectedStudent?.group || !personnelList) return null;
+    return personnelList.find(p => p.group === selectedStudent.group && p.rank === 1) || null;
+  }, [selectedStudent, personnelList]);
 
   const categoryBlocks = useMemo((): CategoryBlock[] => {
     if (!enrollments || !courses) return [];
@@ -148,36 +167,19 @@ export default function ReportsPage() {
       });
     });
 
-    const groupMap = new Map<string, CourseTermData[]>();
+    const academicCourses: CourseTermData[] = [];
+    const nederlandsCourses: CourseTermData[] = [];
+
     courseTermDataMap.forEach((ctd) => {
-      const courseName = (ctd.course.course || "").toLowerCase();
-      const isDutch = courseName.includes("dutch");
-      if (isDutch) {
-        const list = groupMap.get("Nederlands") || [];
-        list.push(ctd);
-        groupMap.set("Nederlands", list);
+      const courseName = ctd.course.course || "";
+      if (NEDERLANDS_COURSES.includes(courseName)) {
+        nederlandsCourses.push(ctd);
       } else {
-        const rawGroup = ctd.course.subjectGroup || "Other";
-        const displayGroup = rawGroup === "Core Academic Studies" ? "Academic Studies" : rawGroup;
-        const list = groupMap.get(displayGroup) || [];
-        list.push(ctd);
-        groupMap.set(displayGroup, list);
+        academicCourses.push(ctd);
       }
     });
 
-    const groupOrder = [
-      "Academic Studies",
-      "Nederlands",
-      "Christian Studies",
-      "Core Expanded Studies",
-      "Applied Studies",
-      "Coursework",
-    ];
-
-    const blocks: CategoryBlock[] = [];
-    const processedGroups = new Set<string>();
-
-    function buildBlock(groupName: string, coursesInGroup: CourseTermData[]): CategoryBlock {
+    function buildBlock(groupName: string, coursesInGroup: CourseTermData[], showAverages: boolean): CategoryBlock {
       coursesInGroup.sort((a, b) => (a.course.level ?? 0) - (b.course.level ?? 0));
 
       const avgTerms: Record<number, TermData> = {};
@@ -201,23 +203,41 @@ export default function ReportsPage() {
           avgGrade: ytdCount > 0 ? ytdGradeSum / ytdCount : null,
           count: ytdCount,
         },
+        showAverages,
       };
     }
 
-    groupOrder.forEach(groupName => {
-      const coursesInGroup = groupMap.get(groupName);
-      if (!coursesInGroup || coursesInGroup.length === 0) return;
-      processedGroups.add(groupName);
-      blocks.push(buildBlock(groupName, coursesInGroup));
-    });
+    const blocks: CategoryBlock[] = [];
 
-    groupMap.forEach((coursesInGroup, groupName) => {
-      if (processedGroups.has(groupName)) return;
-      blocks.push(buildBlock(groupName, coursesInGroup));
-    });
+    if (academicCourses.length > 0) {
+      blocks.push(buildBlock("Academic Studies", academicCourses, true));
+    }
+
+    if (nederlandsCourses.length > 0) {
+      blocks.push(buildBlock("Nederlands", nederlandsCourses, true));
+    }
 
     return blocks;
   }, [enrollments, courses, courseMap, datesMap]);
+
+  const suppBlock = useMemo(() => {
+    if (!suppActivities || suppActivities.length === 0) return null;
+    const uniqueActivities = [...new Set(suppActivities.map(sa => sa.activity))];
+    return uniqueActivities;
+  }, [suppActivities]);
+
+  const suppTermData = useMemo(() => {
+    if (!suppActivities) return new Map<string, Record<number, string>>();
+    const map = new Map<string, Record<number, string>>();
+    suppActivities.forEach(sa => {
+      if (!map.has(sa.activity)) map.set(sa.activity, {});
+      const termMap = map.get(sa.activity)!;
+      if (sa.term && sa.grade) {
+        termMap[sa.term] = sa.grade;
+      }
+    });
+    return map;
+  }, [suppActivities]);
 
   const sortedStudents = useMemo(() => {
     if (!students) return [];
@@ -304,7 +324,7 @@ export default function ReportsPage() {
               </div>
               <div className="yr-info-row-sm">
                 <span className="yr-info-label">Group</span>
-                <span className="yr-info-value" data-testid="text-group">—</span>
+                <span className="yr-info-value" data-testid="text-group">{selectedStudent.group || "—"}</span>
               </div>
             </div>
             <div className="yr-info-panel">
@@ -314,7 +334,9 @@ export default function ReportsPage() {
               </div>
               <div className="yr-info-row-sm">
                 <span className="yr-info-label yr-info-label-wide">Supervisor</span>
-                <span className="yr-info-value" data-testid="text-supervisor">—</span>
+                <span className="yr-info-value" data-testid="text-supervisor">
+                  {supervisor ? `${supervisor.firstName} ${supervisor.lastName}` : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -328,12 +350,12 @@ export default function ReportsPage() {
               </div>
             ))}
             <div className="yr-term-header-group">
-              <span className="yr-term-label">Year to Date</span>
+              <span className="yr-term-label" style={{ whiteSpace: "nowrap" }}>Year to Date</span>
               <span className="yr-count-header">&nbsp;</span>
             </div>
           </div>
 
-          {categoryBlocks.length === 0 && (
+          {categoryBlocks.length === 0 && !suppBlock && (
             <div className="yr-empty" data-testid="yr-empty">
               No enrollments found for {selectedStudent.callName}. Add enrollments on the Enrollments page first.
             </div>
@@ -376,23 +398,57 @@ export default function ReportsPage() {
                   </div>
                 ))}
 
-                <div className="yr-course-row yr-avg-row" data-testid={`yr-avg-${blockIdx}`}>
-                  <div className="yr-course-name-col yr-avg-label">Average / Total</div>
-                  {TERMS.map(t => (
-                    <div key={t} className="yr-term-cell-group">
-                      <span className="yr-grade-cell">{formatGrade(block.avgTerms[t]?.avgGrade)}</span>
-                      <span className="yr-count-cell">{block.avgTerms[t]?.count > 0 ? block.avgTerms[t].count : ""}</span>
+                {block.showAverages && (
+                  <div className="yr-course-row yr-avg-row" data-testid={`yr-avg-${blockIdx}`}>
+                    <div className="yr-course-name-col yr-avg-label">Average / Total</div>
+                    {TERMS.map(t => (
+                      <div key={t} className="yr-term-cell-group">
+                        <span className="yr-grade-cell">{formatGrade(block.avgTerms[t]?.avgGrade)}</span>
+                        <span className="yr-count-cell">{block.avgTerms[t]?.count > 0 ? block.avgTerms[t].count : ""}</span>
+                      </div>
+                    ))}
+                    <div className="yr-term-cell-group">
+                      <span className="yr-grade-cell yr-grade-ytd">{formatGrade(block.avgYtd.avgGrade)}</span>
+                      <span className="yr-count-cell">{block.avgYtd.count > 0 ? block.avgYtd.count : ""}</span>
                     </div>
-                  ))}
-                  <div className="yr-term-cell-group">
-                    <span className="yr-grade-cell yr-grade-ytd">{formatGrade(block.avgYtd.avgGrade)}</span>
-                    <span className="yr-count-cell">{block.avgYtd.count > 0 ? block.avgYtd.count : ""}</span>
                   </div>
-                </div>
+                )}
               </div>
               <div className="yr-block-spacer" />
             </div>
           ))}
+
+          {suppBlock && suppBlock.length > 0 && (
+            <div>
+              <div className="yr-category-block" data-testid="yr-block-supplementary">
+                <div className="yr-category-header">
+                  <span className="yr-category-name" data-testid="text-category-supplementary">Supplementary Activities</span>
+                </div>
+                {suppBlock.map((activity, actIdx) => (
+                  <div
+                    key={activity}
+                    className={`yr-course-row ${actIdx % 2 === 1 ? "yr-course-row-alt" : ""}`}
+                    data-testid={`yr-supp-${actIdx}`}
+                  >
+                    <div className="yr-course-name-col">{activity}</div>
+                    {TERMS.map(t => (
+                      <div key={t} className="yr-term-cell-group">
+                        <span className="yr-grade-cell" data-testid={`supp-grade-${actIdx}-t${t}`}>
+                          {suppTermData.get(activity)?.[t] || ""}
+                        </span>
+                        <span className="yr-count-cell"></span>
+                      </div>
+                    ))}
+                    <div className="yr-term-cell-group">
+                      <span className="yr-grade-cell"></span>
+                      <span className="yr-count-cell"></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="yr-block-spacer" />
+            </div>
+          )}
 
           <div className="yr-relation-row" data-testid="yr-relation">
             <div className="yr-relation-block">

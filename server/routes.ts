@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema } from "@shared/schema";
+import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -437,6 +437,41 @@ export async function registerRoutes(
     } catch (error: any) {
       res.status(400).json({ message: "Failed to process import: " + error.message });
     }
+  });
+
+  app.get("/api/subject-groups", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getSubjectGroups());
+  });
+
+  app.get("/api/supplementary-activities", isAuthenticated, async (req: any, res) => {
+    const { studentId } = req.query;
+    if (!studentId) return res.status(400).json({ message: "studentId query parameter required" });
+    res.json(await storage.getSupplementaryActivitiesByStudent(parseInt(studentId)));
+  });
+
+  app.post("/api/supplementary-activities", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertSupplementaryActivitySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    res.json(await storage.createSupplementaryActivity(parsed.data));
+  });
+
+  app.patch("/api/supplementary-activities/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertSupplementaryActivitySchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updateSupplementaryActivity(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/supplementary-activities/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteSupplementaryActivity(parseInt(req.params.id));
+    res.json({ success: true });
   });
 
   app.post("/api/upload/excel", isAuthenticated, upload.single("file"), async (req: any, res) => {

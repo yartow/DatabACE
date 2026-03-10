@@ -71,7 +71,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
   const emptyForm = {
     surname: "", firstNames: "", callName: "", alias: "",
     isDyslexic: false, active: true, reasonInactive: "", remarks: "",
-    dateOfBirth: "", familyId: "",
+    dateOfBirth: "", familyId: "", group: "",
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -91,6 +91,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
         remarks: form.remarks || null,
         dateOfBirth: form.dateOfBirth || null,
         familyId: form.familyId && form.familyId !== "0" ? parseInt(form.familyId) : null,
+        group: form.group || null,
       };
       await apiRequest("POST", "/api/students", body);
     },
@@ -118,6 +119,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
         remarks: form.remarks || null,
         dateOfBirth: form.dateOfBirth || null,
         familyId: form.familyId && form.familyId !== "0" ? parseInt(form.familyId) : null,
+        group: form.group || null,
       };
       await apiRequest("PATCH", `/api/students/${editId}`, body);
     },
@@ -147,6 +149,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
       alias: s.alias, isDyslexic: s.isDyslexic, active: s.active,
       reasonInactive: s.reasonInactive || "", remarks: s.remarks || "",
       dateOfBirth: s.dateOfBirth || "", familyId: s.familyId ? String(s.familyId) : "",
+      group: s.group || "",
     });
     setOpen(true);
   }
@@ -214,6 +217,15 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
                 families={familiesList || []}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Group</Label>
+              <Select value={form.group} onValueChange={v => setForm(p => ({ ...p, group: v }))}>
+                <SelectTrigger data-testid="select-student-group"><SelectValue placeholder="Select group..." /></SelectTrigger>
+                <SelectContent>
+                  {PERSONNEL_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center justify-between border rounded-md p-3">
               <Label htmlFor="is-dyslexic" className="cursor-pointer">Is dyslexic?</Label>
               <Switch id="is-dyslexic" checked={form.isDyslexic} onCheckedChange={v => setForm(p => ({ ...p, isDyslexic: v }))} data-testid="switch-dyslexic" />
@@ -259,6 +271,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Call Name</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Surname</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Full Names</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Group</th>
                   <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
                   <th className="text-center py-3 px-4 font-medium text-muted-foreground">Dyslexic</th>
                   {isTeacher && <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>}
@@ -271,6 +284,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
                     <td className="py-3 px-4 font-medium">{student.callName}</td>
                     <td className="py-3 px-4">{student.surname}</td>
                     <td className="py-3 px-4 text-muted-foreground text-xs">{student.firstNames || "—"}</td>
+                    <td className="py-3 px-4">{student.group ? <Badge variant="secondary">{student.group}</Badge> : "—"}</td>
                     <td className="py-3 px-4 text-center">
                       {student.active ? (
                         <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" data-testid={`badge-active-${student.id}`}>Active</Badge>
@@ -289,7 +303,7 @@ function StudentsView({ isTeacher, search, setSearch }: ViewProps) {
                     )}
                   </tr>
                 )) : (
-                  <tr><td colSpan={isTeacher ? 7 : 6} className="text-center py-8 text-muted-foreground">{search ? "No students match your search." : "No students found."}</td></tr>
+                  <tr><td colSpan={isTeacher ? 8 : 7} className="text-center py-8 text-muted-foreground">{search ? "No students match your search." : "No students found."}</td></tr>
                 )}
               </tbody>
             </table>
@@ -304,19 +318,19 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { firstName: "", lastName: "", group: "", type: "" };
+  const emptyForm = { firstName: "", lastName: "", group: "", type: "", rank: "" };
   const [form, setForm] = useState(emptyForm);
 
   const { data: personnelList } = useQuery<Personnel[]>({ queryKey: ["/api/personnel"] });
 
   const create = useMutation({
-    mutationFn: async () => { await apiRequest("POST", "/api/personnel", form); },
+    mutationFn: async () => { await apiRequest("POST", "/api/personnel", { ...form, rank: form.rank ? parseInt(form.rank) : null }); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/personnel"] }); setOpen(false); setForm(emptyForm); toast({ title: "Personnel added" }); },
     onError: () => toast({ title: "Failed to add personnel", variant: "destructive" }),
   });
 
   const update = useMutation({
-    mutationFn: async () => { if (!editId) return; await apiRequest("PATCH", `/api/personnel/${editId}`, form); },
+    mutationFn: async () => { if (!editId) return; await apiRequest("PATCH", `/api/personnel/${editId}`, { ...form, rank: form.rank ? parseInt(form.rank) : null }); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/personnel"] }); setOpen(false); setEditId(null); setForm(emptyForm); toast({ title: "Personnel updated" }); },
     onError: () => toast({ title: "Failed to update", variant: "destructive" }),
   });
@@ -327,7 +341,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
   });
 
   function openEdit(p: Personnel) {
-    setEditId(p.id); setForm({ firstName: p.firstName, lastName: p.lastName, group: p.group, type: p.type }); setOpen(true);
+    setEditId(p.id); setForm({ firstName: p.firstName, lastName: p.lastName, group: p.group, type: p.type, rank: p.rank?.toString() || "" }); setOpen(true);
   }
 
   const filtered = personnelList?.filter(p => {
@@ -380,6 +394,10 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Rank</Label>
+              <Input type="number" min="1" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} placeholder="e.g. 1" data-testid="input-rank" />
+            </div>
             <Button
               onClick={() => editId ? update.mutate() : create.mutate()}
               disabled={!form.firstName || !form.lastName || !form.group || !form.type || create.isPending || update.isPending}
@@ -401,6 +419,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Last Name</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Group</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Rank</th>
                   {isTeacher && <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
@@ -411,6 +430,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                     <td className="py-3 px-4">{p.lastName}</td>
                     <td className="py-3 px-4"><Badge variant="secondary">{p.group}</Badge></td>
                     <td className="py-3 px-4"><Badge variant="outline">{p.type}</Badge></td>
+                    <td className="py-3 px-4">{p.rank ?? "—"}</td>
                     {isTeacher && (
                       <td className="py-3 px-4 text-right space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(p)} data-testid={`button-edit-${p.id}`}><Pencil className="w-3.5 h-3.5" /></Button>
@@ -419,7 +439,7 @@ function PersonnelView({ isTeacher, search, setSearch }: ViewProps) {
                     )}
                   </tr>
                 )) : (
-                  <tr><td colSpan={isTeacher ? 5 : 4} className="text-center py-8 text-muted-foreground">{search ? "No matches." : "No personnel found."}</td></tr>
+                  <tr><td colSpan={isTeacher ? 6 : 5} className="text-center py-8 text-muted-foreground">{search ? "No matches." : "No personnel found."}</td></tr>
                 )}
               </tbody>
             </table>
