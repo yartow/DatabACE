@@ -16,6 +16,7 @@ import MaterialsPage from "@/pages/materials";
 import StudentsPage from "@/pages/students";
 import ImportPage from "@/pages/import";
 import EnrollmentsPage from "@/pages/enrollments";
+import ExportPage from "@/pages/export";
 import SetupProfilePage from "@/pages/setup-profile";
 import type { UserProfile } from "@shared/schema";
 
@@ -29,6 +30,7 @@ function AuthenticatedRouter() {
       <Route path="/students" component={StudentsPage} />
       <Route path="/enrollments" component={EnrollmentsPage} />
       <Route path="/import" component={ImportPage} />
+      <Route path="/export" component={ExportPage} />
       <Route component={NotFound} />
     </Switch>
   );

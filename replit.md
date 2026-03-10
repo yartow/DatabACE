@@ -53,7 +53,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `server/seed.ts` - Database seeding from Excel file (attached_assets/WORKBOOK_v0.3_1772895537061.xlsx)
 - `client/src/App.tsx` - Main app with auth flow and routing
 - `client/src/components/app-sidebar.tsx` - Navigation sidebar
-- `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, enrollments, import)
+- `client/src/pages/` - All page components (dashboard, spc, reports, materials, students, enrollments, import, export)
 
 ## Seeded Data
 - 22 students, 164 courses, 1357 PACEs, 1374 PaceCourses, 1622 dates, 11 subjects, 5 subject groups
@@ -66,13 +66,13 @@ A school grading management web application for an ACE/PACE curriculum school. B
 All routes prefixed with `/api/` and protected with `isAuthenticated` middleware.
 - GET /api/profile, POST /api/profile - User profile management
 - GET /api/students, GET /api/students/:id, POST/PATCH/DELETE /api/students/:id - Student CRUD (write ops teacher-only)
-- GET /api/courses, GET /api/courses/:id - Course listing
+- GET /api/courses, GET /api/courses/:id, PATCH /api/courses/:id - Course CRUD (write ops teacher-only)
 - GET /api/paces - PACE listing
-- GET /api/pace-courses?paceId=X&courseId=X - PaceCourse filtering
+- GET /api/pace-courses?paceId=X&courseId=X, PATCH /api/pace-courses/:id - PaceCourse filtering/update (write ops teacher-only)
 - GET /api/subjects - All subjects with colors
 - GET /api/subject-groups - All subject groups
 - GET /api/dates?term=X - Date/calendar filtering
-- GET /api/enrollments?studentId=X - Get enrollments for a student
+- GET /api/enrollments?studentId=X - Get enrollments for a student (parents restricted to own family's students)
 - POST /api/enrollments/course - Create enrollment for course (teacher-only, dateStarted optional)
 - PATCH /api/enrollments/:id - Update individual enrollment number (teacher-only)
 - DELETE /api/enrollments/course/:studentId/:courseId - Delete all enrollment rows for a student-course pair
@@ -80,7 +80,7 @@ All routes prefixed with `/api/` and protected with `isAuthenticated` middleware
 - GET/POST/PATCH/DELETE /api/personnel - Personnel CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/families - Family CRUD (teacher-only writes)
 - GET/POST/PATCH/DELETE /api/parents - Parent CRUD (teacher-only writes, phone stripped on save)
-- GET /api/supplementary-activities?studentId=X - Get supplementary activities for a student
+- GET /api/supplementary-activities?studentId=X - Get supplementary activities (parents restricted to own family's students)
 - POST/PATCH/DELETE /api/supplementary-activities - Supplementary activity CRUD (teacher-only writes)
 - GET /api/enrollments/template - Download Excel enrollment import template (.xlsx)
 - POST /api/enrollments/import - Bulk import enrollments from Excel (teacher-only, validates student/course existence)

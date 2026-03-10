@@ -5,6 +5,7 @@ import {
   type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
   type InsertPersonnel, type InsertFamily, type InsertParent, type InsertSupplementaryActivity,
+  type InsertCourse, type InsertPaceCourse,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -18,12 +19,14 @@ export interface IStorage {
 
   getCourses(): Promise<Course[]>;
   getCourse(id: number): Promise<Course | undefined>;
+  updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined>;
 
   getPaces(): Promise<Pace[]>;
 
   getPaceCourses(): Promise<PaceCourse[]>;
   getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]>;
   getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]>;
+  updatePaceCourse(id: number, data: Partial<InsertPaceCourse>): Promise<PaceCourse | undefined>;
 
   getSubjects(): Promise<Subject[]>;
 
@@ -97,6 +100,10 @@ export class DatabaseStorage implements IStorage {
     const [c] = await db.select().from(courses).where(eq(courses.id, id));
     return c;
   }
+  async updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined> {
+    const [c] = await db.update(courses).set(data).where(eq(courses.id, id)).returning();
+    return c;
+  }
 
   async getPaces(): Promise<Pace[]> {
     return db.select().from(paces);
@@ -110,6 +117,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]> {
     return db.select().from(paceCourses).where(eq(paceCourses.courseId, courseId));
+  }
+  async updatePaceCourse(id: number, data: Partial<InsertPaceCourse>): Promise<PaceCourse | undefined> {
+    const [pc] = await db.update(paceCourses).set(data).where(eq(paceCourses.id, id)).returning();
+    return pc;
   }
 
   async getSubjects(): Promise<Subject[]> {
