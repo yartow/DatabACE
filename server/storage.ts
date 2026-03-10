@@ -176,7 +176,7 @@ export class DatabaseStorage implements IStorage {
   }
   async getPaceNumbersByCourse(courseId: number): Promise<number[]> {
     const rows = await db.select({ number: paceCourses.number }).from(paceCourses).where(eq(paceCourses.courseId, courseId));
-    const numbers = [...new Set(rows.map(r => r.number).filter((n): n is number => n !== null))].sort((a, b) => a - b);
+    const numbers = [...new Set(rows.map(r => r.number).filter((n): n is string => n !== null).map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a, b) => a - b);
     return numbers;
   }
 

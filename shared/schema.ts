@@ -128,7 +128,7 @@ export const paceCourses = pgTable("pace_courses", {
   paceId: integer("pace_id").notNull().references(() => paces.id),
   courseId: integer("course_id").notNull().references(() => courses.id),
   alias: integer("alias"),
-  number: integer("number"),
+  number: varchar("number", { length: 10 }),
   code: text("code"),
   creditValuePace: real("credit_value_pace"),
   passThreshold: real("pass_threshold"),
