@@ -29,7 +29,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `subjects` - Subject definitions with color info (id, subject, colorId, color, colorCode hex, subjectGroupId FK→subjectGroups)
 - `courses` - ACE courses with subject info, levels, PACE ranges, star values, pass thresholds. Includes `icceAlias` and `certificateName`. Has `subjectId` FK to subjects table.
 - `paces` - Individual PACE booklets (12 columns). No direct FK to courses.
-- `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 9 columns including creditValuePace, passThreshold, active status. `number` is varchar(10) to support alphanumeric PACE numbers.
+- `paceCourses` - Intermediary table linking PACEs to Courses (paceId → paces, courseId → courses). 11 columns including creditValuePace, passThreshold, active status, starValue (smallint default 1), weight (smallint default 1). `number` is varchar(10) to support alphanumeric PACE numbers.
 - `dates` - School calendar with term/week info, holidays, weekends, yearTerm (e.g. "25–26", computed from date)
 - `enrollments` - Student-course enrollments with per-number tracking. Each enrollment row = one PACE number (studentId, courseId, number varchar(10), dateStarted nullable, dateEnded, grade, remarks). Auto-generated ID.
 - `supplementaryActivities` - Supplementary activity enrollments (id auto, studentId FK→students, yearTerm, term, grade varchar(4), activity text)

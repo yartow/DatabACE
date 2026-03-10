@@ -708,12 +708,39 @@ function NewSuppActivityForm({ studentId, onCreated, onCancel }: { studentId: nu
   );
 }
 
+type ConflictRow = {
+  rowIndex: number;
+  excelRow: { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null };
+  dbRow: { id: number; studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null };
+};
+
 function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors?: string[] } | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number; updated?: number; errors?: string[] } | null>(null);
+  const [conflicts, setConflicts] = useState<ConflictRow[] | null>(null);
+  const [conflictChoices, setConflictChoices] = useState<Map<number, "db" | "excel">>(new Map());
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [newRowCount, setNewRowCount] = useState(0);
+  const [skippedIdentical, setSkippedIdentical] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: allStudents } = useQuery<Student[]>({ queryKey: ["/api/students"] });
+  const { data: allCourses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
+
+  const studentMap = useMemo(() => {
+    const m = new Map<number, Student>();
+    allStudents?.forEach(s => m.set(s.id, s));
+    return m;
+  }, [allStudents]);
+
+  const courseMap = useMemo(() => {
+    const m = new Map<number, Course>();
+    allCourses?.forEach(c => m.set(c.id, c));
+    return m;
+  }, [allCourses]);
 
   function handleDownloadTemplate() {
     window.open("/api/enrollments/template", "_blank");
@@ -723,6 +750,8 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
     if (!file) return;
     setImporting(true);
     setResult(null);
+    setConflicts(null);
+    setSessionId(null);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -735,6 +764,17 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
       if (!res.ok) {
         toast({ title: "Import failed", description: data.message, variant: "destructive" });
         if (data.errors) setResult({ imported: 0, skipped: 0, errors: data.errors });
+      } else if (data.status === "conflicts") {
+        setConflicts(data.conflicts);
+        setSessionId(data.sessionId);
+        setNewRowCount(data.newRowCount || 0);
+        setSkippedIdentical(data.skippedIdentical || 0);
+        const defaultChoices = new Map<number, "db" | "excel">();
+        data.conflicts.forEach((_: ConflictRow, i: number) => defaultChoices.set(i, "db"));
+        setConflictChoices(defaultChoices);
+        if (data.errors && data.errors.length > 0) {
+          setResult({ imported: 0, skipped: 0, errors: data.errors });
+        }
       } else {
         setResult(data);
         queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
@@ -747,73 +787,222 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
     }
   }
 
+  async function handleResolve() {
+    setResolving(true);
+    try {
+      const choices = conflicts!.map((_, i) => conflictChoices.get(i) || "db");
+
+      const res = await fetch("/api/enrollments/import/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, choices }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Resolution failed", description: data.message, variant: "destructive" });
+      } else {
+        const totalImported = data.imported || 0;
+        const totalUpdated = data.updated || 0;
+        setResult({
+          imported: totalImported,
+          skipped: data.skipped || skippedIdentical,
+          updated: totalUpdated,
+        });
+        setConflicts(null);
+        setSessionId(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
+        toast({ title: `Imported ${totalImported}, updated ${totalUpdated} enrollment(s)` });
+      }
+    } catch (err: any) {
+      toast({ title: "Resolution error", description: err.message, variant: "destructive" });
+    } finally {
+      setResolving(false);
+    }
+  }
+
   function handleClose(v: boolean) {
     if (!v) {
       setFile(null);
       setResult(null);
+      setConflicts(null);
+      setSessionId(null);
+      setNewRowCount(0);
+      setSkippedIdentical(0);
     }
     onOpenChange(v);
   }
 
+  function formatField(label: string, dbVal: any, excelVal: any) {
+    const dbStr = dbVal === null || dbVal === undefined ? "—" : String(dbVal);
+    const excelStr = excelVal === null || excelVal === undefined ? "—" : String(excelVal);
+    const isDiff = dbStr !== excelStr;
+    return (
+      <div key={label} className="grid grid-cols-3 gap-2 text-xs py-0.5">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={isDiff ? "font-medium text-amber-700 dark:text-amber-300" : ""}>{dbStr}</span>
+        <span className={isDiff ? "font-medium text-blue-700 dark:text-blue-300" : ""}>{excelStr}</span>
+      </div>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={conflicts ? "max-w-3xl max-h-[80vh] overflow-y-auto" : "max-w-lg"}>
         <DialogHeader>
-          <DialogTitle>Import Enrollments from Excel</DialogTitle>
+          <DialogTitle>{conflicts ? "Resolve Import Conflicts" : "Import Enrollments from Excel"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <p className="text-sm text-muted-foreground">
-            Upload an Excel file (.xlsx) with enrollment data. The file should have columns: studentId, courseId, number, dateStarted, dateEnded, grade, remarks.
-          </p>
 
-          <Button variant="outline" onClick={handleDownloadTemplate} className="w-full" data-testid="button-download-template">
-            <Download className="w-4 h-4 mr-2" />
-            Download Excel Template
-          </Button>
-
-          <div className="space-y-2">
-            <Label>Select Excel file</Label>
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={e => { setFile(e.target.files?.[0] || null); setResult(null); }}
-              data-testid="input-import-file"
-            />
-          </div>
-
-          {result && (
-            <div className={`rounded-md p-3 text-sm ${result.imported > 0 ? "bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"}`}>
-              <div className="flex items-center gap-2 mb-1">
-                {result.imported > 0 ? (
+        {conflicts ? (
+          <div className="space-y-4 pt-2">
+            {newRowCount > 0 && (
+              <div className="rounded-md p-3 text-sm bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-red-600" />
-                )}
-                <span className="font-medium">
-                  {result.imported > 0 ? `Imported ${result.imported} row(s)` : "No rows imported"}
-                </span>
+                  <span>{newRowCount} new row(s) will be imported</span>
+                </div>
               </div>
-              {result.skipped > 0 && (
-                <p className="text-muted-foreground ml-6">{result.skipped} row(s) skipped due to errors</p>
-              )}
-              {result.errors && result.errors.length > 0 && (
-                <ul className="mt-2 ml-6 space-y-1 text-xs text-red-700 dark:text-red-300 max-h-32 overflow-y-auto">
-                  {result.errors.map((err, i) => <li key={i}>{err}</li>)}
-                </ul>
-              )}
-            </div>
-          )}
+            )}
+            {skippedIdentical > 0 && (
+              <p className="text-sm text-muted-foreground">{skippedIdentical} identical row(s) will be skipped</p>
+            )}
 
-          <Button
-            onClick={handleImport}
-            disabled={!file || importing}
-            className="w-full"
-            data-testid="button-import-submit"
-          >
-            {importing ? "Importing..." : "Import"}
-          </Button>
-        </div>
+            <p className="text-sm">
+              <span className="font-medium">{conflicts.length} conflict(s) found.</span> For each row below, the data in the database differs from the Excel file. Choose which version to keep.
+            </p>
+
+            <div className="space-y-3">
+              {conflicts.map((c, i) => {
+                const student = studentMap.get(c.excelRow.studentId);
+                const course = courseMap.get(c.excelRow.courseId);
+                const choice = conflictChoices.get(i) || "db";
+                return (
+                  <div key={i} className="border rounded-lg p-3 space-y-2" data-testid={`conflict-row-${i}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {student ? `${student.callName} ${student.surname}` : `Student #${c.excelRow.studentId}`}
+                        {" — "}
+                        {course?.course || course?.aceAlias || `Course #${c.excelRow.courseId}`}
+                        {" — PACE "}
+                        {c.excelRow.number}
+                      </span>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <div className="grid grid-cols-3 gap-2 text-xs font-medium border-b pb-1 mb-1">
+                        <span>Field</span>
+                        <span className="text-amber-700 dark:text-amber-300">Database</span>
+                        <span className="text-blue-700 dark:text-blue-300">Excel</span>
+                      </div>
+                      {formatField("Date Started", c.dbRow.dateStarted, c.excelRow.dateStarted)}
+                      {formatField("Date Ended", c.dbRow.dateEnded, c.excelRow.dateEnded)}
+                      {formatField("Grade", c.dbRow.grade, c.excelRow.grade)}
+                      {formatField("Remarks", c.dbRow.remarks, c.excelRow.remarks)}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        variant={choice === "db" ? "default" : "outline"}
+                        className="h-7 text-xs"
+                        onClick={() => setConflictChoices(prev => new Map(prev).set(i, "db"))}
+                        data-testid={`button-keep-db-${i}`}
+                      >
+                        Keep Database
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={choice === "excel" ? "default" : "outline"}
+                        className="h-7 text-xs"
+                        onClick={() => setConflictChoices(prev => new Map(prev).set(i, "excel"))}
+                        data-testid={`button-use-excel-${i}`}
+                      >
+                        Use Excel
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => {
+                const all = new Map<number, "db" | "excel">();
+                conflicts.forEach((_, i) => all.set(i, "db"));
+                setConflictChoices(all);
+              }} data-testid="button-keep-all-db">Keep all Database</Button>
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => {
+                const all = new Map<number, "db" | "excel">();
+                conflicts.forEach((_, i) => all.set(i, "excel"));
+                setConflictChoices(all);
+              }} data-testid="button-use-all-excel">Use all Excel</Button>
+            </div>
+
+            <Button
+              onClick={handleResolve}
+              disabled={resolving}
+              className="w-full"
+              data-testid="button-resolve-submit"
+            >
+              {resolving ? "Applying..." : "Apply Changes"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Upload an Excel file (.xlsx) with enrollment data. The file should have columns: studentId, courseId, number, dateStarted, dateEnded, grade, remarks.
+            </p>
+
+            <Button variant="outline" onClick={handleDownloadTemplate} className="w-full" data-testid="button-download-template">
+              <Download className="w-4 h-4 mr-2" />
+              Download Excel Template
+            </Button>
+
+            <div className="space-y-2">
+              <Label>Select Excel file</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={e => { setFile(e.target.files?.[0] || null); setResult(null); }}
+                data-testid="input-import-file"
+              />
+            </div>
+
+            {result && (
+              <div className={`rounded-md p-3 text-sm ${result.imported > 0 || (result.updated && result.updated > 0) ? "bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {result.imported > 0 || (result.updated && result.updated > 0) ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className="font-medium">
+                    {result.imported > 0 ? `Imported ${result.imported} row(s)` : ""}
+                    {result.imported > 0 && result.updated && result.updated > 0 ? ", " : ""}
+                    {result.updated && result.updated > 0 ? `Updated ${result.updated} row(s)` : ""}
+                    {!result.imported && (!result.updated || result.updated === 0) ? "No rows imported" : ""}
+                  </span>
+                </div>
+                {result.skipped > 0 && (
+                  <p className="text-muted-foreground ml-6">{result.skipped} row(s) skipped (identical or invalid)</p>
+                )}
+                {result.errors && result.errors.length > 0 && (
+                  <ul className="mt-2 ml-6 space-y-1 text-xs text-red-700 dark:text-red-300 max-h-32 overflow-y-auto">
+                    {result.errors.map((err, i) => <li key={i}>{err}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <Button
+              onClick={handleImport}
+              disabled={!file || importing}
+              className="w-full"
+              data-testid="button-import-submit"
+            >
+              {importing ? "Importing..." : "Import"}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

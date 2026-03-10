@@ -38,6 +38,7 @@ export interface IStorage {
   getDatesByTerm(term: number): Promise<DateEntry[]>;
 
   getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
+  getAllEnrollments(): Promise<Enrollment[]>;
   getEnrollment(id: number): Promise<Enrollment | undefined>;
   createEnrollment(data: InsertEnrollment): Promise<Enrollment>;
   createEnrollments(data: InsertEnrollment[]): Promise<Enrollment[]>;
@@ -151,6 +152,9 @@ export class DatabaseStorage implements IStorage {
 
   async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {
     return db.select().from(enrollments).where(eq(enrollments.studentId, studentId));
+  }
+  async getAllEnrollments(): Promise<Enrollment[]> {
+    return db.select().from(enrollments);
   }
   async getEnrollment(id: number): Promise<Enrollment | undefined> {
     const [e] = await db.select().from(enrollments).where(eq(enrollments.id, id));

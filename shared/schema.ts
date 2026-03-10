@@ -1,7 +1,7 @@
 export * from "./models/auth";
 
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, integer, real, boolean, pgEnum, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, boolean, pgEnum, varchar, timestamp, smallint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
@@ -133,6 +133,8 @@ export const paceCourses = pgTable("pace_courses", {
   creditValuePace: real("credit_value_pace"),
   passThreshold: real("pass_threshold"),
   active: integer("active"),
+  starValue: smallint("star_value").default(1),
+  weight: smallint("weight").default(1),
 });
 
 export const dates = pgTable("dates", {
