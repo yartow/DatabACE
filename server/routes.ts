@@ -170,7 +170,7 @@ export async function registerRoutes(
     const rows = numbers.map(num => ({
       studentId: parseInt(studentId),
       courseId: parseInt(courseId),
-      number: num,
+      number: String(num),
       dateStarted: dateStarted || null,
       dateEnded: null,
       grade: null,
@@ -404,7 +404,7 @@ export async function registerRoutes(
       }
 
       const errors: string[] = [];
-      const validRows: { studentId: number; courseId: number; number: number; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null }[] = [];
+      const validRows: { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null }[] = [];
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -412,10 +412,15 @@ export async function registerRoutes(
 
         const studentId = strictInt(row.studentId);
         const courseId = strictInt(row.courseId);
-        const number = strictInt(row.number);
+        const number = row.number !== undefined && row.number !== null && String(row.number).trim() !== "" ? String(row.number).trim() : "";
 
-        if (isNaN(studentId) || isNaN(courseId) || isNaN(number)) {
-          errors.push(`Row ${rowNum}: studentId, courseId, and number are required and must be whole numbers`);
+        if (isNaN(studentId) || isNaN(courseId)) {
+          errors.push(`Row ${rowNum}: studentId and courseId are required and must be whole numbers`);
+          continue;
+        }
+
+        if (!number) {
+          errors.push(`Row ${rowNum}: number is required`);
           continue;
         }
 

@@ -307,7 +307,12 @@ function groupEnrollmentsByCourse(enrollments: Enrollment[], courseMap: Map<numb
   return Array.from(groups.entries()).map(([courseId, rows]) => {
     const course = courseMap.get(courseId);
     const courseName = course?.course || course?.aceAlias || `Course #${courseId}`;
-    const sortedRows = rows.sort((a, b) => a.number - b.number);
+    const sortedRows = rows.sort((a, b) => {
+      const numA = typeof a.number === "string" ? parseInt(a.number, 10) : a.number;
+      const numB = typeof b.number === "string" ? parseInt(b.number, 10) : b.number;
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return String(a.number).localeCompare(String(b.number));
+    });
 
     const dates = sortedRows.map(r => r.dateStarted).filter(Boolean);
     const minDateStarted = dates.length > 0 ? dates.sort()[0] : "";
