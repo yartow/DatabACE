@@ -13,10 +13,39 @@ import type { Student, Course, Enrollment, SupplementaryActivity } from "@shared
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music, Filter } from "lucide-react";
 import { format, parse } from "date-fns";
 
 const SUPP_ACTIVITIES = ["Music", "Physical Education", "Project", "Other"];
+
+function computeYearTermFromDate(dateStr: string): string | null {
+  if (!dateStr) return null;
+  try {
+    const d = parse(dateStr, "yyyy-MM-dd", new Date());
+    if (isNaN(d.getTime())) return null;
+    const month = d.getMonth();
+    const year = d.getFullYear();
+    const startYear = month >= 7 ? year : year - 1;
+    const endYear = startYear + 1;
+    const s = String(startYear).slice(-2);
+    const e = String(endYear).slice(-2);
+    return `${s}\u2013${e}`;
+  } catch {
+    return null;
+  }
+}
+
+function getCurrentYearTerm(): string {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const startYear = month >= 7 ? year : year - 1;
+  const endYear = startYear + 1;
+  const s = String(startYear).slice(-2);
+  const e = String(endYear).slice(-2);
+  return `${s}\u2013${e}`;
+}
 
 function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
   const [query, setQuery] = useState("");
@@ -791,6 +820,8 @@ export default function EnrollmentsPage() {
   const [showNewRow, setShowNewRow] = useState(false);
   const [showNewSuppRow, setShowNewSuppRow] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [selectedYearTerms, setSelectedYearTerms] = useState<Set<string>>(new Set([getCurrentYearTerm()]));
+  const [yearTermFilterOpen, setYearTermFilterOpen] = useState(false);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
     queryKey: ["/api/enrollments", selectedStudent?.id?.toString() || ""],
@@ -829,10 +860,31 @@ export default function EnrollmentsPage() {
     return new Map(courses?.map(c => [c.id, c]) || []);
   }, [courses]);
 
-  const courseGroups = useMemo(() => {
+  const availableYearTerms = useMemo(() => {
     if (!enrollments) return [];
-    return groupEnrollmentsByCourse(enrollments, courseMap);
-  }, [enrollments, courseMap]);
+    const ytSet = new Set<string>();
+    for (const e of enrollments) {
+      if (e.dateStarted) {
+        const yt = computeYearTermFromDate(e.dateStarted);
+        if (yt) ytSet.add(yt);
+      }
+    }
+    return Array.from(ytSet).sort();
+  }, [enrollments]);
+
+  const filteredEnrollments = useMemo(() => {
+    if (!enrollments || selectedYearTerms.size === 0) return enrollments || [];
+    return enrollments.filter(e => {
+      if (!e.dateStarted) return false;
+      const yt = computeYearTermFromDate(e.dateStarted);
+      return yt ? selectedYearTerms.has(yt) : false;
+    });
+  }, [enrollments, selectedYearTerms]);
+
+  const courseGroups = useMemo(() => {
+    if (!filteredEnrollments) return [];
+    return groupEnrollmentsByCourse(filteredEnrollments, courseMap);
+  }, [filteredEnrollments, courseMap]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
@@ -920,6 +972,60 @@ export default function EnrollmentsPage() {
               Course Enrollments
               {courseGroups.length > 0 && <span className="text-muted-foreground font-normal ml-2">({courseGroups.length} courses)</span>}
             </CardTitle>
+            {availableYearTerms.length > 0 && (
+              <Popover open={yearTermFilterOpen} onOpenChange={setYearTermFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" data-testid="button-yearterm-filter">
+                    <Filter className="h-3.5 w-3.5" />
+                    Year-Term
+                    {selectedYearTerms.size > 0 && (
+                      <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 text-[10px] font-semibold">{selectedYearTerms.size}</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="end">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Filter by year-term</p>
+                    {availableYearTerms.map(yt => (
+                      <label key={yt} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm" data-testid={`checkbox-yearterm-${yt}`}>
+                        <Checkbox
+                          checked={selectedYearTerms.has(yt)}
+                          onCheckedChange={(checked) => {
+                            setSelectedYearTerms(prev => {
+                              const next = new Set(prev);
+                              if (checked) next.add(yt);
+                              else next.delete(yt);
+                              return next;
+                            });
+                          }}
+                        />
+                        {yt}
+                      </label>
+                    ))}
+                    <div className="border-t pt-1 mt-1 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs flex-1"
+                        onClick={() => setSelectedYearTerms(new Set(availableYearTerms))}
+                        data-testid="button-yearterm-select-all"
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs flex-1"
+                        onClick={() => setSelectedYearTerms(new Set())}
+                        data-testid="button-yearterm-clear"
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

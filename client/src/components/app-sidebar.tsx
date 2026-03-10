@@ -18,7 +18,7 @@ const teacherItems = [
   { title: "Term Reports", url: "/reports", icon: FileText },
   { title: "Courses & PACEs", url: "/materials", icon: BookOpen },
   { title: "Enrollments", url: "/enrollments", icon: ClipboardList },
-  { title: "Students", url: "/students", icon: Users },
+  { title: "People", url: "/students", icon: Users },
   { title: "Import Data", url: "/import", icon: Upload },
   { title: "Export Data", url: "/export", icon: Download },
 ];
