@@ -153,7 +153,7 @@ export const enrollments = pgTable("enrollments", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   studentId: integer("student_id").notNull().references(() => students.id),
   courseId: integer("course_id").notNull().references(() => courses.id),
-  number: integer("number").notNull(),
+  number: varchar("number", { length: 10 }).notNull(),
   dateStarted: text("date_started"),
   dateEnded: text("date_ended"),
   grade: real("grade"),
