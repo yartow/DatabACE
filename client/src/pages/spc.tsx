@@ -127,7 +127,10 @@ export default function SPCPage() {
       const subject = course.subjectId ? subjectMap.get(course.subjectId) : undefined;
       const paceNumbers = paceNumbersByCourse.get(courseId) || [];
       const enrollmentsByNumber = new Map<number, Enrollment>();
-      enrs.forEach(e => enrollmentsByNumber.set(e.number, e));
+      enrs.forEach(e => {
+        const num = typeof e.number === "string" ? parseInt(e.number, 10) : e.number;
+        if (!isNaN(num)) enrollmentsByNumber.set(num, e);
+      });
 
       result.push({ course, subject, paceNumbers, enrollmentsByNumber });
     });
