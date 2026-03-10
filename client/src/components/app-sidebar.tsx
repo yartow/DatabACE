@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import {
-  BarChart3, FileText, BookOpen, Users, Upload, Download, LayoutDashboard, LogOut, GraduationCap, ClipboardList
+  BarChart3, FileText, BookOpen, Users, Upload, Download, LayoutDashboard, LogOut, GraduationCap, ClipboardList, Shield
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -39,7 +39,10 @@ export function AppSidebar() {
     enabled: !!user,
   });
 
-  const items = profile?.role === "teacher" ? teacherItems : parentItems;
+  const baseItems = profile?.role === "teacher" ? teacherItems : parentItems;
+  const items = profile?.role === "teacher" && profile?.isAdmin
+    ? [...baseItems, { title: "Admin", url: "/admin", icon: Shield }]
+    : baseItems;
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U"
     : "U";

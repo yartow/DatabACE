@@ -1,14 +1,16 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
-  personnel, families, parents, supplementaryActivities, subjectGroups,
+  personnel, families, parents, supplementaryActivities, subjectGroups, invitations,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
   type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
+  type Invitation, type InsertInvitation,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
   type InsertPersonnel, type InsertFamily, type InsertParent, type InsertSupplementaryActivity,
   type InsertCourse, type InsertPaceCourse,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
+import { users } from "@shared/models/auth";
 
 export interface IStorage {
   getStudents(): Promise<Student[]>;
@@ -71,6 +73,15 @@ export interface IStorage {
   createSupplementaryActivity(data: InsertSupplementaryActivity): Promise<SupplementaryActivity>;
   updateSupplementaryActivity(id: number, data: Partial<InsertSupplementaryActivity>): Promise<SupplementaryActivity | undefined>;
   deleteSupplementaryActivity(id: number): Promise<void>;
+
+  createInvitation(data: InsertInvitation): Promise<Invitation>;
+  getInvitations(): Promise<Invitation[]>;
+  getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  markInvitationUsed(token: string, userId: string): Promise<Invitation | undefined>;
+  deleteInvitation(id: number): Promise<void>;
+
+  getAllUserProfilesWithUsers(): Promise<(UserProfile & { email?: string | null; firstName?: string | null; lastName?: string | null })[]>;
+  deleteUserProfile(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +266,48 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteSupplementaryActivity(id: number): Promise<void> {
     await db.delete(supplementaryActivities).where(eq(supplementaryActivities.id, id));
+  }
+
+  async createInvitation(data: InsertInvitation): Promise<Invitation> {
+    const [inv] = await db.insert(invitations).values(data).returning();
+    return inv;
+  }
+  async getInvitations(): Promise<Invitation[]> {
+    return db.select().from(invitations);
+  }
+  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
+    const [inv] = await db.select().from(invitations).where(eq(invitations.token, token));
+    return inv;
+  }
+  async markInvitationUsed(token: string, userId: string): Promise<Invitation | undefined> {
+    const [inv] = await db.update(invitations)
+      .set({ usedBy: userId, usedAt: new Date() })
+      .where(and(eq(invitations.token, token), isNull(invitations.usedBy)))
+      .returning();
+    return inv;
+  }
+  async deleteInvitation(id: number): Promise<void> {
+    await db.delete(invitations).where(eq(invitations.id, id));
+  }
+
+  async getAllUserProfilesWithUsers(): Promise<(UserProfile & { email?: string | null; firstName?: string | null; lastName?: string | null })[]> {
+    const rows = await db
+      .select({
+        id: userProfiles.id,
+        userId: userProfiles.userId,
+        role: userProfiles.role,
+        familyId: userProfiles.familyId,
+        isAdmin: userProfiles.isAdmin,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(userProfiles)
+      .leftJoin(users, eq(userProfiles.userId, users.id));
+    return rows;
+  }
+  async deleteUserProfile(userId: string): Promise<void> {
+    await db.delete(userProfiles).where(eq(userProfiles.userId, userId));
   }
 }
 

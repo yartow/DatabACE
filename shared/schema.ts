@@ -1,7 +1,7 @@
 export * from "./models/auth";
 
-import { relations } from "drizzle-orm";
-import { pgTable, text, integer, real, boolean, pgEnum, varchar } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { pgTable, text, integer, real, boolean, pgEnum, varchar, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
@@ -13,6 +13,20 @@ export const userProfiles = pgTable("user_profiles", {
   userId: text("user_id").notNull().references(() => users.id),
   role: roleEnum("role").notNull().default("parent"),
   familyId: integer("family_id"),
+  isAdmin: boolean("is_admin").notNull().default(false),
+});
+
+export const invitations = pgTable("invitations", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  token: text("token").notNull().unique(),
+  role: roleEnum("role").notNull(),
+  familyId: integer("family_id"),
+  email: text("email"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  usedBy: text("used_by"),
+  usedAt: timestamp("used_at"),
+  expiresAt: timestamp("expires_at").notNull(),
 });
 
 export const families = pgTable("families", {
@@ -197,6 +211,7 @@ export const insertFamilySchema = createInsertSchema(families).omit({ id: true }
 export const insertParentSchema = createInsertSchema(parents).omit({ id: true });
 export const insertSubjectGroupSchema = createInsertSchema(subjectGroups);
 export const insertSupplementaryActivitySchema = createInsertSchema(supplementaryActivities).omit({ id: true });
+export const insertInvitationSchema = createInsertSchema(invitations).omit({ id: true });
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -224,3 +239,5 @@ export type SubjectGroup = typeof subjectGroups.$inferSelect;
 export type InsertSubjectGroup = z.infer<typeof insertSubjectGroupSchema>;
 export type SupplementaryActivity = typeof supplementaryActivities.$inferSelect;
 export type InsertSupplementaryActivity = z.infer<typeof insertSupplementaryActivitySchema>;
+export type Invitation = typeof invitations.$inferSelect;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
