@@ -10,12 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { Student, Course, Enrollment } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format, parse } from "date-fns";
 
 function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +45,31 @@ function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!open) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      setHighlightIndex(-1);
+      return;
+    }
+    if (suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter" && highlightIndex >= 0 && highlightIndex < suggestions.length) {
+      e.preventDefault();
+      const s = suggestions[highlightIndex];
+      onSelect(s);
+      setQuery(`${s.callName} ${s.surname}`);
+      setOpen(false);
+      setHighlightIndex(-1);
+    }
+  }
+
   return (
     <div className="relative" ref={containerRef}>
       <Input
@@ -51,17 +79,19 @@ function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
         onChange={e => {
           setQuery(e.target.value);
           setOpen(e.target.value.length >= 1);
+          setHighlightIndex(-1);
         }}
         onFocus={() => { if (query.length >= 1) setOpen(true); }}
+        onKeyDown={handleKeyDown}
         className="w-full max-w-md"
         data-testid="input-student-search"
       />
       {open && suggestions.length > 0 && (
         <div className="absolute z-50 top-full left-0 mt-1 w-full max-w-md bg-popover border rounded-md shadow-lg" data-testid="dropdown-student-suggestions">
-          {suggestions.map(s => (
+          {suggestions.map((s, i) => (
             <button
               key={s.id}
-              className="w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md"
+              className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
               onClick={() => {
                 onSelect(s);
                 setQuery(`${s.callName} ${s.surname}`);
@@ -87,6 +117,7 @@ function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
 function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => void; exclude: number[] }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
@@ -117,6 +148,30 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!open) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      setHighlightIndex(-1);
+      return;
+    }
+    if (suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter" && highlightIndex >= 0 && highlightIndex < suggestions.length) {
+      e.preventDefault();
+      onSelect(suggestions[highlightIndex]);
+      setQuery("");
+      setOpen(false);
+      setHighlightIndex(-1);
+    }
+  }
+
   return (
     <div className="relative flex-1 min-w-0" ref={containerRef}>
       <Input
@@ -125,17 +180,19 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
         onChange={e => {
           setQuery(e.target.value);
           setOpen(e.target.value.length >= 2);
+          setHighlightIndex(-1);
         }}
         onFocus={() => { if (query.length >= 2) setOpen(true); }}
+        onKeyDown={handleKeyDown}
         className="w-full"
         data-testid="input-course-search"
       />
       {open && suggestions.length > 0 && (
         <div className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-auto" data-testid="dropdown-course-suggestions">
-          {suggestions.map(c => (
+          {suggestions.map((c, i) => (
             <button
               key={c.id}
-              className="w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md"
+              className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
               onClick={() => {
                 onSelect(c);
                 setQuery("");
@@ -448,10 +505,122 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
   );
 }
 
+function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { toast } = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number; errors?: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleDownloadTemplate() {
+    window.open("/api/enrollments/template", "_blank");
+  }
+
+  async function handleImport() {
+    if (!file) return;
+    setImporting(true);
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/enrollments/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Import failed", description: data.message, variant: "destructive" });
+        if (data.errors) setResult({ imported: 0, skipped: 0, errors: data.errors });
+      } else {
+        setResult(data);
+        queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
+        toast({ title: `Successfully imported ${data.imported} enrollment(s)` });
+      }
+    } catch (err: any) {
+      toast({ title: "Import error", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function handleClose(v: boolean) {
+    if (!v) {
+      setFile(null);
+      setResult(null);
+    }
+    onOpenChange(v);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Import Enrollments from Excel</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <p className="text-sm text-muted-foreground">
+            Upload an Excel file (.xlsx) with enrollment data. The file should have columns: studentId, courseId, number, dateStarted, dateEnded, grade, remarks.
+          </p>
+
+          <Button variant="outline" onClick={handleDownloadTemplate} className="w-full" data-testid="button-download-template">
+            <Download className="w-4 h-4 mr-2" />
+            Download Excel Template
+          </Button>
+
+          <div className="space-y-2">
+            <Label>Select Excel file</Label>
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={e => { setFile(e.target.files?.[0] || null); setResult(null); }}
+              data-testid="input-import-file"
+            />
+          </div>
+
+          {result && (
+            <div className={`rounded-md p-3 text-sm ${result.imported > 0 ? "bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"}`}>
+              <div className="flex items-center gap-2 mb-1">
+                {result.imported > 0 ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                )}
+                <span className="font-medium">
+                  {result.imported > 0 ? `Imported ${result.imported} row(s)` : "No rows imported"}
+                </span>
+              </div>
+              {result.skipped > 0 && (
+                <p className="text-muted-foreground ml-6">{result.skipped} row(s) skipped due to errors</p>
+              )}
+              {result.errors && result.errors.length > 0 && (
+                <ul className="mt-2 ml-6 space-y-1 text-xs text-red-700 dark:text-red-300 max-h-32 overflow-y-auto">
+                  {result.errors.map((err, i) => <li key={i}>{err}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <Button
+            onClick={handleImport}
+            disabled={!file || importing}
+            className="w-full"
+            data-testid="button-import-submit"
+          >
+            {importing ? "Importing..." : "Import"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function EnrollmentsPage() {
   const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showNewRow, setShowNewRow] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
     queryKey: ["/api/enrollments", selectedStudent?.id?.toString() || ""],
@@ -514,10 +683,24 @@ export default function EnrollmentsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Enrollments</h1>
-        <p className="text-muted-foreground mt-1">Manage student course enrollments. Search for a student to view and edit their enrollments.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Enrollments</h1>
+          <p className="text-muted-foreground mt-1">Manage student course enrollments. Search for a student to view and edit their enrollments.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => window.open("/api/enrollments/template", "_blank")} data-testid="button-download-template-header">
+            <Download className="w-4 h-4 mr-2" />
+            Download Template
+          </Button>
+          <Button onClick={() => setShowImport(true)} data-testid="button-import-header">
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+        </div>
       </div>
+
+      <ImportDialog open={showImport} onOpenChange={setShowImport} />
 
       <Card>
         <CardHeader>

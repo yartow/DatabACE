@@ -286,6 +286,159 @@ export async function registerRoutes(
     });
   });
 
+  app.get("/api/enrollments/template", isAuthenticated, async (_req: any, res) => {
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const headers = [["studentId", "courseId", "number", "dateStarted", "dateEnded", "grade", "remarks"]];
+      const example = [[1, 1, 1001, "2025-09-01", "2025-10-15", 85, "Good work"]];
+      const ws = XLSX.utils.aoa_to_sheet([...headers, ...example]);
+      ws["!cols"] = [{ wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 30 }];
+      XLSX.utils.book_append_sheet(wb, ws, "Enrollments");
+
+      const instrWs = XLSX.utils.aoa_to_sheet([
+        ["Enrollment Import Template - Instructions"],
+        [""],
+        ["Column", "Required", "Description"],
+        ["studentId", "Yes", "The student ID number"],
+        ["courseId", "Yes", "The course ID number"],
+        ["number", "Yes", "The PACE number (e.g. 1001, 1002...)"],
+        ["dateStarted", "No", "Date format: YYYY-MM-DD"],
+        ["dateEnded", "No", "Date format: YYYY-MM-DD"],
+        ["grade", "No", "Numeric grade (0-100)"],
+        ["remarks", "No", "Optional text remarks"],
+      ]);
+      instrWs["!cols"] = [{ wch: 14 }, { wch: 10 }, { wch: 50 }];
+      XLSX.utils.book_append_sheet(wb, instrWs, "Instructions");
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", "attachment; filename=enrollment_template.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(Buffer.from(buf));
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to generate template: " + error.message });
+    }
+  });
+
+  app.post("/api/enrollments/import", isAuthenticated, upload.single("file"), async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheetName = workbook.SheetNames.find(n => n.toLowerCase() === "enrollments") || workbook.SheetNames[0];
+      if (!sheetName) return res.status(400).json({ message: "No sheets found in workbook" });
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+
+      if (rows.length === 0) return res.status(400).json({ message: "No data rows found in the spreadsheet" });
+
+      const allStudents = await storage.getStudents();
+      const allCourses = await storage.getCourses();
+      const studentIds = new Set(allStudents.map(s => s.id));
+      const courseIds = new Set(allCourses.map(c => c.id));
+
+      function parseExcelDate(val: any): string | null {
+        if (!val) return null;
+        if (typeof val === "number") {
+          const d = new Date(Date.UTC(1899, 11, 30 + val));
+          return d.toISOString().split("T")[0];
+        }
+        const s = String(val).trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined as any;
+        const parts = s.split("-");
+        const month = parseInt(parts[1]);
+        const day = parseInt(parts[2]);
+        if (month < 1 || month > 12 || day < 1 || day > 31) return undefined as any;
+        return s;
+      }
+
+      function strictInt(val: any): number {
+        if (typeof val === "number" && Number.isInteger(val)) return val;
+        const s = String(val).trim();
+        if (!/^\d+$/.test(s)) return NaN;
+        return parseInt(s);
+      }
+
+      const errors: string[] = [];
+      const validRows: { studentId: number; courseId: number; number: number; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null }[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNum = i + 2;
+
+        const studentId = strictInt(row.studentId);
+        const courseId = strictInt(row.courseId);
+        const number = strictInt(row.number);
+
+        if (isNaN(studentId) || isNaN(courseId) || isNaN(number)) {
+          errors.push(`Row ${rowNum}: studentId, courseId, and number are required and must be whole numbers`);
+          continue;
+        }
+
+        if (!studentIds.has(studentId)) {
+          errors.push(`Row ${rowNum}: student with ID ${studentId} does not exist`);
+          continue;
+        }
+
+        if (!courseIds.has(courseId)) {
+          errors.push(`Row ${rowNum}: course with ID ${courseId} does not exist`);
+          continue;
+        }
+
+        const dateStarted = parseExcelDate(row.dateStarted);
+        if (dateStarted === undefined) {
+          errors.push(`Row ${rowNum}: invalid dateStarted format "${row.dateStarted}". Use YYYY-MM-DD`);
+          continue;
+        }
+
+        const dateEnded = parseExcelDate(row.dateEnded);
+        if (dateEnded === undefined) {
+          errors.push(`Row ${rowNum}: invalid dateEnded format "${row.dateEnded}". Use YYYY-MM-DD`);
+          continue;
+        }
+
+        let grade: number | null = null;
+        if (row.grade !== undefined && row.grade !== null && row.grade !== "") {
+          grade = typeof row.grade === "number" ? row.grade : parseFloat(String(row.grade).trim());
+          if (isNaN(grade) || grade < 0 || grade > 100) {
+            errors.push(`Row ${rowNum}: grade must be a number between 0 and 100`);
+            continue;
+          }
+        }
+
+        validRows.push({
+          studentId,
+          courseId,
+          number,
+          dateStarted,
+          dateEnded,
+          grade,
+          remarks: row.remarks ? String(row.remarks) : null,
+        });
+      }
+
+      if (validRows.length === 0) {
+        return res.status(400).json({ message: "No valid rows to import", errors });
+      }
+
+      const created = await storage.createEnrollments(validRows);
+
+      res.json({
+        imported: created.length,
+        skipped: rows.length - validRows.length,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to process import: " + error.message });
+    }
+  });
+
   app.post("/api/upload/excel", isAuthenticated, upload.single("file"), async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);
