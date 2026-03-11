@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema, insertCourseSchema, insertPaceCourseSchema } from "@shared/schema";
+import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, insertFamilySchema, insertParentSchema, insertSupplementaryActivitySchema, insertCourseSchema, insertPaceCourseSchema, insertPaceSchema, insertPaceVersionSchema, insertInventorySchema } from "@shared/schema";
 import multer from "multer";
 import crypto from "crypto";
 
@@ -99,6 +99,42 @@ export async function registerRoutes(
     res.json(c);
   });
 
+  app.get("/api/courses/template", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const type = (req.query.type as string) || "courses";
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      if (type === "pace-courses") {
+        const ws = XLSX.utils.aoa_to_sheet([
+          ["id", "paceId", "courseId", "number", "code", "alias", "creditValuePace", "passThreshold", "active", "starValue", "weight"],
+          [1, 1, 1, "1001", "ENG-1001", null, 1.0, 0.8, 1, 1, 1],
+        ]);
+        ws["!cols"] = [8,8,8,8,14,8,14,14,8,8,8].map(w => ({ wch: w }));
+        XLSX.utils.book_append_sheet(wb, ws, "PaceCourses");
+        const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+        res.setHeader("Content-Disposition", "attachment; filename=pace_courses_template.xlsx");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        return res.send(Buffer.from(buf));
+      }
+      const allCourses = await storage.getCourses();
+      const rows = allCourses.map(c => [c.id, c.course, c.aceAlias, c.icceAlias, c.certificateName, c.level, c.starValue, c.subjectId, c.subjectGroupId, c.courseType, c.passThreshold != null ? Math.round(c.passThreshold * 100) / 100 : null, c.remarks]);
+      const ws = XLSX.utils.aoa_to_sheet([
+        ["id", "course", "aceAlias", "icceAlias", "certificateName", "level", "starValue", "subjectId", "subjectGroupId", "courseType", "passThreshold", "remarks"],
+        ...rows,
+      ]);
+      ws["!cols"] = [8,24,16,16,24,8,8,10,12,12,14,30].map(w => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, ws, "Courses");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", "attachment; filename=courses_template.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(Buffer.from(buf));
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to generate template: " + error.message });
+    }
+  });
+
   app.get("/api/courses/:id", isAuthenticated, async (req, res) => {
     const c = await storage.getCourse(parseInt(req.params.id));
     if (!c) return res.status(404).json({ message: "Not found" });
@@ -140,6 +176,320 @@ export async function registerRoutes(
     const result = await storage.updatePaceCourse(parseInt(req.params.id), parsed.data);
     if (!result) return res.status(404).json({ message: "Not found" });
     res.json(result);
+  });
+
+  app.post("/api/courses/create-with-paces", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { paceNumbers, ...courseData } = req.body;
+    if (!Array.isArray(paceNumbers)) return res.status(400).json({ message: "paceNumbers must be an array" });
+
+    const courseId = await storage.getNextCourseId();
+    const course = await storage.createCourse({ ...courseData, id: courseId });
+
+    const createdPaces = [];
+    const createdPcLinks = [];
+    let nextPaceId = await storage.getNextPaceId();
+    let nextPcId = await storage.getNextPaceCourseId();
+
+    for (const numStr of paceNumbers) {
+      const num = parseInt(String(numStr));
+      if (isNaN(num)) continue;
+      const pace = await storage.createPace({ id: nextPaceId, courseId, number: num, subject: courseData.subjectId || null, subjectGroupId: courseData.subjectGroupId ? String(courseData.subjectGroupId) : null });
+      const pc = await storage.upsertPaceCourse({ id: nextPcId, paceId: nextPaceId, courseId, number: String(num), active: 1, starValue: 1, weight: 1 });
+      createdPaces.push(pace);
+      createdPcLinks.push(pc);
+      nextPaceId++;
+      nextPcId++;
+    }
+
+    res.json({ course, paces: createdPaces, paceCourses: createdPcLinks });
+  });
+
+  const courseImportSessions = new Map<string, {
+    newCourses: any[]; conflictCourses: { excelRow: any; dbRow: any }[];
+    newPcs: any[]; conflictPcs: { excelRow: any; dbRow: any }[];
+    type: "courses" | "pace-courses"; skippedIdentical: number; createdAt: number;
+  }>();
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, session] of courseImportSessions) {
+      if (now - session.createdAt > 30 * 60 * 1000) courseImportSessions.delete(key);
+    }
+  }, 5 * 60 * 1000);
+
+  app.post("/api/courses/import", isAuthenticated, upload.single("file"), async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const importType = (req.query.type as string) || "courses";
+
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      if (rows.length === 0) return res.status(400).json({ message: "No data rows found" });
+
+      const sessionId = crypto.randomUUID();
+
+      if (importType === "pace-courses") {
+        const existingPcs = await storage.getPaceCourses();
+        const existingPcMap = new Map(existingPcs.map(pc => [pc.id, pc]));
+        const existingPaces = await storage.getPaces();
+        const paceIds = new Set(existingPaces.map(p => p.id));
+        const existingCourses = await storage.getCourses();
+        const courseIds = new Set(existingCourses.map(c => c.id));
+
+        const newPcs: any[] = [];
+        const conflictPcs: { excelRow: any; dbRow: any }[] = [];
+        let skippedIdentical = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const id = parseInt(String(row.id));
+          const paceId = parseInt(String(row.paceId));
+          const courseId = parseInt(String(row.courseId));
+          if (isNaN(id)) { errors.push(`Row ${i+2}: id is required`); continue; }
+          if (isNaN(paceId) || !paceIds.has(paceId)) { errors.push(`Row ${i+2}: invalid paceId ${row.paceId}`); continue; }
+          if (isNaN(courseId) || !courseIds.has(courseId)) { errors.push(`Row ${i+2}: invalid courseId ${row.courseId}`); continue; }
+          const excelRow = { id, paceId, courseId, number: row.number != null ? String(row.number) : null, code: row.code || null, alias: row.alias != null ? parseInt(row.alias) : null, creditValuePace: row.creditValuePace != null ? parseFloat(row.creditValuePace) : null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, active: row.active != null ? parseInt(row.active) : 1, starValue: row.starValue != null ? parseInt(row.starValue) : 1, weight: row.weight != null ? parseInt(row.weight) : 1 };
+          const existing = existingPcMap.get(id);
+          if (!existing) { newPcs.push(excelRow); continue; }
+          const changed = Object.keys(excelRow).some(k => k !== "id" && (excelRow as any)[k] !== (existing as any)[k]);
+          if (!changed) { skippedIdentical++; continue; }
+          conflictPcs.push({ excelRow, dbRow: existing });
+        }
+
+        courseImportSessions.set(sessionId, { newCourses: [], conflictCourses: [], newPcs, conflictPcs, type: "pace-courses", skippedIdentical, createdAt: Date.now() });
+        return res.json({ sessionId, newCount: newPcs.length, conflictCount: conflictPcs.length, skippedIdentical, errors, conflicts: conflictPcs.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
+      }
+
+      const existingCourses = await storage.getCourses();
+      const existingCourseMap = new Map(existingCourses.map(c => [c.id, c]));
+      const newCourses: any[] = [];
+      const conflictCourses: { excelRow: any; dbRow: any }[] = [];
+      let skippedIdentical = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const id = parseInt(String(row.id));
+        if (isNaN(id)) { errors.push(`Row ${i+2}: id is required`); continue; }
+        const excelRow = { id, course: row.course || null, aceAlias: row.aceAlias || null, icceAlias: row.icceAlias || null, certificateName: row.certificateName || null, level: row.level != null ? parseInt(row.level) : null, starValue: row.starValue != null ? parseInt(row.starValue) : null, subjectId: row.subjectId != null ? parseInt(row.subjectId) : null, subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null, courseType: row.courseType || null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, remarks: row.remarks ? String(row.remarks).slice(0, 1000) : null };
+        const existing = existingCourseMap.get(id);
+        if (!existing) { newCourses.push(excelRow); continue; }
+        const changed = Object.keys(excelRow).some(k => k !== "id" && (excelRow as any)[k] !== (existing as any)[k]);
+        if (!changed) { skippedIdentical++; continue; }
+        conflictCourses.push({ excelRow, dbRow: existing });
+      }
+
+      courseImportSessions.set(sessionId, { newCourses, conflictCourses, newPcs: [], conflictPcs: [], type: "courses", skippedIdentical, createdAt: Date.now() });
+      res.json({ sessionId, newCount: newCourses.length, conflictCount: conflictCourses.length, skippedIdentical, errors, conflicts: conflictCourses.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to parse file: " + error.message });
+    }
+  });
+
+  app.post("/api/courses/import/resolve", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { sessionId, choices, overrideAll } = req.body;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    const session = courseImportSessions.get(sessionId);
+    if (!session) return res.status(404).json({ message: "Import session not found or expired" });
+    courseImportSessions.delete(sessionId);
+
+    try {
+      let inserted = 0; let updated = 0;
+      if (session.type === "pace-courses") {
+        for (const row of session.newPcs) await storage.upsertPaceCourse(row) && inserted++;
+        const resolvedChoices = overrideAll ? session.conflictPcs.map(() => "excel") : (choices || []);
+        for (let i = 0; i < session.conflictPcs.length; i++) {
+          if (resolvedChoices[i] === "excel") { await storage.upsertPaceCourse(session.conflictPcs[i].excelRow); updated++; }
+        }
+      } else {
+        for (const row of session.newCourses) { await storage.upsertCourse(row); inserted++; }
+        const resolvedChoices = overrideAll ? session.conflictCourses.map(() => "excel") : (choices || []);
+        for (let i = 0; i < session.conflictCourses.length; i++) {
+          if (resolvedChoices[i] === "excel") { await storage.upsertCourse(session.conflictCourses[i].excelRow); updated++; }
+        }
+      }
+      res.json({ status: "done", inserted, updated, skipped: session.skippedIdentical });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to apply: " + error.message });
+    }
+  });
+
+  app.get("/api/pace-versions", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getPaceVersions());
+  });
+
+  app.post("/api/pace-versions", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPaceVersionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    res.json(await storage.createPaceVersion(parsed.data));
+  });
+
+  app.patch("/api/pace-versions/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPaceVersionSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updatePaceVersion(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/pace-versions/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deletePaceVersion(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/inventory", isAuthenticated, async (_req: any, res) => {
+    res.json(await storage.getInventoryRich());
+  });
+
+  app.post("/api/inventory", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { paceVersionsId, studentId, numberInPossession } = req.body;
+    if (!paceVersionsId || !studentId) return res.status(400).json({ message: "paceVersionsId and studentId required" });
+    const inv = await storage.upsertInventoryEntry(parseInt(paceVersionsId), parseInt(studentId), parseInt(numberInPossession) || 0);
+    res.json(inv);
+  });
+
+  app.patch("/api/inventory/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertInventorySchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updateInventoryEntry(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
+  app.delete("/api/inventory/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deleteInventoryEntry(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  const inventoryImportSessions = new Map<string, {
+    newRows: any[]; conflicts: { excelRow: any; dbRow: any }[]; skippedIdentical: number; createdAt: number;
+  }>();
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, session] of inventoryImportSessions) {
+      if (now - session.createdAt > 30 * 60 * 1000) inventoryImportSessions.delete(key);
+    }
+  }, 5 * 60 * 1000);
+
+  app.get("/api/inventory/template", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet([
+        ["paceVersionsId", "studentId", "numberInPossession"],
+        [1, 9996, 3],
+      ]);
+      ws["!cols"] = [{ wch: 16 }, { wch: 12 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+      const instrWs = XLSX.utils.aoa_to_sheet([
+        ["Inventory Import Template – Instructions"],
+        [""],
+        ["Column", "Required", "Description"],
+        ["paceVersionsId", "Yes", "PaceVersion ID (must exist in pace_versions table)"],
+        ["studentId", "Yes", "Student ID (use 9996–9999 for inventory locations)"],
+        ["numberInPossession", "Yes", "Number of copies"],
+      ]);
+      instrWs["!cols"] = [{ wch: 18 }, { wch: 10 }, { wch: 50 }];
+      XLSX.utils.book_append_sheet(wb, instrWs, "Instructions");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Disposition", "attachment; filename=inventory_template.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(Buffer.from(buf));
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to generate template: " + error.message });
+    }
+  });
+
+  app.post("/api/inventory/import", isAuthenticated, upload.single("file"), async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      if (rows.length === 0) return res.status(400).json({ message: "No data rows found" });
+
+      const allPvs = await storage.getPaceVersions();
+      const pvIds = new Set(allPvs.map(pv => pv.id));
+      const allStudents = await storage.getStudents();
+      const studentIds = new Set(allStudents.map(s => s.id));
+      const existingInv = await storage.getInventoryRich();
+      const existingMap = new Map(existingInv.map(r => [`${r.paceVersionId}-${r.studentId}`, r]));
+
+      const newRows: any[] = [];
+      const conflicts: { excelRow: any; dbRow: any }[] = [];
+      let skippedIdentical = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const paceVersionsId = parseInt(String(row.paceVersionsId));
+        const studentId = parseInt(String(row.studentId));
+        const numberInPossession = parseInt(String(row.numberInPossession));
+        if (isNaN(paceVersionsId) || !pvIds.has(paceVersionsId)) { errors.push(`Row ${i+2}: invalid paceVersionsId`); continue; }
+        if (isNaN(studentId) || !studentIds.has(studentId)) { errors.push(`Row ${i+2}: invalid studentId`); continue; }
+        if (isNaN(numberInPossession)) { errors.push(`Row ${i+2}: numberInPossession must be a number`); continue; }
+        const key = `${paceVersionsId}-${studentId}`;
+        const existing = existingMap.get(key);
+        const excelRow = { paceVersionsId, studentId, numberInPossession };
+        if (!existing) { newRows.push(excelRow); continue; }
+        if (existing.numberInPossession === numberInPossession) { skippedIdentical++; continue; }
+        conflicts.push({ excelRow, dbRow: { paceVersionsId, studentId, numberInPossession: existing.numberInPossession, inventoryId: existing.inventoryId } });
+      }
+
+      const sessionId = crypto.randomUUID();
+      inventoryImportSessions.set(sessionId, { newRows, conflicts, skippedIdentical, createdAt: Date.now() });
+      res.json({ sessionId, newCount: newRows.length, conflictCount: conflicts.length, skippedIdentical, errors, conflicts: conflicts.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to parse file: " + error.message });
+    }
+  });
+
+  app.post("/api/inventory/import/resolve", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { sessionId, choices, overrideAll } = req.body;
+    const session = inventoryImportSessions.get(sessionId);
+    if (!session) return res.status(404).json({ message: "Import session not found or expired" });
+    inventoryImportSessions.delete(sessionId);
+    try {
+      let inserted = 0; let updated = 0;
+      for (const row of session.newRows) { await storage.upsertInventoryEntry(row.paceVersionsId, row.studentId, row.numberInPossession); inserted++; }
+      const resolvedChoices = overrideAll ? session.conflicts.map(() => "excel") : (choices || []);
+      for (let i = 0; i < session.conflicts.length; i++) {
+        if (resolvedChoices[i] === "excel") { const c = session.conflicts[i]; await storage.updateInventoryEntry(c.dbRow.inventoryId, { numberInPossession: c.excelRow.numberInPossession }); updated++; }
+      }
+      res.json({ status: "done", inserted, updated, skipped: session.skippedIdentical });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to apply: " + error.message });
+    }
   });
 
   app.get("/api/subjects", isAuthenticated, async (_req: any, res) => {

@@ -1,16 +1,34 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
   personnel, families, parents, supplementaryActivities, subjectGroups, invitations,
+  paceVersions, inventory,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
   type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
   type Invitation, type InsertInvitation,
   type InsertStudent, type InsertUserProfile, type InsertEnrollment,
   type InsertPersonnel, type InsertFamily, type InsertParent, type InsertSupplementaryActivity,
-  type InsertCourse, type InsertPaceCourse,
+  type InsertCourse, type InsertPaceCourse, type InsertPace,
+  type PaceVersion, type InsertPaceVersion, type Inventory, type InsertInventory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { users } from "@shared/models/auth";
+
+export type InventoryRow = {
+  inventoryId: number;
+  paceVersionId: number;
+  yearRevised: number | null;
+  type: "PACE" | "Score Key" | "Material" | null;
+  edition: number | null;
+  paceId: number;
+  paceNumber: number | null;
+  courseId: number | null;
+  courseName: string | null;
+  studentId: number;
+  studentSurname: string;
+  studentCallName: string;
+  numberInPossession: number | null;
+};
 
 export interface IStorage {
   getStudents(): Promise<Student[]>;
@@ -21,17 +39,25 @@ export interface IStorage {
 
   getCourses(): Promise<Course[]>;
   getCourse(id: number): Promise<Course | undefined>;
+  createCourse(data: InsertCourse): Promise<Course>;
   updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined>;
+  getNextCourseId(): Promise<number>;
+  upsertCourse(data: InsertCourse): Promise<Course>;
 
   getPaces(): Promise<Pace[]>;
+  createPace(data: InsertPace): Promise<Pace>;
+  getNextPaceId(): Promise<number>;
+  upsertPace(data: InsertPace): Promise<Pace>;
 
   getPaceCourses(): Promise<PaceCourse[]>;
   getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]>;
   getPaceCoursesByCourse(courseId: number): Promise<PaceCourse[]>;
   updatePaceCourse(id: number, data: Partial<InsertPaceCourse>): Promise<PaceCourse | undefined>;
+  createPaceCourseBatch(data: InsertPaceCourse[]): Promise<PaceCourse[]>;
+  getNextPaceCourseId(): Promise<number>;
+  upsertPaceCourse(data: InsertPaceCourse): Promise<PaceCourse>;
 
   getSubjects(): Promise<Subject[]>;
-
   getSubjectGroups(): Promise<SubjectGroup[]>;
 
   getDates(): Promise<DateEntry[]>;
@@ -83,6 +109,17 @@ export interface IStorage {
 
   getAllUserProfilesWithUsers(): Promise<(UserProfile & { email?: string | null; firstName?: string | null; lastName?: string | null })[]>;
   deleteUserProfile(userId: string): Promise<void>;
+
+  getPaceVersions(): Promise<PaceVersion[]>;
+  createPaceVersion(data: InsertPaceVersion): Promise<PaceVersion>;
+  updatePaceVersion(id: number, data: Partial<InsertPaceVersion>): Promise<PaceVersion | undefined>;
+  deletePaceVersion(id: number): Promise<void>;
+
+  getInventoryRich(): Promise<InventoryRow[]>;
+  createInventoryEntry(data: InsertInventory): Promise<Inventory>;
+  updateInventoryEntry(id: number, data: Partial<InsertInventory>): Promise<Inventory | undefined>;
+  deleteInventoryEntry(id: number): Promise<void>;
+  upsertInventoryEntry(paceVersionsId: number, studentId: number, numberInPossession: number): Promise<Inventory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -112,6 +149,20 @@ export class DatabaseStorage implements IStorage {
     const [c] = await db.select().from(courses).where(eq(courses.id, id));
     return c;
   }
+  async getNextCourseId(): Promise<number> {
+    const [r] = await db.select({ maxId: sql<number>`COALESCE(MAX(id), 0)` }).from(courses);
+    return (r.maxId || 0) + 1;
+  }
+  async createCourse(data: InsertCourse): Promise<Course> {
+    const [c] = await db.insert(courses).values(data).returning();
+    return c;
+  }
+  async upsertCourse(data: InsertCourse): Promise<Course> {
+    const [c] = await db.insert(courses).values(data)
+      .onConflictDoUpdate({ target: courses.id, set: { ...data } })
+      .returning();
+    return c;
+  }
   async updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined> {
     const [c] = await db.update(courses).set(data).where(eq(courses.id, id)).returning();
     return c;
@@ -119,6 +170,20 @@ export class DatabaseStorage implements IStorage {
 
   async getPaces(): Promise<Pace[]> {
     return db.select().from(paces);
+  }
+  async getNextPaceId(): Promise<number> {
+    const [r] = await db.select({ maxId: sql<number>`COALESCE(MAX(id), 0)` }).from(paces);
+    return (r.maxId || 0) + 1;
+  }
+  async createPace(data: InsertPace): Promise<Pace> {
+    const [p] = await db.insert(paces).values(data).returning();
+    return p;
+  }
+  async upsertPace(data: InsertPace): Promise<Pace> {
+    const [p] = await db.insert(paces).values(data)
+      .onConflictDoUpdate({ target: paces.id, set: { ...data } })
+      .returning();
+    return p;
   }
 
   async getPaceCourses(): Promise<PaceCourse[]> {
@@ -134,11 +199,24 @@ export class DatabaseStorage implements IStorage {
     const [pc] = await db.update(paceCourses).set(data).where(eq(paceCourses.id, id)).returning();
     return pc;
   }
+  async getNextPaceCourseId(): Promise<number> {
+    const [r] = await db.select({ maxId: sql<number>`COALESCE(MAX(id), 0)` }).from(paceCourses);
+    return (r.maxId || 0) + 1;
+  }
+  async createPaceCourseBatch(data: InsertPaceCourse[]): Promise<PaceCourse[]> {
+    if (data.length === 0) return [];
+    return db.insert(paceCourses).values(data).returning();
+  }
+  async upsertPaceCourse(data: InsertPaceCourse): Promise<PaceCourse> {
+    const [pc] = await db.insert(paceCourses).values(data)
+      .onConflictDoUpdate({ target: paceCourses.id, set: { ...data } })
+      .returning();
+    return pc;
+  }
 
   async getSubjects(): Promise<Subject[]> {
     return db.select().from(subjects);
   }
-
   async getSubjectGroups(): Promise<SubjectGroup[]> {
     return db.select().from(subjectGroups);
   }
@@ -312,6 +390,71 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteUserProfile(userId: string): Promise<void> {
     await db.delete(userProfiles).where(eq(userProfiles.userId, userId));
+  }
+
+  async getPaceVersions(): Promise<PaceVersion[]> {
+    return db.select().from(paceVersions);
+  }
+  async createPaceVersion(data: InsertPaceVersion): Promise<PaceVersion> {
+    const [pv] = await db.insert(paceVersions).values(data).returning();
+    return pv;
+  }
+  async updatePaceVersion(id: number, data: Partial<InsertPaceVersion>): Promise<PaceVersion | undefined> {
+    const [pv] = await db.update(paceVersions).set(data).where(eq(paceVersions.id, id)).returning();
+    return pv;
+  }
+  async deletePaceVersion(id: number): Promise<void> {
+    await db.delete(paceVersions).where(eq(paceVersions.id, id));
+  }
+
+  async getInventoryRich(): Promise<InventoryRow[]> {
+    const rows = await db
+      .select({
+        inventoryId: inventory.id,
+        paceVersionId: paceVersions.id,
+        yearRevised: paceVersions.yearRevised,
+        type: paceVersions.type,
+        edition: paceVersions.edition,
+        paceId: paces.id,
+        paceNumber: paces.number,
+        courseId: paceCourses.courseId,
+        courseName: courses.course,
+        studentId: students.id,
+        studentSurname: students.surname,
+        studentCallName: students.callName,
+        numberInPossession: inventory.numberInPossession,
+      })
+      .from(inventory)
+      .innerJoin(paceVersions, eq(inventory.paceVersionsId, paceVersions.id))
+      .innerJoin(paces, eq(paceVersions.paceId, paces.id))
+      .innerJoin(students, eq(inventory.studentId, students.id))
+      .leftJoin(paceCourses, eq(paceCourses.paceId, paces.id))
+      .leftJoin(courses, eq(paceCourses.courseId, courses.id));
+    return rows as InventoryRow[];
+  }
+  async createInventoryEntry(data: InsertInventory): Promise<Inventory> {
+    const [inv] = await db.insert(inventory).values(data).returning();
+    return inv;
+  }
+  async updateInventoryEntry(id: number, data: Partial<InsertInventory>): Promise<Inventory | undefined> {
+    const [inv] = await db.update(inventory).set(data).where(eq(inventory.id, id)).returning();
+    return inv;
+  }
+  async deleteInventoryEntry(id: number): Promise<void> {
+    await db.delete(inventory).where(eq(inventory.id, id));
+  }
+  async upsertInventoryEntry(paceVersionsId: number, studentId: number, numberInPossession: number): Promise<Inventory> {
+    const existing = await db.select().from(inventory)
+      .where(and(eq(inventory.paceVersionsId, paceVersionsId), eq(inventory.studentId, studentId)));
+    if (existing.length > 0) {
+      const [inv] = await db.update(inventory)
+        .set({ numberInPossession })
+        .where(eq(inventory.id, existing[0].id))
+        .returning();
+      return inv;
+    }
+    const [inv] = await db.insert(inventory).values({ paceVersionsId, studentId, numberInPossession }).returning();
+    return inv;
   }
 }
 

@@ -7,7 +7,8 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - **Role-based authentication**: Teachers (full CRUD) and Parents (read-only access to their children)
 - **Student Progress Chart (SPC page, /spc)**: Per-student PACE progress view with colored/grey stars showing pass/fail per PACE number, grades, and term labels. Subject color coding from subjects table.
 - **Term Reports (/reports)**: Formal Year Report view matching Figma design — title header (Ceder logo/school/year), green info panels (student name+group top-left, supervisor+report date top-right), three category blocks (Academic Studies, Nederlands, Supplementary Activities), behavioral assessment (In Relation to Work/Others), signature boxes. Supervisor derived from personnel table (rank 1 for student's group). Print support.
-- **Courses & PACEs**: Browse courses, PACEs, and PACE-Course links with filtering
+- **Courses & PACEs (/materials)**: Browse courses, PACEs, and PACE-Course links with filtering. Teachers can: add courses with PACE numbers, edit course/PACE-course details inline, import/export Courses and PaceCourses via Excel with conflict resolution dialog, download templates.
+- **Inventory (/inventory)**: Track physical PACE booklets. Grouped by PACE version (paceVersions table). Expandable rows show per-student/location breakdown. Filters by type (PACE/Score Key/Material), course, PACE number. "Show only inventory locations" checkbox filters to IDs 9996–9999. Excel import with conflict resolution. 4 virtual inventory students: IDs 9996=Kindergarten, 9997=ABCs, 9998=Juniors, 9999=Seniors (aliases INV-KG/INV-ABC/INV-JNR/INV-SNR).
 - **Excel Import**: Upload Excel files to preview data
 - **Family-based accounts**: One parent account can view all children in the same family
 - **Enrollment management**: Course-based enrollment with optional start dates; individual PACE number tracking; supplementary activity enrollment (Music, Physical Education, Project, Other)
@@ -33,6 +34,8 @@ A school grading management web application for an ACE/PACE curriculum school. B
 - `dates` - School calendar with term/week info, holidays, weekends, yearTerm (e.g. "25–26", computed from date)
 - `enrollments` - Student-course enrollments with per-number tracking. Each enrollment row = one PACE number (studentId, courseId, number varchar(10), dateStarted nullable, dateEnded, grade, remarks). Auto-generated ID.
 - `supplementaryActivities` - Supplementary activity enrollments (id auto, studentId FK→students, yearTerm, term, grade varchar(4), activity text)
+- `paceVersions` - Physical edition versions of a PACE booklet (id auto, yearRevised, type enum "PACE"/"Score Key"/"Material", edition smallint, paceId FK→paces)
+- `inventory` - Stock tracking (id auto, paceVersionsId FK→paceVersions, studentId FK→students, numberInPossession smallint). Student IDs 9996–9999 are virtual inventory locations.
 
 **Key constraint**: No direct FK between `paces` and `courses`. The relationship goes through `paceCourses` intermediary table.
 
