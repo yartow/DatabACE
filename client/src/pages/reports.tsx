@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity, UserProfile } from "@shared/schema";
 import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const TERMS = [1, 2, 3, 4, 5];
 const SCHOOL_NAME = "Ceder Academy";
@@ -262,6 +264,99 @@ export default function ReportsPage() {
 
   const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = useCallback(async () => {
+    const el = reportRef.current;
+    if (!el || !selectedStudent) return;
+    setDownloading(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.position = "absolute";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.width = "794px";
+      clone.style.maxWidth = "794px";
+      clone.style.padding = "0";
+      clone.style.fontSize = "14px";
+
+      clone.querySelectorAll<HTMLElement>(".yr-title").forEach(n => { n.style.padding = "8px"; n.style.minHeight = "auto"; });
+      clone.querySelectorAll<HTMLElement>(".yr-logo-img").forEach(n => { n.style.height = "45px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-report-heading").forEach(n => { n.style.fontSize = "28px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-school-name, .yr-terms-label").forEach(n => { n.style.fontSize = "16px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-year").forEach(n => { n.style.fontSize = "28px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info").forEach(n => { n.style.gap = "12px"; n.style.margin = "4px 0"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info-panel").forEach(n => { n.style.padding = "12px 16px"; n.style.minHeight = "auto"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info-label, .yr-info-value").forEach(n => { n.style.fontSize = "14px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info-label").forEach(n => { n.style.width = "70px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info-label-wide").forEach(n => { n.style.width = "95px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-info-row").forEach(n => { n.style.padding = "4px 0"; });
+      clone.querySelectorAll<HTMLElement>(".yr-course-name-col").forEach(n => { n.style.width = "160px"; n.style.minWidth = "160px"; n.style.fontSize = "13px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-category-name").forEach(n => { n.style.fontSize = "15px"; n.style.width = "160px"; n.style.minWidth = "130px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-term-label").forEach(n => { n.style.fontSize = "13px"; n.style.width = "58px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-grade-cell").forEach(n => { n.style.fontSize = "13px"; n.style.width = "58px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-count-cell").forEach(n => { n.style.fontSize = "11px"; n.style.width = "18px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-category-header").forEach(n => { n.style.padding = "8px 12px"; n.style.minHeight = "auto"; n.style.gap = "8px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-course-row").forEach(n => { n.style.gap = "8px"; n.style.padding = "6px 8px"; n.style.minHeight = "auto"; });
+      clone.querySelectorAll<HTMLElement>(".yr-relation-row").forEach(n => { n.style.gap = "16px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-progress-label").forEach(n => { n.style.fontSize = "13px"; n.style.width = "180px"; n.style.minWidth = "100px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-progress-term-header, .yr-progress-grade").forEach(n => { n.style.fontSize = "13px"; n.style.width = "28px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-progress-row").forEach(n => { n.style.padding = "6px 8px"; n.style.minHeight = "auto"; n.style.gap = "8px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-signatures").forEach(n => { n.style.gap = "12px"; n.style.padding = "12px 0"; });
+      clone.querySelectorAll<HTMLElement>(".yr-signature-box").forEach(n => { n.style.height = "60px"; n.style.padding = "8px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-signature-label").forEach(n => { n.style.fontSize = "13px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-block-spacer").forEach(n => { n.style.height = "8px"; });
+      clone.querySelectorAll<HTMLElement>(".yr-category-header-row").forEach(n => { n.style.padding = "8px"; });
+
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: 794,
+      });
+
+      document.body.removeChild(clone);
+
+      const margin = 10;
+      const a4Width = 210;
+      const a4Height = 297;
+      const contentWidth = a4Width - margin * 2;
+      const contentHeight = a4Height - margin * 2;
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      let yOffset = 0;
+      let pageNum = 0;
+      while (yOffset < imgHeight) {
+        if (pageNum > 0) pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL("image/png"),
+          "PNG",
+          margin,
+          margin - yOffset,
+          contentWidth,
+          imgHeight,
+        );
+        yOffset += contentHeight;
+        pageNum++;
+      }
+
+      const studentName = `${selectedStudent.callName}_${selectedStudent.surname}`.replace(/\s+/g, "_");
+      pdf.save(`Year_Report_${studentName}_${yearTerm}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [selectedStudent, yearTerm]);
+
   if (studentsLoading) {
     return (
       <div className="yr-page">
@@ -288,13 +383,26 @@ export default function ReportsPage() {
           </SelectContent>
         </Select>
         {selectedStudent && (
-          <button
-            className="text-sm text-muted-foreground underline hover:text-foreground print:hidden"
-            onClick={() => window.print()}
-            data-testid="button-print"
-          >
-            Print Report
-          </button>
+          <>
+            <button
+              className="text-sm text-muted-foreground underline hover:text-foreground print:hidden"
+              onClick={() => window.print()}
+              data-testid="button-print"
+            >
+              Print Report
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="print:hidden"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              data-testid="button-download-pdf"
+            >
+              <Download className="w-4 h-4 mr-1.5" />
+              {downloading ? "Generating..." : "Download PDF"}
+            </Button>
+          </>
         )}
       </div>
 
@@ -314,7 +422,7 @@ export default function ReportsPage() {
       )}
 
       {selectedStudent && enrollments && !enrollmentsLoading && (
-        <div className="yr-page" data-testid="year-report">
+        <div className="yr-page" data-testid="year-report" ref={reportRef}>
           <div className="yr-title" data-testid="yr-title">
             <div className="yr-logo">
               <img src={cederLogoPath} alt="de Ceder" className="yr-logo-img" data-testid="text-logo" />

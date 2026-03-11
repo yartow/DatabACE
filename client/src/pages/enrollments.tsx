@@ -119,10 +119,15 @@ function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
         data-testid="input-student-search"
       />
       {open && suggestions.length > 0 && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-full max-w-md bg-popover border rounded-md shadow-lg" data-testid="dropdown-student-suggestions">
+        <div
+          className="absolute z-50 top-full left-0 mt-1 w-full max-w-md bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto"
+          data-testid="dropdown-student-suggestions"
+          onMouseDown={e => e.preventDefault()}
+        >
           {suggestions.map((s, i) => (
             <button
               key={s.id}
+              type="button"
               className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
               onClick={() => {
                 onSelect(s);
@@ -220,10 +225,15 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
         data-testid="input-course-search"
       />
       {open && suggestions.length > 0 && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-auto" data-testid="dropdown-course-suggestions">
+        <div
+          className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-auto"
+          data-testid="dropdown-course-suggestions"
+          onMouseDown={e => e.preventDefault()}
+        >
           {suggestions.map((c, i) => (
             <button
               key={c.id}
+              type="button"
               className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
               onClick={() => {
                 onSelect(c);
