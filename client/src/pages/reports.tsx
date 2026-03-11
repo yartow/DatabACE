@@ -275,78 +275,33 @@ export default function ReportsPage() {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
-      const clone = el.cloneNode(true) as HTMLElement;
-      clone.style.position = "absolute";
-      clone.style.left = "-9999px";
-      clone.style.top = "0";
-      clone.style.width = "794px";
-      clone.style.maxWidth = "794px";
-      clone.style.padding = "0";
-      clone.style.fontSize = "14px";
-
-      clone.querySelectorAll<HTMLElement>(".yr-title").forEach(n => { n.style.padding = "8px"; n.style.minHeight = "auto"; });
-      clone.querySelectorAll<HTMLElement>(".yr-logo-img").forEach(n => { n.style.height = "45px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-report-heading").forEach(n => { n.style.fontSize = "28px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-school-name, .yr-terms-label").forEach(n => { n.style.fontSize = "16px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-year").forEach(n => { n.style.fontSize = "28px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info").forEach(n => { n.style.gap = "12px"; n.style.margin = "4px 0"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info-panel").forEach(n => { n.style.padding = "12px 16px"; n.style.minHeight = "auto"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info-label, .yr-info-value").forEach(n => { n.style.fontSize = "14px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info-label").forEach(n => { n.style.width = "70px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info-label-wide").forEach(n => { n.style.width = "95px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-info-row").forEach(n => { n.style.padding = "4px 0"; });
-      clone.querySelectorAll<HTMLElement>(".yr-course-name-col").forEach(n => { n.style.width = "160px"; n.style.minWidth = "160px"; n.style.fontSize = "13px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-category-name").forEach(n => { n.style.fontSize = "15px"; n.style.width = "160px"; n.style.minWidth = "130px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-term-label").forEach(n => { n.style.fontSize = "13px"; n.style.width = "58px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-grade-cell").forEach(n => { n.style.fontSize = "13px"; n.style.width = "58px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-count-cell").forEach(n => { n.style.fontSize = "11px"; n.style.width = "18px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-category-header").forEach(n => { n.style.padding = "8px 12px"; n.style.minHeight = "auto"; n.style.gap = "8px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-course-row").forEach(n => { n.style.gap = "8px"; n.style.padding = "6px 8px"; n.style.minHeight = "auto"; });
-      clone.querySelectorAll<HTMLElement>(".yr-relation-row").forEach(n => { n.style.gap = "16px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-progress-label").forEach(n => { n.style.fontSize = "13px"; n.style.width = "180px"; n.style.minWidth = "100px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-progress-term-header, .yr-progress-grade").forEach(n => { n.style.fontSize = "13px"; n.style.width = "28px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-progress-row").forEach(n => { n.style.padding = "6px 8px"; n.style.minHeight = "auto"; n.style.gap = "8px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-signatures").forEach(n => { n.style.gap = "12px"; n.style.padding = "12px 0"; });
-      clone.querySelectorAll<HTMLElement>(".yr-signature-box").forEach(n => { n.style.height = "60px"; n.style.padding = "8px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-signature-label").forEach(n => { n.style.fontSize = "13px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-block-spacer").forEach(n => { n.style.height = "8px"; });
-      clone.querySelectorAll<HTMLElement>(".yr-category-header-row").forEach(n => { n.style.padding = "8px"; });
-
-      document.body.appendChild(clone);
-
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        width: 794,
+        logging: false,
       });
 
-      document.body.removeChild(clone);
+      const margin = 8;
+      const a4W = 210;
+      const a4H = 297;
+      const contentW = a4W - margin * 2;
+      const contentH = a4H - margin * 2;
 
-      const margin = 10;
-      const a4Width = 210;
-      const a4Height = 297;
-      const contentWidth = a4Width - margin * 2;
-      const contentHeight = a4Height - margin * 2;
-      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+      const pxToMm = 25.4 / 96 / 2;
+      const imgW_mm = canvas.width * pxToMm;
+      const imgH_mm = canvas.height * pxToMm;
+
+      const scale = Math.min(contentW / imgW_mm, contentH / imgH_mm);
+
+      const finalW = imgW_mm * scale;
+      const finalH = imgH_mm * scale;
+
+      const xOff = margin + (contentW - finalW) / 2;
+      const yOff = margin + (contentH - finalH) / 2;
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-      let yOffset = 0;
-      let pageNum = 0;
-      while (yOffset < imgHeight) {
-        if (pageNum > 0) pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
-          margin,
-          margin - yOffset,
-          contentWidth,
-          imgHeight,
-        );
-        yOffset += contentHeight;
-        pageNum++;
-      }
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOff, yOff, finalW, finalH);
 
       const studentName = `${selectedStudent.callName}_${selectedStudent.surname}`.replace(/\s+/g, "_");
       pdf.save(`Year_Report_${studentName}_${yearTerm}.pdf`);
