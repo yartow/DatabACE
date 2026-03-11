@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect } from "react";
 import type { Student, Course, Enrollment, Subject, DateEntry, PaceCourse, UserProfile } from "@shared/schema";
 import { Star } from "lucide-react";
+import { StudentSearch } from "@/components/student-search";
 
 function formatGrade(grade: number | null): string {
   if (grade === null || grade === undefined) return "";
@@ -184,18 +184,11 @@ export default function SPCPage() {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">Select Student</label>
-        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-          <SelectTrigger className="w-[280px]" data-testid="select-student">
-            <SelectValue placeholder="Choose a student..." />
-          </SelectTrigger>
-          <SelectContent>
-            {sortedStudents.map(s => (
-              <SelectItem key={s.id} value={String(s.id)} data-testid={`option-student-${s.id}`}>
-                {s.callName} {s.surname}{!s.active ? " (inactive)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <StudentSearch
+          onSelect={(s) => setSelectedStudentId(String(s.id))}
+          selectedStudent={selectedStudent}
+          className="max-w-md"
+        />
       </div>
 
       {selectedStudent && !enrollments && (
