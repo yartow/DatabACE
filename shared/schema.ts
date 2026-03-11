@@ -106,6 +106,7 @@ export const courses = pgTable("courses", {
   courseType: text("course_type"),
   course: text("course"),
   passThreshold: real("pass_threshold"),
+  remarks: varchar("remarks", { length: 1000 }),
 });
 
 export const paces = pgTable("paces", {
