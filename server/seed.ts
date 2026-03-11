@@ -113,6 +113,7 @@ export async function seedDatabase() {
       courseType: safeStr(row.CourseType),
       course: safeStr(row.Course),
       passThreshold: safeReal(row.PassThreshold),
+      remarks: safeStr(row.Remarks),
     });
   }
 
