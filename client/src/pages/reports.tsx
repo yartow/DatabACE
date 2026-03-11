@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity, UserProfile } from "@shared/schema";
 import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StudentSearch } from "@/components/student-search";
 
 const TERMS = [1, 2, 3, 4, 5];
 const SCHOOL_NAME = "Ceder Academy";
@@ -370,18 +370,11 @@ export default function ReportsPage() {
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="reports-page">
       <div className="flex items-center gap-4 flex-wrap print:hidden">
-        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-          <SelectTrigger className="w-[280px]" data-testid="select-student">
-            <SelectValue placeholder="Choose a student..." />
-          </SelectTrigger>
-          <SelectContent>
-            {sortedStudents.map(s => (
-              <SelectItem key={s.id} value={String(s.id)} data-testid={`option-student-${s.id}`}>
-                {s.callName} {s.surname}{!s.active ? " (inactive)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <StudentSearch
+          onSelect={(s) => setSelectedStudentId(String(s.id))}
+          selectedStudent={selectedStudent}
+          className="w-[320px]"
+        />
         {selectedStudent && (
           <>
             <button

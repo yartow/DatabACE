@@ -13,6 +13,7 @@ import type { Student, Course, Enrollment, SupplementaryActivity } from "@shared
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StudentSearch } from "@/components/student-search";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music, Filter } from "lucide-react";
 import { format, parse } from "date-fns";
@@ -47,109 +48,6 @@ function getCurrentYearTerm(): string {
   return `${s}\u2013${e}`;
 }
 
-function StudentSearch({ onSelect }: { onSelect: (student: Student) => void }) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { data: students } = useQuery<Student[]>({ queryKey: ["/api/students"] });
-
-  const suggestions = useMemo(() => {
-    if (!students || query.length < 1) return [];
-    const q = query.toLowerCase();
-    return students.filter(s =>
-      s.callName.toLowerCase().includes(q) ||
-      s.surname.toLowerCase().includes(q) ||
-      s.alias.toLowerCase().includes(q) ||
-      (s.firstNames?.toLowerCase().includes(q))
-    ).slice(0, 8);
-  }, [students, query]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (!open) return;
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setOpen(false);
-      setHighlightIndex(-1);
-      return;
-    }
-    if (suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIndex(prev => (prev + 1) % suggestions.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-    } else if (e.key === "Enter" && highlightIndex >= 0 && highlightIndex < suggestions.length) {
-      e.preventDefault();
-      const s = suggestions[highlightIndex];
-      onSelect(s);
-      setQuery(`${s.callName} ${s.surname}`);
-      setOpen(false);
-      setHighlightIndex(-1);
-    }
-  }
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <Input
-        ref={inputRef}
-        placeholder="Type student name to search..."
-        value={query}
-        onChange={e => {
-          setQuery(e.target.value);
-          setOpen(e.target.value.length >= 1);
-          setHighlightIndex(-1);
-        }}
-        onFocus={() => { if (query.length >= 1) setOpen(true); }}
-        onKeyDown={handleKeyDown}
-        className="w-full max-w-md"
-        data-testid="input-student-search"
-      />
-      {open && suggestions.length > 0 && (
-        <div
-          className="absolute z-50 top-full left-0 mt-1 w-full max-w-md bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto"
-          data-testid="dropdown-student-suggestions"
-          onMouseDown={e => e.preventDefault()}
-        >
-          {suggestions.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
-              onClick={() => {
-                onSelect(s);
-                setQuery(`${s.callName} ${s.surname}`);
-                setOpen(false);
-              }}
-              data-testid={`suggestion-student-${s.id}`}
-            >
-              <span className="font-medium">{s.callName} {s.surname}</span>
-              <span className="text-xs text-muted-foreground">{s.alias}</span>
-            </button>
-          ))}
-        </div>
-      )}
-      {open && query.length >= 1 && suggestions.length === 0 && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-full max-w-md bg-popover border rounded-md shadow-lg p-3 text-sm text-muted-foreground">
-          No students found matching "{query}"
-        </div>
-      )}
-    </div>
-  );
-}
 
 function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => void; exclude: number[] }) {
   const [query, setQuery] = useState("");
@@ -234,7 +132,11 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
             <button
               key={c.id}
               type="button"
-              className={`w-full text-left px-4 py-2.5 hover:bg-accent text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md ${highlightIndex === i ? "bg-accent" : ""}`}
+              className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md transition-colors ${
+                highlightIndex === i
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              }`}
               onClick={() => {
                 onSelect(c);
                 setQuery("");
@@ -243,7 +145,7 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
               data-testid={`suggestion-course-${c.id}`}
             >
               <span className="font-medium truncate">{c.course || c.aceAlias || `Course ${c.id}`}</span>
-              <span className="text-xs text-muted-foreground shrink-0">{c.subjectAbb} L{c.level}</span>
+              <span className={`text-xs shrink-0 ${highlightIndex === i ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{c.subjectAbb} L{c.level}</span>
             </button>
           ))}
         </div>
@@ -1154,7 +1056,7 @@ export default function EnrollmentsPage() {
           <CardTitle className="text-base">Select Student</CardTitle>
         </CardHeader>
         <CardContent>
-          <StudentSearch onSelect={(s) => { setSelectedStudent(s); setShowNewRow(false); }} />
+          <StudentSearch onSelect={(s) => { setSelectedStudent(s); setShowNewRow(false); }} selectedStudent={selectedStudent} className="max-w-md" />
           {selectedStudent && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Selected:</span>
