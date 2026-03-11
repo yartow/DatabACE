@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { StudentSearch } from "@/components/student-search";
 
 const TERMS = [1, 2, 3, 4, 5];
-const SCHOOL_NAME = "Ceder Academy";
+const SCHOOL_NAME = "ICS De Ceder \u2013 Boskoop";
 
 const NEDERLANDS_COURSES = ["Taal", "Spelling", "Lezen", "Taal (PACE)", "Spelling (PACE)"];
 
