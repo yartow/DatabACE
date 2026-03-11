@@ -7,6 +7,7 @@ import { z } from "zod";
 import { users } from "./models/auth";
 
 export const roleEnum = pgEnum("user_role", ["teacher", "parent"]);
+export const paceVersionTypeEnum = pgEnum("pace_version_type", ["PACE", "Score Key", "Material"]);
 
 export const userProfiles = pgTable("user_profiles", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -93,16 +94,9 @@ export const courses = pgTable("courses", {
   icceAlias: text("icce_alias"),
   certificateName: text("certificate_name"),
   level: integer("level"),
-  paceNrStart: integer("pace_nr_start"),
-  paceNrEnd: integer("pace_nr_end"),
-  paceCount: integer("pace_count"),
   starValue: integer("star_value"),
   subjectId: integer("subject_id"),
-  subjectTemp: text("subject_temp"),
-  subjectAbb: text("subject_abb"),
-  specification: text("specification"),
   subjectGroupId: integer("subject_group_id"),
-  subjectGroup: text("subject_group"),
   courseType: text("course_type"),
   course: text("course"),
   passThreshold: real("pass_threshold"),
@@ -136,6 +130,21 @@ export const paceCourses = pgTable("pace_courses", {
   active: integer("active"),
   starValue: smallint("star_value").default(1),
   weight: smallint("weight").default(1),
+});
+
+export const paceVersions = pgTable("pace_versions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  yearRevised: integer("year_revised"),
+  type: paceVersionTypeEnum("type"),
+  edition: smallint("edition"),
+  paceId: integer("pace_id").notNull().references(() => paces.id),
+});
+
+export const inventory = pgTable("inventory", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  paceVersionsId: integer("pace_versions_id").notNull().references(() => paceVersions.id),
+  studentId: integer("student_id").notNull().references(() => students.id),
+  numberInPossession: smallint("number_in_possession"),
 });
 
 export const dates = pgTable("dates", {
@@ -180,6 +189,7 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
 export const studentsRelations = relations(students, ({ many }) => ({
   enrollments: many(enrollments),
   supplementaryActivities: many(supplementaryActivities),
+  inventory: many(inventory),
 }));
 
 export const supplementaryActivitiesRelations = relations(supplementaryActivities, ({ one }) => ({
@@ -201,6 +211,17 @@ export const coursesRelations = relations(courses, ({ many }) => ({
 
 export const pacesRelations = relations(paces, ({ many }) => ({
   paceCourses: many(paceCourses),
+  paceVersions: many(paceVersions),
+}));
+
+export const paceVersionsRelations = relations(paceVersions, ({ one, many }) => ({
+  pace: one(paces, { fields: [paceVersions.paceId], references: [paces.id] }),
+  inventory: many(inventory),
+}));
+
+export const inventoryRelations = relations(inventory, ({ one }) => ({
+  paceVersion: one(paceVersions, { fields: [inventory.paceVersionsId], references: [paceVersions.id] }),
+  student: one(students, { fields: [inventory.studentId], references: [students.id] }),
 }));
 
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
@@ -217,6 +238,8 @@ export const insertParentSchema = createInsertSchema(parents).omit({ id: true })
 export const insertSubjectGroupSchema = createInsertSchema(subjectGroups);
 export const insertSupplementaryActivitySchema = createInsertSchema(supplementaryActivities).omit({ id: true });
 export const insertInvitationSchema = createInsertSchema(invitations).omit({ id: true });
+export const insertPaceVersionSchema = createInsertSchema(paceVersions).omit({ id: true });
+export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true });
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
@@ -246,3 +269,7 @@ export type SupplementaryActivity = typeof supplementaryActivities.$inferSelect;
 export type InsertSupplementaryActivity = z.infer<typeof insertSupplementaryActivitySchema>;
 export type Invitation = typeof invitations.$inferSelect;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type PaceVersion = typeof paceVersions.$inferSelect;
+export type InsertPaceVersion = z.infer<typeof insertPaceVersionSchema>;
+export type Inventory = typeof inventory.$inferSelect;
+export type InsertInventory = z.infer<typeof insertInventorySchema>;
