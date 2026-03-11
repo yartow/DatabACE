@@ -110,6 +110,14 @@ UPDATE user_profiles SET is_admin = true WHERE user_id = 'YOUR_USER_ID';
 ```
 Find your user_id by running: `SELECT * FROM user_profiles;`
 
+## PWA & Native Feel
+- PWA manifest at `client/public/manifest.json` — app is installable on iOS/Android home screens
+- Icons: `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` in `client/public/`
+- Session duration: 30 days (configured in `server/replit_integrations/auth/replitAuth.ts`)
+- Theme color: `#16a34a` (green) — matches browser chrome on mobile
+- Apple meta tags for standalone mode, status bar, and app title
+- Only loads Inter and Open Sans fonts (trimmed from 30+ Google Fonts)
+
 ## User Preferences
 - App name: "Ceder"
 - Progress view terminology: "Student Progress Chart" or "SPC"
