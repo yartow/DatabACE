@@ -275,12 +275,32 @@ export default function ReportsPage() {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
-      const canvas = await html2canvas(el, {
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.position = "absolute";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.width = "1256px";
+      clone.style.maxWidth = "1256px";
+      clone.style.overflow = "visible";
+
+      clone.querySelectorAll<HTMLElement>(".yr-course-name-col, .yr-category-name, .yr-progress-label").forEach(n => {
+        n.style.overflow = "visible";
+        n.style.whiteSpace = "nowrap";
+        n.style.textOverflow = "clip";
+      });
+
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
+        width: 1256,
+        windowWidth: 1280,
         logging: false,
       });
+
+      document.body.removeChild(clone);
 
       const margin = 8;
       const a4W = 210;
