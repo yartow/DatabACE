@@ -18,6 +18,7 @@ function EditableCourseRow({ c, onCancel, onSaved }: { c: Course; onCancel: () =
   const [starValue, setStarValue] = useState(c.starValue?.toString() || "");
   const [passThreshold, setPassThreshold] = useState(c.passThreshold != null ? Math.round(c.passThreshold * 100).toString() : "");
   const [courseType, setCourseType] = useState(c.courseType || "");
+  const [remarks, setRemarks] = useState(c.remarks || "");
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -27,6 +28,7 @@ function EditableCourseRow({ c, onCancel, onSaved }: { c: Course; onCancel: () =
         starValue: starValue ? parseInt(starValue) : null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         courseType: courseType || null,
+        remarks: remarks || null,
       });
     },
     onSuccess: () => {
@@ -57,6 +59,9 @@ function EditableCourseRow({ c, onCancel, onSaved }: { c: Course; onCancel: () =
       </td>
       <td className="text-center py-2 px-2">
         <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-pass" />
+      </td>
+      <td className="py-2 px-2">
+        <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} data-testid="input-edit-course-remarks" />
       </td>
       <td className="text-center py-2 px-2">
         <div className="flex items-center gap-1 justify-center">
@@ -427,6 +432,7 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Remarks</th>
                       {isTeacher && <th className="text-center py-3 px-2 font-medium text-muted-foreground w-[50px]"></th>}
                     </tr>
                   </thead>
@@ -447,6 +453,11 @@ export default function MaterialsPage() {
                           <td className="text-center py-3 px-2">{c.starValue ?? "—"}</td>
                           <td className="text-center py-3 px-2 text-muted-foreground">
                             {c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}
+                          </td>
+                          <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px]" data-testid={`text-course-remarks-${c.id}`}>
+                            {c.remarks ? (
+                              <span className="block truncate cursor-help" title={c.remarks}>{c.remarks}</span>
+                            ) : "—"}
                           </td>
                           {isTeacher && (
                             <td className="text-center py-3 px-2">
