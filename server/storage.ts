@@ -110,6 +110,8 @@ export interface IStorage {
   getAllUserProfilesWithUsers(): Promise<(UserProfile & { email?: string | null; firstName?: string | null; lastName?: string | null })[]>;
   deleteUserProfile(userId: string): Promise<void>;
 
+  deletePaceCourse(id: number): Promise<void>;
+
   getPaceVersions(): Promise<PaceVersion[]>;
   createPaceVersion(data: InsertPaceVersion): Promise<PaceVersion>;
   updatePaceVersion(id: number, data: Partial<InsertPaceVersion>): Promise<PaceVersion | undefined>;
@@ -212,6 +214,9 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({ target: paceCourses.id, set: { ...data } })
       .returning();
     return pc;
+  }
+  async deletePaceCourse(id: number): Promise<void> {
+    await db.delete(paceCourses).where(eq(paceCourses.id, id));
   }
 
   async getSubjects(): Promise<Subject[]> {
