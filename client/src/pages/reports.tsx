@@ -52,7 +52,7 @@ export default function ReportsPage() {
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
-  const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
+  const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
   const { data: allDates } = useQuery<DateEntry[]>({ queryKey: ["/api/dates"] });
   const { data: personnelList } = useQuery<Personnel[]>({ queryKey: ["/api/personnel"] });
 
@@ -118,7 +118,11 @@ export default function ReportsPage() {
     };
 
     const courseEnrollments = new Map<number, Enrollment[]>();
+    const seenKeys = new Set<string>();
     enrollments.forEach(e => {
+      const key = `${e.courseId}|${e.number}|${e.dateStarted ?? ""}|${e.grade ?? ""}`;
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
       const list = courseEnrollments.get(e.courseId) || [];
       list.push(e);
       courseEnrollments.set(e.courseId, list);
@@ -380,7 +384,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {selectedStudent && enrollmentsLoading && (
+      {selectedStudent && (enrollmentsLoading || coursesLoading) && (
         <div className="yr-page">
           <Skeleton className="h-[100px] w-full" />
           <Skeleton className="h-[100px] w-full mt-4" />
@@ -389,7 +393,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {selectedStudent && enrollments && !enrollmentsLoading && (
+      {selectedStudent && enrollments && courses && !enrollmentsLoading && !coursesLoading && (
         <div className="yr-page" data-testid="year-report" ref={reportRef}>
           <div className="yr-title" data-testid="yr-title">
             <div className="yr-logo">
