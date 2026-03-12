@@ -178,6 +178,13 @@ export async function registerRoutes(
     res.json(result);
   });
 
+  app.delete("/api/pace-courses/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    await storage.deletePaceCourse(parseInt(req.params.id));
+    res.json({ ok: true });
+  });
+
   app.post("/api/courses/create-with-paces", isAuthenticated, async (req: any, res) => {
     const profile = await storage.getUserProfile(req.user.claims.sub);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
