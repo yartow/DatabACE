@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useMemo, useRef } from "react";
 import type { Course, Pace, PaceCourse, Subject, SubjectGroup, UserProfile } from "@shared/schema";
-import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, AlertTriangle } from "lucide-react";
+import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +23,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
   const existing = paceCourses?.filter(pc => pc.courseId === course.id) || [];
   const [paceCount, setPaceCount] = useState("");
   const [paceEntries, setPaceEntries] = useState<{ number: string; starValue: string }[]>([]);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handlePaceCountChange = (val: string) => {
     setPaceCount(val);
@@ -36,7 +37,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
     }
   };
 
-  const mutation = useMutation({
+  const addMutation = useMutation({
     mutationFn: async () => {
       const valid = paceEntries.filter(e => e.number.trim() !== "");
       await apiRequest("POST", `/api/courses/${course.id}/paces`, {
@@ -47,10 +48,27 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
       queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/paces"] });
       toast({ title: "PACEs added" });
-      onSaved();
+      setPaceCount("");
+      setPaceEntries([]);
     },
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (pcId: number) => {
+      setDeletingId(pcId);
+      await apiRequest("DELETE", `/api/pace-courses/${pcId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/paces"] });
+      toast({ title: "PACE removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+    onSettled: () => setDeletingId(null),
+  });
+
+  const isBusy = addMutation.isPending || deleteMutation.isPending;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -65,7 +83,19 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
               {existing.map(pc => (
                 <div key={pc.id} className="flex items-center justify-between px-3 py-1.5">
                   <span className="font-mono">PACE #{pc.number}</span>
-                  <span className="text-muted-foreground">★ {pc.starValue ?? 1}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">★ {pc.starValue ?? 1}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      disabled={isBusy}
+                      onClick={() => deleteMutation.mutate(pc.id)}
+                      data-testid={`button-delete-pace-${pc.id}`}
+                    >
+                      {deletingId === pc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -74,7 +104,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
         <div className="space-y-4 pt-2 border-t">
           <div className="space-y-1.5">
             <Label>Number of new PACEs to add</Label>
-            <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} placeholder="e.g. 3" className="w-32" data-testid="input-add-pace-count" />
+            <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} placeholder="e.g. 3" className="w-32" disabled={isBusy} data-testid="input-add-pace-count" />
           </div>
           {paceEntries.length > 0 && (
             <div className="space-y-2">
@@ -90,6 +120,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                         onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
                         placeholder="e.g. 1001"
                         className="text-center"
+                        disabled={isBusy}
                         data-testid={`input-add-pace-number-${i}`}
                       />
                     </div>
@@ -103,6 +134,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                         onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
                         placeholder="1"
                         className="text-center"
+                        disabled={isBusy}
                         data-testid={`input-add-pace-star-${i}`}
                       />
                     </div>
@@ -113,10 +145,10 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose} disabled={isBusy}>Close</Button>
           {paceEntries.length > 0 && (
-            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-paces">
-              {mutation.isPending ? "Adding…" : "Add PACEs"}
+            <Button onClick={() => addMutation.mutate()} disabled={isBusy} data-testid="button-save-paces">
+              {addMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Adding…</> : "Add PACEs"}
             </Button>
           )}
         </DialogFooter>
@@ -190,9 +222,9 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, on
               Add/Edit PACEs
             </Button>
             <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-course">
-              <Check className="h-3 w-3 text-emerald-600" />
+              {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 text-emerald-600" />}
             </Button>
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-course">
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} disabled={mutation.isPending} data-testid="button-cancel-course">
               <X className="h-3 w-3" />
             </Button>
           </div>
@@ -214,16 +246,18 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
   const [creditValue, setCreditValue] = useState(pc.creditValuePace?.toString() || "");
   const [passThreshold, setPassThreshold] = useState(pc.passThreshold != null ? Math.round(pc.passThreshold * 100).toString() : "");
   const [active, setActive] = useState(pc.active?.toString() || "1");
+  const [starValue, setStarValue] = useState(pc.starValue?.toString() || "1");
 
   const course = courseMap.get(pc.courseId);
   const courseName = course?.icceAlias || course?.aceAlias || `#${pc.courseId}`;
 
-  const mutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/pace-courses/${pc.id}`, {
         creditValuePace: creditValue ? parseFloat(creditValue) : null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         active: parseInt(active),
+        starValue: starValue ? parseFloat(starValue) : 1,
       });
     },
     onSuccess: () => {
@@ -234,20 +268,38 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/pace-courses/${pc.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/paces"] });
+      toast({ title: "PACE-Course deleted" });
+      onSaved();
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const isBusy = saveMutation.isPending || deleteMutation.isPending;
+
   return (
     <tr className="border-b bg-muted/20" data-testid={`row-pc-edit-${pc.id}`}>
       <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
       <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
       <td className="py-2 px-2 font-medium text-xs">{courseName}</td>
-      <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
+      <td className="text-center py-2 px-2 font-mono text-xs">{pc.number ?? "—"}</td>
       <td className="text-center py-2 px-2">
-        <Input value={creditValue} onChange={e => setCreditValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-pc-credit" />
+        <Input value={starValue} onChange={e => setStarValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" type="number" step="0.5" min="0" disabled={isBusy} data-testid="input-edit-pc-star" />
       </td>
       <td className="text-center py-2 px-2">
-        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-pc-pass" />
+        <Input value={creditValue} onChange={e => setCreditValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-credit" />
       </td>
       <td className="text-center py-2 px-2">
-        <Select value={active} onValueChange={setActive}>
+        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-pass" />
+      </td>
+      <td className="text-center py-2 px-2">
+        <Select value={active} onValueChange={setActive} disabled={isBusy}>
           <SelectTrigger className="h-7 w-24 text-xs mx-auto" data-testid="select-edit-pc-active"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="1">Active</SelectItem>
@@ -257,10 +309,13 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
       </td>
       <td className="text-center py-2 px-2">
         <div className="flex items-center gap-1 justify-center">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-pc">
-            <Check className="h-3 w-3 text-emerald-600" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveMutation.mutate()} disabled={isBusy} data-testid="button-save-pc">
+            {saveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 text-emerald-600" />}
           </Button>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-pc">
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate()} disabled={isBusy} data-testid={`button-delete-pc-${pc.id}`}>
+            {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} disabled={isBusy} data-testid="button-cancel-pc">
             <X className="h-3 w-3" />
           </Button>
         </div>
@@ -388,7 +443,11 @@ export default function MaterialsPage() {
       );
     }
     if (levelFilter) result = result.filter(c => c.level?.toString() === levelFilter);
-    return result;
+    return [...result].sort((a, b) => {
+      const nameA = (a.icceAlias || a.aceAlias || "").toLowerCase();
+      const nameB = (b.icceAlias || b.aceAlias || "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
   }, [courses, selectedSubjectId, subjectGroupIdFilter, search, levelFilter]);
 
   const activePaceCourses = useMemo(() => paceCourses?.filter(pc => pc.active === 1) || [], [paceCourses]);
@@ -649,6 +708,7 @@ export default function MaterialsPage() {
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Code</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Course</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">PACE #</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Credit</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
@@ -666,7 +726,8 @@ export default function MaterialsPage() {
                           <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
                           <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
                           <td className="py-2 px-2 font-medium text-xs">{course?.icceAlias || course?.aceAlias || `#${pc.courseId}`}</td>
-                          <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
+                          <td className="text-center py-2 px-2 font-mono text-xs">{pc.number ?? "—"}</td>
+                          <td className="text-center py-2 px-2 text-muted-foreground">★ {pc.starValue ?? 1}</td>
                           <td className="text-center py-2 px-2">{pc.creditValuePace ?? "—"}</td>
                           <td className="text-center py-2 px-2 text-muted-foreground">{pc.passThreshold != null ? `${Math.round(pc.passThreshold * 100)}%` : "—"}</td>
                           <td className="text-center py-2 px-2">
