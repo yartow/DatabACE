@@ -94,11 +94,9 @@ export const courses = pgTable("courses", {
   icceAlias: text("icce_alias"),
   certificateName: text("certificate_name"),
   level: integer("level"),
-  starValue: integer("star_value"),
   subjectId: integer("subject_id"),
   subjectGroupId: integer("subject_group_id"),
   courseType: text("course_type"),
-  course: text("course"),
   passThreshold: real("pass_threshold"),
   remarks: varchar("remarks", { length: 1000 }),
 });
@@ -128,7 +126,7 @@ export const paceCourses = pgTable("pace_courses", {
   creditValuePace: real("credit_value_pace"),
   passThreshold: real("pass_threshold"),
   active: integer("active"),
-  starValue: smallint("star_value").default(1),
+  starValue: real("star_value").default(1),
   weight: smallint("weight").default(1),
 });
 

@@ -178,7 +178,7 @@ export default function ReportsPage() {
     const nederlandsCourses: CourseTermData[] = [];
 
     courseTermDataMap.forEach((ctd) => {
-      const courseName = ctd.course.course || "";
+      const courseName = ctd.course.icceAlias || "";
       if (NEDERLANDS_COURSES.includes(courseName)) {
         nederlandsCourses.push(ctd);
       } else {
@@ -467,8 +467,8 @@ export default function ReportsPage() {
                     className={`yr-course-row ${courseIdx % 2 === 1 ? "yr-course-row-alt" : ""}`}
                     data-testid={`yr-course-${ctd.course.id}`}
                   >
-                    <div className="yr-course-name-col" title={ctd.course.aceAlias || ctd.course.course || ""}>
-                      {ctd.course.certificateName || ctd.course.icceAlias || ctd.course.aceAlias || ctd.course.course || `Course ${ctd.course.id}`}
+                    <div className="yr-course-name-col" title={ctd.course.icceAlias || ctd.course.aceAlias || ""}>
+                      {ctd.course.certificateName || ctd.course.icceAlias || ctd.course.aceAlias || `Course ${ctd.course.id}`}
                     </div>
                     {TERMS.map(t => (
                       <div key={t} className="yr-term-cell-group">
