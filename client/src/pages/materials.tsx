@@ -15,21 +15,130 @@ import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Uploa
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-function EditableCourseRow({ c, subjectMap, subjectGroupMap, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; onCancel: () => void; onSaved: () => void }) {
+const COURSE_TYPES = ["Core", "CourseWork", "Further Credit Option"] as const;
+
+function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast();
-  const [course, setCourse] = useState(c.course || "");
+  const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
+  const existing = paceCourses?.filter(pc => pc.courseId === course.id) || [];
+  const [paceCount, setPaceCount] = useState("");
+  const [paceEntries, setPaceEntries] = useState<{ number: string; starValue: string }[]>([]);
+
+  const handlePaceCountChange = (val: string) => {
+    setPaceCount(val);
+    const n = parseInt(val);
+    if (!isNaN(n) && n >= 0 && n <= 50) {
+      setPaceEntries(prev => {
+        const arr = [...prev];
+        while (arr.length < n) arr.push({ number: "", starValue: "1" });
+        return arr.slice(0, n);
+      });
+    }
+  };
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const valid = paceEntries.filter(e => e.number.trim() !== "");
+      await apiRequest("POST", `/api/courses/${course.id}/paces`, {
+        paceData: valid.map(e => ({ number: e.number, starValue: e.starValue ? parseFloat(e.starValue) : 1 })),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/paces"] });
+      toast({ title: "PACEs added" });
+      onSaved();
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add/Edit PACEs — {course.icceAlias || course.aceAlias || `Course ${course.id}`}</DialogTitle>
+        </DialogHeader>
+        {existing.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">Existing PACEs ({existing.length})</p>
+            <div className="rounded border divide-y text-xs">
+              {existing.map(pc => (
+                <div key={pc.id} className="flex items-center justify-between px-3 py-1.5">
+                  <span className="font-mono">PACE #{pc.number}</span>
+                  <span className="text-muted-foreground">★ {pc.starValue ?? 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="space-y-4 pt-2 border-t">
+          <div className="space-y-1.5">
+            <Label>Number of new PACEs to add</Label>
+            <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} placeholder="e.g. 3" className="w-32" data-testid="input-add-pace-count" />
+          </div>
+          {paceEntries.length > 0 && (
+            <div className="space-y-2">
+              <Label>PACE details</Label>
+              <div className="grid gap-2">
+                {paceEntries.map((entry, i) => (
+                  <div key={i} className="grid grid-cols-2 gap-2 items-center">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">#{i + 1} PACE number</label>
+                      <Input
+                        type="number"
+                        value={entry.number}
+                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
+                        placeholder="e.g. 1001"
+                        className="text-center"
+                        data-testid={`input-add-pace-number-${i}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Star value</label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={entry.starValue}
+                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
+                        placeholder="1"
+                        className="text-center"
+                        data-testid={`input-add-pace-star-${i}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          {paceEntries.length > 0 && (
+            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-paces">
+              {mutation.isPending ? "Adding…" : "Add PACEs"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; courseStarValue: number; onCancel: () => void; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [icceAlias, setIcceAlias] = useState(c.icceAlias || "");
   const [level, setLevel] = useState(c.level?.toString() || "");
-  const [starValue, setStarValue] = useState(c.starValue?.toString() || "");
   const [passThreshold, setPassThreshold] = useState(c.passThreshold != null ? Math.round(c.passThreshold * 100).toString() : "");
   const [courseType, setCourseType] = useState(c.courseType || "");
   const [remarks, setRemarks] = useState(c.remarks || "");
+  const [showPacesDialog, setShowPacesDialog] = useState(false);
 
   const mutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/courses/${c.id}`, {
-        course: course || null,
+        icceAlias: icceAlias || null,
         level: level ? parseInt(level) : null,
-        starValue: starValue ? parseInt(starValue) : null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         courseType: courseType || null,
         remarks: remarks || null,
@@ -47,40 +156,56 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, onCancel, onSaved }
   const grp = c.subjectGroupId ? subjectGroupMap.get(c.subjectGroupId) : null;
 
   return (
-    <tr className="border-b bg-muted/20" data-testid={`row-course-edit-${c.id}`}>
-      <td className="py-2 px-2">
-        <Input value={course} onChange={e => setCourse(e.target.value)} className="h-7 text-xs" data-testid="input-edit-course-name" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Badge variant="secondary">{subj?.subject || "—"}</Badge>
-      </td>
-      <td className="text-center py-2 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
-      <td className="text-center py-2 px-2">
-        <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-level" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Input value={courseType} onChange={e => setCourseType(e.target.value)} className="h-7 w-20 text-xs text-center mx-auto" data-testid="input-edit-course-type" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Input value={starValue} onChange={e => setStarValue(e.target.value)} className="h-7 w-14 text-xs text-center mx-auto" data-testid="input-edit-course-stars" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-pass" />
-      </td>
-      <td className="py-2 px-2">
-        <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} data-testid="input-edit-course-remarks" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <div className="flex items-center gap-1 justify-center">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-course">
-            <Check className="h-3 w-3 text-emerald-600" />
-          </Button>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-course">
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b bg-muted/20" data-testid={`row-course-edit-${c.id}`}>
+        <td className="py-2 px-2">
+          <Input value={icceAlias} onChange={e => setIcceAlias(e.target.value)} className="h-7 text-xs" data-testid="input-edit-course-name" />
+        </td>
+        <td className="text-center py-2 px-2">
+          <Badge variant="secondary">{subj?.subject || "—"}</Badge>
+        </td>
+        <td className="text-center py-2 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
+        <td className="text-center py-2 px-2">
+          <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-level" />
+        </td>
+        <td className="text-center py-2 px-2">
+          <Select value={courseType || "none"} onValueChange={v => setCourseType(v === "none" ? "" : v)}>
+            <SelectTrigger className="h-7 text-xs mx-auto" data-testid="select-edit-course-type"><SelectValue placeholder="— type —" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— none —</SelectItem>
+              {COURSE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="text-center py-2 px-2 text-muted-foreground text-sm">{courseStarValue > 0 ? courseStarValue : "—"}</td>
+        <td className="text-center py-2 px-2">
+          <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-pass" />
+        </td>
+        <td className="py-2 px-2">
+          <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} data-testid="input-edit-course-remarks" />
+        </td>
+        <td className="text-center py-2 px-2">
+          <div className="flex items-center gap-1 justify-center">
+            <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setShowPacesDialog(true)} data-testid={`button-add-edit-paces-${c.id}`}>
+              Add/Edit PACEs
+            </Button>
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-course">
+              <Check className="h-3 w-3 text-emerald-600" />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} data-testid="button-cancel-course">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </td>
+      </tr>
+      {showPacesDialog && (
+        <AddPacesDialog
+          course={c}
+          onClose={() => setShowPacesDialog(false)}
+          onSaved={() => setShowPacesDialog(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -91,6 +216,7 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
   const [active, setActive] = useState(pc.active?.toString() || "1");
 
   const course = courseMap.get(pc.courseId);
+  const courseName = course?.icceAlias || course?.aceAlias || `#${pc.courseId}`;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -112,7 +238,7 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
     <tr className="border-b bg-muted/20" data-testid={`row-pc-edit-${pc.id}`}>
       <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
       <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
-      <td className="py-2 px-2 font-medium text-xs">{course?.course || course?.aceAlias || `#${pc.courseId}`}</td>
+      <td className="py-2 px-2 font-medium text-xs">{courseName}</td>
       <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
       <td className="text-center py-2 px-2">
         <Input value={creditValue} onChange={e => setCreditValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-pc-credit" />
@@ -256,7 +382,7 @@ export default function MaterialsPage() {
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(c =>
-        (c.course || "").toLowerCase().includes(q) ||
+        (c.icceAlias || "").toLowerCase().includes(q) ||
         (c.aceAlias || "").toLowerCase().includes(q) ||
         (c.certificateName || "").toLowerCase().includes(q)
       );
@@ -269,6 +395,15 @@ export default function MaterialsPage() {
   const inactivePaceCourses = useMemo(() => paceCourses?.filter(pc => pc.active === 0) || [], [paceCourses]);
 
   const courseMap = useMemo(() => new Map(courses?.map(c => [c.id, c]) || []), [courses]);
+
+  const courseStarValues = useMemo(() => {
+    const map = new Map<number, number>();
+    paceCourses?.forEach(pc => {
+      const cur = map.get(pc.courseId) || 0;
+      map.set(pc.courseId, cur + (pc.starValue || 0));
+    });
+    return map;
+  }, [paceCourses]);
 
   const displayPaceCourses = useMemo(() => {
     if (!paceCourses) return [];
@@ -434,7 +569,7 @@ export default function MaterialsPage() {
             <SelectTrigger className="w-[250px]" data-testid="select-course"><SelectValue placeholder="All courses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
-              {filteredCourses.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.course || c.aceAlias || `Course ${c.id}`}</SelectItem>)}
+              {filteredCourses.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.icceAlias || c.aceAlias || `Course ${c.id}`}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -468,18 +603,19 @@ export default function MaterialsPage() {
                   <tbody>
                     {filteredCourses.map(c => {
                       if (editingCourseId === c.id) {
-                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
+                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} courseStarValue={courseStarValues.get(c.id) || 0} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
                       }
                       const subj = c.subjectId ? subjectMap.get(c.subjectId) : null;
                       const grp = c.subjectGroupId ? subjectGroupMap.get(c.subjectGroupId) : null;
+                      const sv = courseStarValues.get(c.id);
                       return (
                         <tr key={c.id} className="border-b last:border-0" data-testid={`row-course-${c.id}`}>
-                          <td className="py-3 px-2 font-medium">{c.course || c.aceAlias || `Course ${c.id}`}</td>
+                          <td className="py-3 px-2 font-medium">{c.icceAlias || c.aceAlias || `Course ${c.id}`}</td>
                           <td className="text-center py-3 px-2"><Badge variant="secondary">{subj?.subject || "—"}</Badge></td>
                           <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
                           <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
                           <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
-                          <td className="text-center py-3 px-2">{c.starValue ?? "—"}</td>
+                          <td className="text-center py-3 px-2">{sv != null && sv > 0 ? sv : "—"}</td>
                           <td className="text-center py-3 px-2 text-muted-foreground">{c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}</td>
                           <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px]" data-testid={`text-course-remarks-${c.id}`}>
                             {c.remarks ? <span className="block truncate cursor-help" title={c.remarks}>{c.remarks}</span> : "—"}
@@ -529,7 +665,7 @@ export default function MaterialsPage() {
                         <tr key={pc.id} className="border-b last:border-0" data-testid={`row-pc-${pc.id}`}>
                           <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
                           <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
-                          <td className="py-2 px-2 font-medium text-xs">{course?.course || course?.aceAlias || `#${pc.courseId}`}</td>
+                          <td className="py-2 px-2 font-medium text-xs">{course?.icceAlias || course?.aceAlias || `#${pc.courseId}`}</td>
                           <td className="text-center py-2 px-2">{pc.number ?? "—"}</td>
                           <td className="text-center py-2 px-2">{pc.creditValuePace ?? "—"}</td>
                           <td className="text-center py-2 px-2 text-muted-foreground">{pc.passThreshold != null ? `${Math.round(pc.passThreshold * 100)}%` : "—"}</td>
@@ -585,27 +721,25 @@ export default function MaterialsPage() {
 
 function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subjects: Subject[]; subjectGroups: SubjectGroup[]; onClose: () => void; onCreated: () => void }) {
   const { toast } = useToast();
-  const [courseName, setCourseName] = useState("");
   const [aceAlias, setAceAlias] = useState("");
   const [icceAlias, setIcceAlias] = useState("");
   const [certificateName, setCertificateName] = useState("");
   const [level, setLevel] = useState("");
-  const [starValue, setStarValue] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [subjectGroupId, setSubjectGroupId] = useState("");
   const [courseType, setCourseType] = useState("");
   const [passThreshold, setPassThreshold] = useState("");
   const [remarks, setRemarks] = useState("");
   const [paceCount, setPaceCount] = useState("");
-  const [paceNumbers, setPaceNumbers] = useState<string[]>([]);
+  const [paceEntries, setPaceEntries] = useState<{ number: string; starValue: string }[]>([]);
 
   const handlePaceCountChange = (val: string) => {
     setPaceCount(val);
     const n = parseInt(val);
     if (!isNaN(n) && n >= 0 && n <= 50) {
-      setPaceNumbers(prev => {
+      setPaceEntries(prev => {
         const arr = [...prev];
-        while (arr.length < n) arr.push("");
+        while (arr.length < n) arr.push({ number: "", starValue: "1" });
         return arr.slice(0, n);
       });
     }
@@ -613,20 +747,18 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const nums = paceNumbers.filter(p => p.trim() !== "");
+      const valid = paceEntries.filter(e => e.number.trim() !== "");
       await apiRequest("POST", "/api/courses/create-with-paces", {
-        course: courseName || null,
         aceAlias: aceAlias || null,
         icceAlias: icceAlias || null,
         certificateName: certificateName || null,
         level: level ? parseInt(level) : null,
-        starValue: starValue ? parseInt(starValue) : null,
         subjectId: subjectId ? parseInt(subjectId) : null,
         subjectGroupId: subjectGroupId ? parseInt(subjectGroupId) : null,
         courseType: courseType || null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         remarks: remarks || null,
-        paceNumbers: nums,
+        paceData: valid.map(e => ({ number: e.number, starValue: e.starValue ? parseFloat(e.starValue) : 1 })),
       });
     },
     onSuccess: () => { toast({ title: "Course created" }); onCreated(); },
@@ -640,10 +772,6 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
           <DialogTitle>Add New Course</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-4 py-2">
-          <div className="space-y-1.5">
-            <Label>Course name</Label>
-            <Input value={courseName} onChange={e => setCourseName(e.target.value)} placeholder="e.g. Mathematics I" data-testid="input-new-course-name" />
-          </div>
           <div className="space-y-1.5">
             <Label>ACE alias</Label>
             <Input value={aceAlias} onChange={e => setAceAlias(e.target.value)} placeholder="e.g. Math I" data-testid="input-new-ace-alias" />
@@ -662,7 +790,13 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
           </div>
           <div className="space-y-1.5">
             <Label>Course type</Label>
-            <Input value={courseType} onChange={e => setCourseType(e.target.value)} placeholder="e.g. ACE" data-testid="input-new-course-type" />
+            <Select value={courseType || "none"} onValueChange={v => setCourseType(v === "none" ? "" : v)}>
+              <SelectTrigger data-testid="select-new-course-type"><SelectValue placeholder="— select type —" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— none —</SelectItem>
+                {COURSE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Subject</Label>
@@ -685,11 +819,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Star value</Label>
-            <Input type="number" value={starValue} onChange={e => setStarValue(e.target.value)} data-testid="input-new-star-value" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Pass threshold (%)</Label>
+            <Label>Pass threshold</Label>
             <Input type="number" value={passThreshold} onChange={e => setPassThreshold(e.target.value)} placeholder="e.g. 80" data-testid="input-new-pass-threshold" />
           </div>
           <div className="col-span-2 space-y-1.5">
@@ -700,21 +830,36 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
             <Label>Number of PACEs in this course</Label>
             <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} placeholder="e.g. 6" className="w-32" data-testid="input-new-pace-count" />
           </div>
-          {paceNumbers.length > 0 && (
+          {paceEntries.length > 0 && (
             <div className="col-span-2 space-y-2">
-              <Label>PACE numbers</Label>
-              <div className="grid grid-cols-6 gap-2">
-                {paceNumbers.map((num, i) => (
-                  <div key={i} className="space-y-1">
-                    <label className="text-xs text-muted-foreground">#{i + 1}</label>
-                    <Input
-                      type="number"
-                      value={num}
-                      onChange={e => setPaceNumbers(prev => { const arr = [...prev]; arr[i] = e.target.value; return arr; })}
-                      placeholder={`PACE ${i + 1}`}
-                      className="text-center"
-                      data-testid={`input-pace-number-${i}`}
-                    />
+              <Label>PACE details</Label>
+              <div className="grid gap-2">
+                {paceEntries.map((entry, i) => (
+                  <div key={i} className="grid grid-cols-2 gap-3 items-end">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">#{i + 1} PACE number</label>
+                      <Input
+                        type="number"
+                        value={entry.number}
+                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
+                        placeholder={`e.g. 100${i + 1}`}
+                        className="text-center"
+                        data-testid={`input-pace-number-${i}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Star value</label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={entry.starValue}
+                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
+                        placeholder="1"
+                        className="text-center"
+                        data-testid={`input-pace-star-${i}`}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

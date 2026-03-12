@@ -418,7 +418,7 @@ export class DatabaseStorage implements IStorage {
         paceId: paces.id,
         paceNumber: paces.number,
         courseId: paceCourses.courseId,
-        courseName: courses.course,
+        courseName: courses.icceAlias,
         studentId: students.id,
         studentSurname: students.surname,
         studentCallName: students.callName,
