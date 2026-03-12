@@ -385,15 +385,18 @@ export default function ReportsPage() {
       )}
 
       {selectedStudent && (enrollmentsLoading || coursesLoading) && (
-        <div className="yr-page">
-          <Skeleton className="h-[100px] w-full" />
-          <Skeleton className="h-[100px] w-full mt-4" />
-          <Skeleton className="h-[300px] w-full mt-4" />
-          <Skeleton className="h-[200px] w-full mt-4" />
+        <div className="yr-scroll-wrapper">
+          <div className="yr-page">
+            <Skeleton className="h-[100px] w-full" />
+            <Skeleton className="h-[100px] w-full mt-4" />
+            <Skeleton className="h-[300px] w-full mt-4" />
+            <Skeleton className="h-[200px] w-full mt-4" />
+          </div>
         </div>
       )}
 
       {selectedStudent && enrollments && courses && !enrollmentsLoading && !coursesLoading && (
+        <div className="yr-scroll-wrapper">
         <div className="yr-page" data-testid="year-report" ref={reportRef}>
           <div className="yr-title" data-testid="yr-title">
             <div className="yr-logo">
@@ -591,6 +594,7 @@ export default function ReportsPage() {
               <span className="yr-signature-label">Parent / Guardian</span>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>
