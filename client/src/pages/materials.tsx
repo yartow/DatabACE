@@ -70,9 +70,13 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
 
   const isBusy = addMutation.isPending || deleteMutation.isPending;
 
+  const scrollIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add/Edit PACEs — {course.icceAlias || course.aceAlias || `Course ${course.id}`}</DialogTitle>
         </DialogHeader>
@@ -104,7 +108,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
         <div className="space-y-4 pt-2 border-t">
           <div className="space-y-1.5">
             <Label>Number of new PACEs to add</Label>
-            <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} placeholder="e.g. 3" className="w-32" disabled={isBusy} data-testid="input-add-pace-count" />
+            <Input type="number" min="0" max="50" value={paceCount} onChange={e => handlePaceCountChange(e.target.value)} onFocus={scrollIntoView} placeholder="e.g. 3" className="w-32" disabled={isBusy} data-testid="input-add-pace-count" />
           </div>
           {paceEntries.length > 0 && (
             <div className="space-y-2">
@@ -118,6 +122,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                         type="number"
                         value={entry.number}
                         onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
+                        onFocus={scrollIntoView}
                         placeholder="e.g. 1001"
                         className="text-center"
                         disabled={isBusy}
@@ -132,6 +137,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                         min="0"
                         value={entry.starValue}
                         onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
+                        onFocus={scrollIntoView}
                         placeholder="1"
                         className="text-center"
                         disabled={isBusy}
