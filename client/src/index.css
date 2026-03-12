@@ -287,6 +287,12 @@
   }
 }
 
+.yr-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .yr-page {
   background: #fff;
   color: #000;
@@ -611,9 +617,15 @@
     print-color-adjust: exact;
   }
 
+  .yr-scroll-wrapper {
+    overflow: visible;
+    width: 100%;
+  }
+
   .yr-page {
     padding: 0;
     max-width: none;
+    min-width: 0;
     width: 100%;
     transform-origin: top left;
     font-size: 14px;
@@ -823,7 +835,11 @@
   .yr-signature-box {
     height: 70px;
   }
+  .yr-page {
+    min-width: 640px;
+  }
   .yr-category-header-row {
-    display: none;
+    display: flex;
+    padding: 6px 8px;
   }
 }
