@@ -100,18 +100,9 @@ export async function seedDatabase() {
       icceAlias: icceInfo?.icceAlias || null,
       certificateName: icceInfo?.certificateName || null,
       level: safeInt(row.Level),
-      paceNrStart: safeInt(row.PaceNrStart),
-      paceNrEnd: safeInt(row.PaceNrEnd),
-      paceCount: safeInt(row.PaceCount__),
-      starValue: safeInt(row.StarValue),
       subjectId: safeInt(row.SubjectID),
-      subjectTemp: safeStr(row.Subject_temp),
-      subjectAbb: safeStr(row.SubjectAbb),
-      specification: safeStr(row.Specification),
       subjectGroupId: safeInt(row.SubjectGroupID),
-      subjectGroup: safeStr(row.SubjectGroup__),
       courseType: safeStr(row.CourseType),
-      course: safeStr(row.Course),
       passThreshold: safeReal(row.PassThreshold),
       remarks: safeStr(row.Remarks),
     });
@@ -123,17 +114,10 @@ export async function seedDatabase() {
   for (let i = 0; i < paceData.length; i += batchSize) {
     const batch = paceData.slice(i, i + batchSize).map(row => ({
       id: row.ID,
-      courseId: safeInt(row.CourseID),
       number: safeInt(row.Number),
-      specificationAbb: safeStr(row.SpecificationAbb),
-      code2: safeStr(row.Code2),
-      alias: safeInt(row.Alias__),
-      subject: safeInt(row.Subject),
       edition: safeInt(row.Edition),
       editionOrder: safeInt(row.EditionOrder),
       type: safeStr(row.Type),
-      subjectGroupId: safeStr(row.SubjectGroupID__),
-      starValue: safeInt(row.StarValue),
     }));
     await db.insert(paces).values(batch);
   }
@@ -156,11 +140,7 @@ export async function seedDatabase() {
       paceId: row.PaceID,
       courseId: row.CourseID,
       alias: safeInt(row.Alias__),
-      number: safeInt(row.Number__),
-      code: safeStr(row.Code__),
-      creditValuePace: safeInt(row.CreditValuePace),
-      passThreshold: safeReal(row.PassThreshold__),
-      active: safeInt(row.Active),
+      number: row.Number__ != null ? String(row.Number__) : null,
     }));
     await db.insert(paceCourses).values(batch);
   }
