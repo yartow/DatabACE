@@ -63,6 +63,7 @@ export interface IStorage {
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
   getTermWeekCounts(): Promise<{ yearTerm: string; term: number; weeks: number }[]>;
+  backfillEnrollmentTerms(): Promise<number>;
 
   getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
   getAllEnrollments(): Promise<Enrollment[]>;
@@ -243,6 +244,22 @@ export class DatabaseStorage implements IStorage {
     `);
     const rowData: any[] = (result as any).rows ?? result;
     return rowData.map((r: any) => ({ yearTerm: String(r.year_term), term: Number(r.term), weeks: Number(r.weeks) }));
+  }
+
+  async backfillEnrollmentTerms(): Promise<number> {
+    const result = await db.execute(sql`
+      UPDATE enrollments
+      SET term = (
+        SELECT d.term
+        FROM dates d
+        WHERE (DATE '1899-12-30' + d.date * INTERVAL '1 day')::date = enrollments.date_ended::date
+          AND d.term IS NOT NULL
+        LIMIT 1
+      )
+      WHERE term IS NULL
+        AND date_ended IS NOT NULL
+    `);
+    return (result as any).rowCount ?? 0;
   }
 
   async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {

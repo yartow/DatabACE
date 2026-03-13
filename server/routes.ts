@@ -597,7 +597,13 @@ export async function registerRoutes(
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     const parsed = insertEnrollmentSchema.partial().safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
-    const enrollment = await storage.updateEnrollment(parseInt(req.params.id), parsed.data);
+    let updateData = parsed.data;
+    if (updateData.dateEnded && updateData.term == null) {
+      await storage.backfillEnrollmentTerms();
+      const updated = await storage.getEnrollment(parseInt(req.params.id));
+      if (updated && updated.term != null) updateData = { ...updateData, term: updated.term };
+    }
+    const enrollment = await storage.updateEnrollment(parseInt(req.params.id), updateData);
     if (!enrollment) return res.status(404).json({ message: "Not found" });
     res.json(enrollment);
   });
@@ -968,6 +974,7 @@ export async function registerRoutes(
         const created = await storage.createEnrollments(newRows);
         imported = created.length;
       }
+      await storage.backfillEnrollmentTerms();
 
       res.json({
         status: "done",
@@ -1025,6 +1032,7 @@ export async function registerRoutes(
         }
       }
 
+      await storage.backfillEnrollmentTerms();
       res.json({ status: "done", imported, updated, skipped: session.skippedIdentical });
     } catch (error: any) {
       res.status(400).json({ message: "Failed to apply resolutions: " + error.message });
