@@ -599,7 +599,8 @@ export async function registerRoutes(
     if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
     const enrollment = await storage.updateEnrollment(parseInt(req.params.id), parsed.data);
     if (!enrollment) return res.status(404).json({ message: "Not found" });
-    if (parsed.data.dateEnded) {
+    const userSetTermManually = ("term" in parsed.data) || ("yearTerm" in parsed.data);
+    if (parsed.data.dateEnded && !userSetTermManually) {
       await storage.backfillEnrollmentTerms();
       const refreshed = await storage.getEnrollment(parseInt(req.params.id));
       if (refreshed) return res.json(refreshed);
@@ -1003,11 +1004,11 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Import session expired or not found. Please re-upload the file." });
       }
 
-      importSessions.delete(sessionId);
-
       if (!Array.isArray(choices) || choices.length !== session.conflicts.length) {
-        return res.status(400).json({ message: "Invalid choices array. Must match number of conflicts." });
+        return res.status(400).json({ message: `Invalid choices array. Expected ${session.conflicts.length} item(s), got ${Array.isArray(choices) ? choices.length : "non-array"}.` });
       }
+
+      importSessions.delete(sessionId);
 
       let imported = 0;
       let updated = 0;
