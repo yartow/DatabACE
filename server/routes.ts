@@ -560,18 +560,27 @@ export async function registerRoutes(
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
-    const { studentId, courseId, dateStarted } = req.body;
+    const { studentId, courseId, dateStarted, term, paces: selectedPaces } = req.body;
     if (!studentId || !courseId) return res.status(400).json({ message: "studentId and courseId are required" });
-    const numbers = await storage.getPaceNumbersByCourse(courseId);
-    if (numbers.length === 0) return res.status(400).json({ message: "No PACEs found for this course" });
-    const rows = numbers.map(num => ({
+    let paceEntries: { number: string; isRepeat: boolean }[];
+    if (selectedPaces && Array.isArray(selectedPaces) && selectedPaces.length > 0) {
+      paceEntries = selectedPaces.map((p: any) => ({ number: String(p.number), isRepeat: !!p.isRepeat }));
+    } else {
+      const numbers = await storage.getPaceNumbersByCourse(courseId);
+      if (numbers.length === 0) return res.status(400).json({ message: "No PACEs found for this course" });
+      paceEntries = numbers.map(n => ({ number: String(n), isRepeat: false }));
+    }
+    const termVal = term != null ? parseInt(String(term)) : null;
+    const rows = paceEntries.map(p => ({
       studentId: parseInt(studentId),
       courseId: parseInt(courseId),
-      number: String(num),
+      number: p.number,
       dateStarted: dateStarted || null,
       dateEnded: null,
       grade: null,
       remarks: null,
+      term: termVal && !isNaN(termVal) ? termVal : null,
+      isRepeat: p.isRepeat,
     }));
     const created = await storage.createEnrollments(rows);
     res.json(created);
