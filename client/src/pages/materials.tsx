@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from "@/components/ui/switch";
 import { useState, useMemo, useRef, Fragment } from "react";
 import type { Course, Pace, PaceCourse, Subject, SubjectGroup, UserProfile } from "@shared/schema";
-import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, ChevronsUpDown, ArrowUp, ArrowDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Package, Link2, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, ChevronsUpDown, ArrowUp, ArrowDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -25,7 +25,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
   const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
   const existing = paceCourses?.filter(pc => pc.courseId === course.id) || [];
   const [paceCount, setPaceCount] = useState("");
-  const [paceEntries, setPaceEntries] = useState<{ number: string; starValue: string }[]>([]);
+  const [paceEntries, setPaceEntries] = useState<{ number: string }[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handlePaceCountChange = (val: string) => {
@@ -34,7 +34,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
     if (!isNaN(n) && n >= 0 && n <= 50) {
       setPaceEntries(prev => {
         const arr = [...prev];
-        while (arr.length < n) arr.push({ number: "", starValue: "1" });
+        while (arr.length < n) arr.push({ number: "" });
         return arr.slice(0, n);
       });
     }
@@ -44,7 +44,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
     mutationFn: async () => {
       const valid = paceEntries.filter(e => e.number.trim() !== "");
       await apiRequest("POST", `/api/courses/${course.id}/paces`, {
-        paceData: valid.map(e => ({ number: e.number, starValue: e.starValue ? parseFloat(e.starValue) : 1 })),
+        paceData: valid.map(e => ({ number: e.number })),
       });
     },
     onSuccess: () => {
@@ -91,7 +91,6 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                 <div key={pc.id} className="flex items-center justify-between px-3 py-1.5">
                   <span className="font-mono">PACE #{pc.number}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-muted-foreground">★ {pc.starValue ?? 1}</span>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -115,38 +114,21 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
           </div>
           {paceEntries.length > 0 && (
             <div className="space-y-2">
-              <Label>PACE details</Label>
-              <div className="grid gap-2">
+              <Label>PACE numbers</Label>
+              <div className="grid grid-cols-3 gap-2">
                 {paceEntries.map((entry, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-2 items-center">
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">#{i + 1} PACE number</label>
-                      <Input
-                        type="number"
-                        value={entry.number}
-                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
-                        onFocus={scrollIntoView}
-                        placeholder="e.g. 1001"
-                        className="text-center"
-                        disabled={isBusy}
-                        data-testid={`input-add-pace-number-${i}`}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Star value</label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={entry.starValue}
-                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
-                        onFocus={scrollIntoView}
-                        placeholder="1"
-                        className="text-center"
-                        disabled={isBusy}
-                        data-testid={`input-add-pace-star-${i}`}
-                      />
-                    </div>
+                  <div key={i} className="space-y-1">
+                    <label className="text-xs text-muted-foreground">#{i + 1}</label>
+                    <Input
+                      type="number"
+                      value={entry.number}
+                      onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { number: e.target.value }; return arr; })}
+                      onFocus={scrollIntoView}
+                      placeholder="e.g. 1001"
+                      className="text-center"
+                      disabled={isBusy}
+                      data-testid={`input-add-pace-number-${i}`}
+                    />
                   </div>
                 ))}
               </div>
@@ -166,7 +148,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
   );
 }
 
-function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; courseStarValue: number; colSpan: number; onCancel: () => void; onSaved: () => void }) {
+function EditableCourseRow({ c, subjectMap, subjectGroupMap, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; colSpan: number; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
   const [icceAlias, setIcceAlias] = useState(c.icceAlias || "");
   const [aceAlias, setAceAlias] = useState(c.aceAlias || "");
@@ -224,7 +206,6 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, co
             </SelectContent>
           </Select>
         </td>
-        <td className="text-center py-2 px-2 text-muted-foreground text-sm">{courseStarValue > 0 ? courseStarValue : "—"}</td>
         <td className="text-center py-2 px-2">
           <Switch checked={active} onCheckedChange={setActive} disabled={mutation.isPending} data-testid="switch-edit-course-active" />
         </td>
@@ -232,7 +213,7 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, co
           <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={mutation.isPending} data-testid="input-edit-course-pass" />
         </td>
         <td className="py-2 px-2">
-          <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} disabled={mutation.isPending} data-testid="input-edit-course-remarks" />
+          <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={3000} disabled={mutation.isPending} data-testid="input-edit-course-remarks" />
         </td>
         <td className="text-center py-2 px-2">
           <div className="flex items-center gap-1 justify-center">
@@ -276,10 +257,8 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, co
 
 function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; courseMap: Map<number, Course>; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
-  const [creditValue, setCreditValue] = useState(pc.creditValuePace?.toString() || "");
-  const [passThreshold, setPassThreshold] = useState(pc.passThreshold != null ? Math.round(pc.passThreshold * 100).toString() : "");
-  const [active, setActive] = useState(pc.active?.toString() || "1");
-  const [starValue, setStarValue] = useState(pc.starValue?.toString() || "1");
+  const [number, setNumber] = useState(pc.number || "");
+  const [alias, setAlias] = useState(pc.alias?.toString() || "");
 
   const course = courseMap.get(pc.courseId);
   const courseName = course?.icceAlias || course?.aceAlias || `#${pc.courseId}`;
@@ -287,10 +266,8 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
   const saveMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/pace-courses/${pc.id}`, {
-        creditValuePace: creditValue ? parseFloat(creditValue) : null,
-        passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
-        active: parseInt(active),
-        starValue: starValue ? parseFloat(starValue) : 1,
+        number: number || null,
+        alias: alias ? parseInt(alias) : null,
       });
     },
     onSuccess: () => {
@@ -319,26 +296,12 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
   return (
     <tr className="border-b bg-muted/20" data-testid={`row-pc-edit-${pc.id}`}>
       <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
-      <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
       <td className="py-2 px-2 font-medium text-xs">{courseName}</td>
-      <td className="text-center py-2 px-2 font-mono text-xs">{pc.number ?? "—"}</td>
-      <td className="text-center py-2 px-2">
-        <Input value={starValue} onChange={e => setStarValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" type="number" step="0.5" min="0" disabled={isBusy} data-testid="input-edit-pc-star" />
+      <td className="text-center py-2 px-2 font-mono text-xs">
+        <Input value={number} onChange={e => setNumber(e.target.value)} className="h-7 w-24 text-xs text-center mx-auto font-mono" disabled={isBusy} data-testid="input-edit-pc-number" />
       </td>
       <td className="text-center py-2 px-2">
-        <Input value={creditValue} onChange={e => setCreditValue(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-credit" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-pass" />
-      </td>
-      <td className="text-center py-2 px-2">
-        <Select value={active} onValueChange={setActive} disabled={isBusy}>
-          <SelectTrigger className="h-7 w-24 text-xs mx-auto" data-testid="select-edit-pc-active"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Active</SelectItem>
-            <SelectItem value="0">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+        <Input value={alias} onChange={e => setAlias(e.target.value)} className="h-7 w-20 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-alias" />
       </td>
       <td className="text-center py-2 px-2">
         <div className="flex items-center gap-1 justify-center">
@@ -449,7 +412,7 @@ export default function MaterialsPage() {
   const [pcSearch, setPcSearch] = useState("");
   const [pcSelectedCourse, setPcSelectedCourse] = useState("all");
   const [pcComboOpen, setPcComboOpen] = useState(false);
-  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "stars" | "credit" | "pass" | "active">("course");
+  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "alias">("course");
   const [pcSortDir, setPcSortDir] = useState<"asc" | "desc">("asc");
 
   const togglePcSort = (col: typeof pcSortCol) => {
@@ -501,19 +464,7 @@ export default function MaterialsPage() {
     });
   }, [courses, selectedSubjectId, subjectGroupIdFilter, search, levelFilter]);
 
-  const activePaceCourses = useMemo(() => paceCourses?.filter(pc => pc.active === 1) || [], [paceCourses]);
-  const inactivePaceCourses = useMemo(() => paceCourses?.filter(pc => pc.active === 0) || [], [paceCourses]);
-
   const courseMap = useMemo(() => new Map(courses?.map(c => [c.id, c]) || []), [courses]);
-
-  const courseStarValues = useMemo(() => {
-    const map = new Map<number, number>();
-    paceCourses?.forEach(pc => {
-      const cur = map.get(pc.courseId) || 0;
-      map.set(pc.courseId, cur + (pc.starValue || 0));
-    });
-    return map;
-  }, [paceCourses]);
 
   const displayPaceCourses = useMemo(() => {
     if (!paceCourses) return [];
@@ -526,7 +477,7 @@ export default function MaterialsPage() {
       filtered = filtered.filter(pc => {
         const course = courseMap.get(pc.courseId);
         const name = (course?.icceAlias || course?.aceAlias || "").toLowerCase();
-        return name.includes(q) || (pc.code || "").toLowerCase().includes(q) || (pc.number || "").toLowerCase().includes(q);
+        return name.includes(q) || (pc.number || "").toLowerCase().includes(q);
       });
     }
     return [...filtered].sort((a, b) => {
@@ -540,10 +491,7 @@ export default function MaterialsPage() {
           return na.localeCompare(nb) * dir;
         }
         case "number": return ((a.number || "") < (b.number || "") ? -1 : 1) * dir;
-        case "stars": return ((a.starValue ?? 1) - (b.starValue ?? 1)) * dir;
-        case "credit": return ((a.creditValuePace ?? 0) - (b.creditValuePace ?? 0)) * dir;
-        case "pass": return ((a.passThreshold ?? 0) - (b.passThreshold ?? 0)) * dir;
-        case "active": return ((a.active ?? 1) - (b.active ?? 1)) * dir;
+        case "alias": return ((a.alias ?? 0) - (b.alias ?? 0)) * dir;
         default: return 0;
       }
     });
@@ -646,17 +594,10 @@ export default function MaterialsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active PACE-Courses</CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">PACE-Course Links</CardTitle>
+            <Link2 className="w-4 h-4 text-chart-3" />
           </CardHeader>
-          <CardContent><p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-active">{activePaceCourses.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Inactive PACE-Courses</CardTitle>
-            <XCircle className="w-4 h-4 text-red-500" />
-          </CardHeader>
-          <CardContent><p className="text-2xl font-bold" data-testid="text-inactive">{inactivePaceCourses.length}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold" data-testid="text-total-pace-courses">{paceCourses?.length || 0}</p></CardContent>
         </Card>
       </div>
 
@@ -707,7 +648,6 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Group</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Remarks</th>
@@ -716,13 +656,12 @@ export default function MaterialsPage() {
                   </thead>
                   <tbody>
                     {filteredCourses.map(c => {
-                      const colSpan = 10;
+                      const colSpan = 9;
                       if (editingCourseId === c.id) {
-                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} courseStarValue={courseStarValues.get(c.id) || 0} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
+                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
                       }
                       const subj = c.subjectId ? subjectMap.get(c.subjectId) : null;
                       const grp = c.subjectGroupId ? subjectGroupMap.get(c.subjectGroupId) : null;
-                      const sv = courseStarValues.get(c.id);
                       const isExpanded = expandedCourseIds.has(c.id);
                       const isInactive = (c.active ?? 1) === 0;
                       return (
@@ -733,7 +672,6 @@ export default function MaterialsPage() {
                             <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
                             <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
                             <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
-                            <td className="text-center py-3 px-2">{sv != null && sv > 0 ? sv : "—"}</td>
                             <td className="text-center py-3 px-2">
                               <Badge variant={(c.active ?? 1) === 1 ? "default" : "secondary"}>
                                 {(c.active ?? 1) === 1 ? "Active" : "Inactive"}
@@ -846,28 +784,10 @@ export default function MaterialsPage() {
                           {pcSortCol === "number" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
                         </div>
                       </th>
-                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("stars")} data-testid="th-sort-stars">
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("alias")} data-testid="th-sort-alias">
                         <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          Stars
-                          {pcSortCol === "stars" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
-                        </div>
-                      </th>
-                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("credit")} data-testid="th-sort-credit">
-                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          Credit
-                          {pcSortCol === "credit" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
-                        </div>
-                      </th>
-                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("pass")} data-testid="th-sort-pass">
-                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          Pass %
-                          {pcSortCol === "pass" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
-                        </div>
-                      </th>
-                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("active")} data-testid="th-sort-active">
-                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          Active
-                          {pcSortCol === "active" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                          Alias
+                          {pcSortCol === "alias" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
                         </div>
                       </th>
                       {isTeacher && <th className="w-[50px]" />}
@@ -882,15 +802,9 @@ export default function MaterialsPage() {
                       return (
                         <tr key={pc.id} className="border-b last:border-0" data-testid={`row-pc-${pc.id}`}>
                           <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
-                          <td className="py-2 px-2 font-mono text-xs">{pc.code || "—"}</td>
                           <td className="py-2 px-2 font-medium text-xs">{course?.icceAlias || course?.aceAlias || `#${pc.courseId}`}</td>
                           <td className="text-center py-2 px-2 font-mono text-xs">{pc.number ?? "—"}</td>
-                          <td className="text-center py-2 px-2 text-muted-foreground">★ {pc.starValue ?? 1}</td>
-                          <td className="text-center py-2 px-2">{pc.creditValuePace ?? "—"}</td>
-                          <td className="text-center py-2 px-2 text-muted-foreground">{pc.passThreshold != null ? `${Math.round(pc.passThreshold * 100)}%` : "—"}</td>
-                          <td className="text-center py-2 px-2">
-                            <Badge variant={pc.active === 1 ? "default" : "secondary"}>{pc.active === 1 ? "Active" : "Inactive"}</Badge>
-                          </td>
+                          <td className="text-center py-2 px-2 text-muted-foreground text-xs">{pc.alias ?? "—"}</td>
                           {isTeacher && (
                             <td className="text-center py-2 px-2">
                               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPcId(pc.id)} data-testid={`button-edit-pc-${pc.id}`}>
@@ -950,7 +864,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
   const [passThreshold, setPassThreshold] = useState("");
   const [remarks, setRemarks] = useState("");
   const [paceCount, setPaceCount] = useState("");
-  const [paceEntries, setPaceEntries] = useState<{ number: string; starValue: string }[]>([]);
+  const [paceEntries, setPaceEntries] = useState<{ number: string }[]>([]);
 
   const handlePaceCountChange = (val: string) => {
     setPaceCount(val);
@@ -958,7 +872,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
     if (!isNaN(n) && n >= 0 && n <= 50) {
       setPaceEntries(prev => {
         const arr = [...prev];
-        while (arr.length < n) arr.push({ number: "", starValue: "1" });
+        while (arr.length < n) arr.push({ number: "" });
         return arr.slice(0, n);
       });
     }
@@ -977,7 +891,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
         courseType: courseType || null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         remarks: remarks || null,
-        paceData: valid.map(e => ({ number: e.number, starValue: e.starValue ? parseFloat(e.starValue) : 1 })),
+        paceData: valid.map(e => ({ number: e.number })),
       });
     },
     onSuccess: () => { toast({ title: "Course created" }); onCreated(); },
@@ -1043,7 +957,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Remarks</Label>
-            <Textarea value={remarks} onChange={e => setRemarks(e.target.value)} maxLength={1000} rows={2} data-testid="input-new-remarks" />
+            <Textarea value={remarks} onChange={e => setRemarks(e.target.value)} maxLength={3000} rows={2} data-testid="input-new-remarks" />
           </div>
           <div className="col-span-2 space-y-1.5 border-t pt-4">
             <Label>Number of PACEs in this course</Label>
@@ -1052,33 +966,18 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
           {paceEntries.length > 0 && (
             <div className="col-span-2 space-y-2">
               <Label>PACE details</Label>
-              <div className="grid gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {paceEntries.map((entry, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-3 items-end">
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">#{i + 1} PACE number</label>
-                      <Input
-                        type="number"
-                        value={entry.number}
-                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], number: e.target.value }; return arr; })}
-                        placeholder={`e.g. 100${i + 1}`}
-                        className="text-center"
-                        data-testid={`input-pace-number-${i}`}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Star value</label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={entry.starValue}
-                        onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { ...arr[i], starValue: e.target.value }; return arr; })}
-                        placeholder="1"
-                        className="text-center"
-                        data-testid={`input-pace-star-${i}`}
-                      />
-                    </div>
+                  <div key={i} className="space-y-1">
+                    <label className="text-xs text-muted-foreground">PACE {i + 1}</label>
+                    <Input
+                      type="number"
+                      value={entry.number}
+                      onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { number: e.target.value }; return arr; })}
+                      placeholder={`e.g. 100${i + 1}`}
+                      className="text-center"
+                      data-testid={`input-pace-number-${i}`}
+                    />
                   </div>
                 ))}
               </div>

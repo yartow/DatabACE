@@ -281,7 +281,7 @@ export default function InventoryPage() {
               <SelectItem value="all">All Courses</SelectItem>
               {uniqueCourseIds.map(cid => {
                 const c = courseMap.get(cid);
-                return <SelectItem key={cid} value={cid.toString()}>{c?.course || c?.aceAlias || `#${cid}`}</SelectItem>;
+                return <SelectItem key={cid} value={cid.toString()}>{c?.icceAlias || c?.aceAlias || `#${cid}`}</SelectItem>;
               })}
             </SelectContent>
           </Select>

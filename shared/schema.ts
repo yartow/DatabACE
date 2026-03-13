@@ -98,23 +98,17 @@ export const courses = pgTable("courses", {
   subjectGroupId: integer("subject_group_id"),
   courseType: text("course_type"),
   passThreshold: real("pass_threshold"),
-  remarks: varchar("remarks", { length: 1000 }),
+  remarks: varchar("remarks", { length: 3000 }),
   active: integer("active").notNull().default(1),
 });
 
 export const paces = pgTable("paces", {
   id: integer("id").primaryKey(),
-  courseId: integer("course_id"),
   number: integer("number"),
-  specificationAbb: text("specification_abb"),
-  code2: text("code2"),
-  alias: integer("alias"),
-  subject: integer("subject"),
   edition: integer("edition"),
   editionOrder: integer("edition_order"),
   type: text("type"),
-  subjectGroupId: text("subject_group_id"),
-  starValue: integer("star_value"),
+  weight: smallint("weight"),
 });
 
 export const paceCourses = pgTable("pace_courses", {
@@ -123,12 +117,6 @@ export const paceCourses = pgTable("pace_courses", {
   courseId: integer("course_id").notNull().references(() => courses.id),
   alias: integer("alias"),
   number: varchar("number", { length: 10 }),
-  code: text("code"),
-  creditValuePace: real("credit_value_pace"),
-  passThreshold: real("pass_threshold"),
-  active: integer("active"),
-  starValue: real("star_value").default(1),
-  weight: smallint("weight").default(1),
 });
 
 export const paceVersions = pgTable("pace_versions", {

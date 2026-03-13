@@ -108,10 +108,10 @@ export async function registerRoutes(
       const wb = XLSX.utils.book_new();
       if (type === "pace-courses") {
         const ws = XLSX.utils.aoa_to_sheet([
-          ["id", "paceId", "courseId", "number", "code", "alias", "creditValuePace", "passThreshold", "active", "starValue", "weight"],
-          [1, 1, 1, "1001", "ENG-1001", null, 1.0, 0.8, 1, 1, 1],
+          ["id", "paceId", "courseId", "number", "alias"],
+          [1, 1, 1, "1001", null],
         ]);
-        ws["!cols"] = [8,8,8,8,14,8,14,14,8,8,8].map(w => ({ wch: w }));
+        ws["!cols"] = [8,8,8,10,8].map(w => ({ wch: w }));
         XLSX.utils.book_append_sheet(wb, ws, "PaceCourses");
         const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
         res.setHeader("Content-Disposition", "attachment; filename=pace_courses_template.xlsx");
@@ -202,9 +202,8 @@ export async function registerRoutes(
     for (const entry of paceData) {
       const num = parseInt(String(entry.number));
       if (isNaN(num)) continue;
-      const sv = entry.starValue != null ? parseFloat(String(entry.starValue)) : 1;
-      const pace = await storage.createPace({ id: nextPaceId, courseId, number: num, subject: courseData.subjectId || null, subjectGroupId: courseData.subjectGroupId ? String(courseData.subjectGroupId) : null });
-      const pc = await storage.upsertPaceCourse({ id: nextPcId, paceId: nextPaceId, courseId, number: String(num), active: 1, starValue: sv, weight: 1 });
+      const pace = await storage.createPace({ id: nextPaceId, number: num });
+      const pc = await storage.upsertPaceCourse({ id: nextPcId, paceId: nextPaceId, courseId, number: String(num) });
       createdPaces.push(pace);
       createdPcLinks.push(pc);
       nextPaceId++;
@@ -231,9 +230,8 @@ export async function registerRoutes(
     for (const entry of paceData) {
       const num = parseInt(String(entry.number));
       if (isNaN(num)) continue;
-      const sv = entry.starValue != null ? parseFloat(String(entry.starValue)) : 1;
-      const pace = await storage.createPace({ id: nextPaceId, courseId, number: num, subject: course.subjectId || null, subjectGroupId: course.subjectGroupId ? String(course.subjectGroupId) : null });
-      const pc = await storage.upsertPaceCourse({ id: nextPcId, paceId: nextPaceId, courseId, number: String(num), active: 1, starValue: sv, weight: 1 });
+      const pace = await storage.createPace({ id: nextPaceId, number: num });
+      const pc = await storage.upsertPaceCourse({ id: nextPcId, paceId: nextPaceId, courseId, number: String(num) });
       createdPaces.push(pace);
       createdPcLinks.push(pc);
       nextPaceId++;
@@ -293,7 +291,7 @@ export async function registerRoutes(
           if (isNaN(id)) { errors.push(`Row ${i+2}: id is required`); continue; }
           if (isNaN(paceId) || !paceIds.has(paceId)) { errors.push(`Row ${i+2}: invalid paceId ${row.paceId}`); continue; }
           if (isNaN(courseId) || !courseIds.has(courseId)) { errors.push(`Row ${i+2}: invalid courseId ${row.courseId}`); continue; }
-          const excelRow = { id, paceId, courseId, number: row.number != null ? String(row.number) : null, code: row.code || null, alias: row.alias != null ? parseInt(row.alias) : null, creditValuePace: row.creditValuePace != null ? parseFloat(row.creditValuePace) : null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, active: row.active != null ? parseInt(row.active) : 1, starValue: row.starValue != null ? parseFloat(row.starValue) : 1, weight: row.weight != null ? parseInt(row.weight) : 1 };
+          const excelRow = { id, paceId, courseId, number: row.number != null ? String(row.number) : null, alias: row.alias != null ? parseInt(row.alias) : null };
           const existing = existingPcMap.get(id);
           if (!existing) { newPcs.push(excelRow); continue; }
           const changed = Object.keys(excelRow).some(k => k !== "id" && (excelRow as any)[k] !== (existing as any)[k]);
@@ -316,7 +314,7 @@ export async function registerRoutes(
         const row = rows[i];
         const id = parseInt(String(row.id));
         if (isNaN(id)) { errors.push(`Row ${i+2}: id is required`); continue; }
-        const excelRow = { id, aceAlias: row.aceAlias || null, icceAlias: row.icceAlias || row.course || null, certificateName: row.certificateName || null, level: row.level != null ? parseInt(row.level) : null, subjectId: row.subjectId != null ? parseInt(row.subjectId) : null, subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null, courseType: row.courseType || null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, remarks: row.remarks ? String(row.remarks).slice(0, 1000) : null };
+        const excelRow = { id, aceAlias: row.aceAlias || null, icceAlias: row.icceAlias || row.course || null, certificateName: row.certificateName || null, level: row.level != null ? parseInt(row.level) : null, subjectId: row.subjectId != null ? parseInt(row.subjectId) : null, subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null, courseType: row.courseType || null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, remarks: row.remarks ? String(row.remarks).slice(0, 3000) : null };
         const existing = existingCourseMap.get(id);
         if (!existing) { newCourses.push(excelRow); continue; }
         const changed = Object.keys(excelRow).some(k => k !== "id" && (excelRow as any)[k] !== (existing as any)[k]);
