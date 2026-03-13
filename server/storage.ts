@@ -62,6 +62,7 @@ export interface IStorage {
 
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
+  getTermWeekCounts(): Promise<{ term: number; weeks: number }[]>;
 
   getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
   getAllEnrollments(): Promise<Enrollment[]>;
@@ -231,6 +232,17 @@ export class DatabaseStorage implements IStorage {
   }
   async getDatesByTerm(term: number): Promise<DateEntry[]> {
     return db.select().from(dates).where(eq(dates.term, term));
+  }
+  async getTermWeekCounts(): Promise<{ term: number; weeks: number }[]> {
+    const result = await db.execute(sql`
+      SELECT term, COUNT(DISTINCT term_week) AS weeks
+      FROM dates
+      WHERE holiday = 0 AND term IS NOT NULL AND term_week IS NOT NULL
+      GROUP BY term
+      ORDER BY term
+    `);
+    const rowData: any[] = (result as any).rows ?? result;
+    return rowData.map((r: any) => ({ term: Number(r.term), weeks: Number(r.weeks) }));
   }
 
   async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {
