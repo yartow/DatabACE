@@ -12,7 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from "@/components/ui/switch";
 import { useState, useMemo, useRef, Fragment } from "react";
 import type { Course, Pace, PaceCourse, Subject, SubjectGroup, UserProfile } from "@shared/schema";
-import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, ChevronsUpDown, ArrowUp, ArrowDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -188,9 +190,9 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, co
         remarks: remarks || null,
         active: active ? 1 : 0,
       });
+      await queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
       toast({ title: "Course updated" });
       onSaved();
     },
@@ -431,7 +433,6 @@ function ImportConflictDialog({ result, onResolve, onClose, importType }: { resu
 
 export default function MaterialsPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
-  const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [levelFilter, setLevelFilter] = useState("");
   const [subjectGroupIdFilter, setSubjectGroupIdFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -444,6 +445,18 @@ export default function MaterialsPage() {
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
   });
+
+  const [pcSearch, setPcSearch] = useState("");
+  const [pcSelectedCourse, setPcSelectedCourse] = useState("all");
+  const [pcComboOpen, setPcComboOpen] = useState(false);
+  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "stars" | "credit" | "pass" | "active">("course");
+  const [pcSortDir, setPcSortDir] = useState<"asc" | "desc">("asc");
+
+  const togglePcSort = (col: typeof pcSortCol) => {
+    if (pcSortCol === col) setPcSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setPcSortCol(col); setPcSortDir("asc"); }
+  };
+
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importType, setImportType] = useState<"courses" | "pace-courses">("courses");
@@ -505,14 +518,36 @@ export default function MaterialsPage() {
   const displayPaceCourses = useMemo(() => {
     if (!paceCourses) return [];
     let filtered = paceCourses;
-    const hasFilters = selectedSubjectId !== "all" || search || levelFilter || subjectGroupIdFilter !== "all";
-    if (hasFilters) {
-      const courseIds = new Set(filteredCourses.map(c => c.id));
-      filtered = filtered.filter(pc => courseIds.has(pc.courseId));
+    if (pcSelectedCourse !== "all") {
+      filtered = filtered.filter(pc => pc.courseId === parseInt(pcSelectedCourse));
     }
-    if (selectedCourse !== "all") filtered = filtered.filter(pc => pc.courseId === parseInt(selectedCourse));
-    return filtered;
-  }, [paceCourses, selectedSubjectId, selectedCourse, filteredCourses, search, levelFilter, subjectGroupIdFilter]);
+    if (pcSearch.trim()) {
+      const q = pcSearch.trim().toLowerCase();
+      filtered = filtered.filter(pc => {
+        const course = courseMap.get(pc.courseId);
+        const name = (course?.icceAlias || course?.aceAlias || "").toLowerCase();
+        return name.includes(q) || (pc.code || "").toLowerCase().includes(q) || (pc.number || "").toLowerCase().includes(q);
+      });
+    }
+    return [...filtered].sort((a, b) => {
+      const dir = pcSortDir === "asc" ? 1 : -1;
+      const courseA = courseMap.get(a.courseId);
+      const courseB = courseMap.get(b.courseId);
+      switch (pcSortCol) {
+        case "course": {
+          const na = (courseA?.icceAlias || courseA?.aceAlias || "").toLowerCase();
+          const nb = (courseB?.icceAlias || courseB?.aceAlias || "").toLowerCase();
+          return na.localeCompare(nb) * dir;
+        }
+        case "number": return ((a.number || "") < (b.number || "") ? -1 : 1) * dir;
+        case "stars": return ((a.starValue ?? 1) - (b.starValue ?? 1)) * dir;
+        case "credit": return ((a.creditValuePace ?? 0) - (b.creditValuePace ?? 0)) * dir;
+        case "pass": return ((a.passThreshold ?? 0) - (b.passThreshold ?? 0)) * dir;
+        case "active": return ((a.active ?? 1) - (b.active ?? 1)) * dir;
+        default: return 0;
+      }
+    });
+  }, [paceCourses, pcSelectedCourse, pcSearch, pcSortCol, pcSortDir, courseMap]);
 
   const handleImportUpload = async (file: File, type: "courses" | "pace-courses") => {
     setImportType(type);
@@ -625,53 +660,6 @@ export default function MaterialsPage() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Search</label>
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Name, alias…" className="w-[200px]" data-testid="input-search-courses" />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Subject</label>
-          <Select value={selectedSubjectId} onValueChange={v => { setSelectedSubjectId(v); setSelectedCourse("all"); }}>
-            <SelectTrigger className="w-[200px]" data-testid="select-subject"><SelectValue placeholder="All subjects" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Subjects</SelectItem>
-              {subjects?.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.subject}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Group</label>
-          <Select value={subjectGroupIdFilter} onValueChange={setSubjectGroupIdFilter}>
-            <SelectTrigger className="w-[200px]" data-testid="select-group"><SelectValue placeholder="All groups" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Groups</SelectItem>
-              {subjectGroups?.map(g => <SelectItem key={g.id} value={g.id.toString()}>{g.subjectGroup}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Level</label>
-          <Select value={levelFilter || "all"} onValueChange={v => setLevelFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[120px]" data-testid="select-level"><SelectValue placeholder="All levels" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              {uniqueLevels.map(l => <SelectItem key={l} value={l.toString()}>Level {l}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Course</label>
-          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-            <SelectTrigger className="w-[250px]" data-testid="select-course"><SelectValue placeholder="All courses" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Courses</SelectItem>
-              {filteredCourses.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.icceAlias || c.aceAlias || `Course ${c.id}`}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       <Tabs defaultValue="courses" className="space-y-4">
         <TabsList>
           <TabsTrigger value="courses" data-testid="tab-courses">Courses</TabsTrigger>
@@ -680,7 +668,35 @@ export default function MaterialsPage() {
 
         <TabsContent value="courses">
           <Card>
-            <CardHeader><CardTitle className="text-base">Courses ({filteredCourses.length})</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex flex-wrap items-end gap-3">
+                <CardTitle className="text-base shrink-0">Courses ({filteredCourses.length})</CardTitle>
+                <div className="flex flex-wrap items-end gap-3 ml-auto">
+                  <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, alias…" className="h-8 w-[180px]" data-testid="input-search-courses" />
+                  <Select value={selectedSubjectId} onValueChange={v => setSelectedSubjectId(v)}>
+                    <SelectTrigger className="h-8 w-[160px]" data-testid="select-subject"><SelectValue placeholder="All subjects" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Subjects</SelectItem>
+                      {subjects?.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.subject}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={subjectGroupIdFilter} onValueChange={setSubjectGroupIdFilter}>
+                    <SelectTrigger className="h-8 w-[150px]" data-testid="select-group"><SelectValue placeholder="All groups" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Groups</SelectItem>
+                      {subjectGroups?.map(g => <SelectItem key={g.id} value={g.id.toString()}>{g.subjectGroup}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={levelFilter || "all"} onValueChange={v => setLevelFilter(v === "all" ? "" : v)}>
+                    <SelectTrigger className="h-8 w-[110px]" data-testid="select-level"><SelectValue placeholder="All levels" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      {uniqueLevels.map(l => <SelectItem key={l} value={l.toString()}>Level {l}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="table-courses-list">
@@ -763,7 +779,54 @@ export default function MaterialsPage() {
 
         <TabsContent value="pace-courses">
           <Card>
-            <CardHeader><CardTitle className="text-base">PACE-Course Links ({displayPaceCourses.length})</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex flex-wrap items-end gap-3">
+                <CardTitle className="text-base shrink-0">PACE-Course Links ({displayPaceCourses.length})</CardTitle>
+                <div className="flex flex-wrap items-end gap-3 ml-auto">
+                  <Input
+                    value={pcSearch}
+                    onChange={e => setPcSearch(e.target.value)}
+                    placeholder="Search course, code, PACE#…"
+                    className="h-8 w-[220px]"
+                    data-testid="input-search-pc"
+                  />
+                  <Popover open={pcComboOpen} onOpenChange={setPcComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" aria-expanded={pcComboOpen} className="h-8 w-[230px] justify-between font-normal" data-testid="combobox-course">
+                        <span className="truncate">
+                          {pcSelectedCourse === "all"
+                            ? "All Courses"
+                            : (() => { const c = courseMap.get(parseInt(pcSelectedCourse)); return c?.icceAlias || c?.aceAlias || `Course ${pcSelectedCourse}`; })()}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Type to search course…" data-testid="input-combobox-course" />
+                        <CommandList>
+                          <CommandEmpty>No course found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem value="all" onSelect={() => { setPcSelectedCourse("all"); setPcComboOpen(false); }}>
+                              All Courses
+                            </CommandItem>
+                            {[...(courses || [])].sort((a, b) => (a.icceAlias || a.aceAlias || "").localeCompare(b.icceAlias || b.aceAlias || "")).map(c => (
+                              <CommandItem
+                                key={c.id}
+                                value={`${c.icceAlias || ""} ${c.aceAlias || ""} ${c.id}`}
+                                onSelect={() => { setPcSelectedCourse(c.id.toString()); setPcComboOpen(false); }}
+                              >
+                                {c.icceAlias || c.aceAlias || `Course ${c.id}`}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="table-pace-courses">
@@ -771,17 +834,47 @@ export default function MaterialsPage() {
                     <tr className="border-b">
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">ID</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Code</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Course</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">PACE #</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Credit</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
+                      <th className="text-left py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("course")} data-testid="th-sort-course">
+                        <div className="flex items-center gap-1 font-medium text-muted-foreground">
+                          Course
+                          {pcSortCol === "course" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("number")} data-testid="th-sort-number">
+                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
+                          PACE #
+                          {pcSortCol === "number" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("stars")} data-testid="th-sort-stars">
+                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
+                          Stars
+                          {pcSortCol === "stars" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("credit")} data-testid="th-sort-credit">
+                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
+                          Credit
+                          {pcSortCol === "credit" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("pass")} data-testid="th-sort-pass">
+                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
+                          Pass %
+                          {pcSortCol === "pass" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("active")} data-testid="th-sort-active">
+                        <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
+                          Active
+                          {pcSortCol === "active" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </div>
+                      </th>
                       {isTeacher && <th className="w-[50px]" />}
                     </tr>
                   </thead>
                   <tbody>
-                    {displayPaceCourses.slice(0, 100).map(pc => {
+                    {displayPaceCourses.slice(0, 200).map(pc => {
                       if (editingPcId === pc.id) {
                         return <EditablePcRow key={pc.id} pc={pc} courseMap={courseMap} onCancel={() => setEditingPcId(null)} onSaved={() => setEditingPcId(null)} />;
                       }
@@ -810,8 +903,8 @@ export default function MaterialsPage() {
                     })}
                   </tbody>
                 </table>
-                {displayPaceCourses.length > 100 && (
-                  <p className="text-sm text-muted-foreground text-center py-3">Showing 100 of {displayPaceCourses.length}. Use filters to narrow results.</p>
+                {displayPaceCourses.length > 200 && (
+                  <p className="text-sm text-muted-foreground text-center py-3">Showing 200 of {displayPaceCourses.length}. Use filters to narrow results.</p>
                 )}
               </div>
             </CardContent>
