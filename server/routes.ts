@@ -541,6 +541,11 @@ export async function registerRoutes(
     res.json(d);
   });
 
+  app.get("/api/dates/term-weeks", isAuthenticated, async (_req: any, res) => {
+    const rows = await storage.getTermWeekCounts();
+    res.json(rows);
+  });
+
   app.get("/api/enrollments", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);

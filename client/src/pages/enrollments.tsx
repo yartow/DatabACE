@@ -1042,6 +1042,7 @@ export default function EnrollmentsPage() {
   const { data: paces } = useQuery<Pace[]>({ queryKey: ["/api/paces"] });
   const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
   const { data: subjects } = useQuery<Subject[]>({ queryKey: ["/api/subjects"] });
+  const { data: termWeeks } = useQuery<{ term: number; weeks: number }[]>({ queryKey: ["/api/dates/term-weeks"] });
 
   const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
     queryKey: ["/api/supplementary-activities", selectedStudent?.id?.toString() || ""],
@@ -1110,6 +1111,36 @@ export default function EnrollmentsPage() {
   }, [enrollments, selectedYearTerms, termFilter]);
 
   const courseGroups = useMemo(() => groupEnrollmentsByCourse(filteredEnrollments, courseMap), [filteredEnrollments, courseMap]);
+
+  const honorRoll = useMemo(() => {
+    if (!selectedStudent || termFilter === "all" || !termWeeks) return null;
+    const tf = parseInt(termFilter);
+    const termData = termWeeks.find(t => t.term === tf);
+    if (!termData) return null;
+    const z = termData.weeks;
+    const x = z * 2 - 1;
+    let sumGradeWeight = 0, sumWeight = 0, totalStars = 0;
+    for (const e of filteredEnrollments) {
+      const course = courseMap.get(e.courseId);
+      if (!course) continue;
+      const threshold = getEffectivePassThreshold(course, selectedStudent.isDyslexic, subjectById);
+      const star = paceStarMapByCourse.get(e.courseId)?.get(e.number) ?? 1;
+      if (e.grade != null && e.grade >= threshold) {
+        totalStars += star;
+        sumGradeWeight += e.grade * star;
+        sumWeight += star;
+      }
+    }
+    const y = totalStars;
+    const w = sumWeight > 0 ? sumGradeWeight / sumWeight : null;
+    let score: string | null = null;
+    if (y >= x && w != null) {
+      if (w >= 98) score = "A*";
+      else if (w >= 96) score = "A";
+      else if (w >= 92) score = "B";
+    }
+    return { x, y, w, z, score };
+  }, [selectedStudent, termFilter, termWeeks, filteredEnrollments, courseMap, subjectById, paceStarMapByCourse]);
 
   const deleteSuppMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
@@ -1200,6 +1231,37 @@ export default function EnrollmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedStudent && honorRoll && (
+        <div
+          className={cn(
+            "rounded-lg border px-4 py-3 text-sm",
+            honorRoll.score
+              ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700"
+              : "bg-muted/30"
+          )}
+          data-testid="banner-honor-roll"
+        >
+          <p className="font-medium">
+            <span className="font-bold">{honorRoll.x}</span> stars needed for honor roll.
+            {" "}Student has{" "}
+            <span className={cn("font-bold", honorRoll.y >= honorRoll.x ? "text-green-600 dark:text-green-400" : "text-foreground")}>
+              {honorRoll.y}
+            </span>{" "}
+            stars at the moment.
+            {honorRoll.w != null && (
+              <span className="text-muted-foreground ml-2 text-xs">(weighted avg: {honorRoll.w.toFixed(1)}%)</span>
+            )}
+          </p>
+          {honorRoll.score && (
+            <p className="mt-1 font-semibold text-green-700 dark:text-green-300" data-testid="text-honor-roll-achieved">
+              The student has passed{" "}
+              {honorRoll.score === "A*" ? <span>A<sup>*</sup></span> : honorRoll.score}{" "}
+              Honor Roll
+            </p>
+          )}
+        </div>
+      )}
 
       {selectedStudent && (
         <Card>
