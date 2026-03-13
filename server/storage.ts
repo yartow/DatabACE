@@ -249,15 +249,29 @@ export class DatabaseStorage implements IStorage {
   async backfillEnrollmentTerms(): Promise<number> {
     const result = await db.execute(sql`
       UPDATE enrollments
-      SET term = (
-        SELECT d.term
-        FROM dates d
-        WHERE (DATE '1899-12-30' + d.date * INTERVAL '1 day')::date = enrollments.date_ended::date
-          AND d.term IS NOT NULL
-        LIMIT 1
-      )
-      WHERE term IS NULL
-        AND date_ended IS NOT NULL
+      SET
+        term = COALESCE(term, (
+          SELECT d.term
+          FROM dates d
+          WHERE (DATE '1899-12-30' + d.date * INTERVAL '1 day')::date = enrollments.date_ended::date
+            AND d.term IS NOT NULL
+          LIMIT 1
+        )),
+        year_term = CASE
+          WHEN date_ended IS NOT NULL THEN
+            CASE
+              WHEN EXTRACT(MONTH FROM date_ended::date) >= 8 THEN
+                LPAD((EXTRACT(YEAR FROM date_ended::date)::int % 100)::text, 2, '0')
+                || '–'
+                || LPAD(((EXTRACT(YEAR FROM date_ended::date)::int + 1) % 100)::text, 2, '0')
+              ELSE
+                LPAD(((EXTRACT(YEAR FROM date_ended::date)::int - 1) % 100)::text, 2, '0')
+                || '–'
+                || LPAD((EXTRACT(YEAR FROM date_ended::date)::int % 100)::text, 2, '0')
+            END
+          ELSE NULL
+        END
+      WHERE date_ended IS NOT NULL
     `);
     return (result as any).rowCount ?? 0;
   }

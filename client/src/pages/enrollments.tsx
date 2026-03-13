@@ -1061,10 +1061,8 @@ export default function EnrollmentsPage() {
     if (!enrollments) return [];
     const ytSet = new Set<string>();
     for (const e of enrollments) {
-      if (e.dateStarted) {
-        const yt = computeYearTermFromDate(e.dateStarted);
-        if (yt) ytSet.add(yt);
-      }
+      const yt = e.yearTerm ?? (e.dateStarted ? computeYearTermFromDate(e.dateStarted) : null);
+      if (yt) ytSet.add(yt);
     }
     return Array.from(ytSet).sort();
   }, [enrollments]);
@@ -1074,8 +1072,7 @@ export default function EnrollmentsPage() {
     let result = enrollments;
     if (selectedYearTerms.size > 0) {
       result = result.filter(e => {
-        if (!e.dateStarted) return false;
-        const yt = computeYearTermFromDate(e.dateStarted);
+        const yt = e.yearTerm ?? (e.dateStarted ? computeYearTermFromDate(e.dateStarted) : null);
         return yt ? selectedYearTerms.has(yt) : false;
       });
     }

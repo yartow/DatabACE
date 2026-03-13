@@ -159,6 +159,7 @@ export const enrollments = pgTable("enrollments", {
   grade: real("grade"),
   remarks: text("remarks"),
   term: smallint("term"),
+  yearTerm: text("year_term"),
   isRepeat: boolean("is_repeat").notNull().default(false),
 });
 
