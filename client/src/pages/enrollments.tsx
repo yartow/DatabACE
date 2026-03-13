@@ -201,6 +201,11 @@ function groupEnrollmentsByCourse(enrollmentList: Enrollment[], courseMap: Map<n
   });
 }
 
+const YEAR_TERM_OPTIONS = Array.from({ length: 12 }, (_, i) => {
+  const y = 22 + i;
+  return `${String(y).padStart(2, "0")}–${String(y + 1).padStart(2, "0")}`;
+});
+
 function NumberRow({
   enrollment,
   onUpdate,
@@ -222,6 +227,8 @@ function NumberRow({
   const [grade, setGrade] = useState(enrollment.grade?.toString() || "");
   const [remarks, setRemarks] = useState(enrollment.remarks || "");
   const [isRepeat, setIsRepeat] = useState(enrollment.isRepeat);
+  const [editTerm, setEditTerm] = useState<string>(enrollment.term?.toString() || "");
+  const [editYearTerm, setEditYearTerm] = useState<string>(enrollment.yearTerm || "");
 
   const handleSave = useCallback(() => {
     onUpdate(enrollment.id, {
@@ -230,74 +237,121 @@ function NumberRow({
       grade: grade ? parseFloat(grade) : null,
       remarks: remarks || null,
       isRepeat,
+      term: editTerm ? parseInt(editTerm) : null,
+      yearTerm: editYearTerm || null,
     });
     setEditing(false);
-  }, [enrollment.id, dateStarted, dateEnded, grade, remarks, isRepeat, onUpdate]);
+  }, [enrollment.id, dateStarted, dateEnded, grade, remarks, isRepeat, editTerm, editYearTerm, onUpdate]);
 
   const isFailed = enrollment.grade != null && enrollment.grade < passThreshold;
   const isPassed = enrollment.grade != null && enrollment.grade >= passThreshold;
 
   if (editing) {
     return (
-      <tr className="border-b bg-muted/20" data-testid={`row-number-edit-${enrollment.id}`}>
-        <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">{enrollment.number}</td>
-        <td className="py-2 px-2">
-          <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
-        </td>
-        <td className="py-2 px-2">
-          <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
-        </td>
-        <td className="py-2 px-2 text-center text-amber-500 text-xs">{"★".repeat(Math.max(1, starValue))}</td>
-        <td className="py-2 px-2">
-          <Input
-            type="number" step="0.1" min="0" max="100"
-            value={grade}
-            onChange={e => setGrade(e.target.value)}
-            className="w-[80px] h-8 text-xs"
-            placeholder="Grade"
-            data-testid="input-grade-edit"
-          />
-        </td>
-        <td className="py-2 px-2">
-          <Textarea
-            value={remarks}
-            onChange={e => setRemarks(e.target.value.slice(0, 1000))}
-            maxLength={1000}
-            className="text-xs min-h-[32px] h-8 resize-none"
-            placeholder="Remarks..."
-            data-testid="input-remarks-edit"
-          />
-        </td>
-        <td className="py-2 px-2 text-right">
-          <div className="flex items-center gap-1 justify-end flex-wrap">
-            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer mr-1">
-              <Checkbox checked={isRepeat} onCheckedChange={(v) => setIsRepeat(!!v)} data-testid="checkbox-is-repeat" />
-              Repeat
-            </label>
-            <Button size="sm" variant="default" onClick={handleSave} disabled={isPending} className="h-7 text-xs" data-testid="button-save-number">
-              Save
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">
-              Cancel
-            </Button>
-            <Button
-              size="sm" variant="ghost"
-              onClick={() => { if (confirm("Delete this PACE enrollment?")) { onDelete(enrollment.id); setEditing(false); } }}
-              disabled={isPending}
-              className="h-7 text-xs text-destructive hover:text-destructive"
-              data-testid={`button-delete-number-${enrollment.id}`}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </td>
-      </tr>
+      <>
+        <tr className="border-b bg-muted/20" data-testid={`row-number-edit-${enrollment.id}`}>
+          <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">{enrollment.number}</td>
+          <td className="py-2 px-2">
+            <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
+          </td>
+          <td className="py-2 px-2">
+            <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
+          </td>
+          <td className="py-2 px-2 text-center text-amber-500 text-xs">{"★".repeat(Math.max(1, starValue))}</td>
+          <td className="py-2 px-2">
+            <Input
+              type="number" step="0.1" min="0" max="100"
+              value={grade}
+              onChange={e => setGrade(e.target.value)}
+              className="w-[80px] h-8 text-xs"
+              placeholder="Grade"
+              data-testid="input-grade-edit"
+            />
+          </td>
+          <td className="py-2 px-2">
+            <Textarea
+              value={remarks}
+              onChange={e => setRemarks(e.target.value.slice(0, 1000))}
+              maxLength={1000}
+              className="text-xs min-h-[32px] h-8 resize-none"
+              placeholder="Remarks..."
+              data-testid="input-remarks-edit"
+            />
+          </td>
+          <td className="py-2 px-2 text-right">
+            <div className="flex items-center gap-1 justify-end flex-wrap">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer mr-1">
+                <Checkbox checked={isRepeat} onCheckedChange={(v) => setIsRepeat(!!v)} data-testid="checkbox-is-repeat" />
+                Repeat
+              </label>
+              <Button size="sm" variant="default" onClick={handleSave} disabled={isPending} className="h-7 text-xs" data-testid="button-save-number">
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">
+                Cancel
+              </Button>
+              <Button
+                size="sm" variant="ghost"
+                onClick={() => { if (confirm("Delete this PACE enrollment?")) { onDelete(enrollment.id); setEditing(false); } }}
+                disabled={isPending}
+                className="h-7 text-xs text-destructive hover:text-destructive"
+                data-testid={`button-delete-number-${enrollment.id}`}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </td>
+        </tr>
+        <tr className="bg-muted/20 border-b">
+          <td className="pl-10 pb-2 pr-2" />
+          <td colSpan={3} className="pb-2 px-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Term:</span>
+              <Select value={editTerm} onValueChange={setEditTerm} data-testid="select-term-edit">
+                <SelectTrigger className="h-7 text-xs w-[80px]">
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {[1, 2, 3, 4, 5].map(t => (
+                    <SelectItem key={t} value={String(t)}>T{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">Year–Term:</span>
+              <Select value={editYearTerm} onValueChange={setEditYearTerm} data-testid="select-yearterm-edit">
+                <SelectTrigger className="h-7 text-xs w-[100px]">
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {YEAR_TERM_OPTIONS.map(yt => (
+                    <SelectItem key={yt} value={yt}>{yt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </td>
+          <td colSpan={3} className="pb-2 px-2">
+            <p className="text-[10px] text-muted-foreground/60 italic">
+              Term and Year–Term are normally auto-computed from the end date. Edit manually only to correct errors.
+            </p>
+          </td>
+        </tr>
+      </>
     );
   }
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/10" data-testid={`row-number-${enrollment.id}`}>
-      <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">{enrollment.number}</td>
+      <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">
+        {enrollment.number}
+        {enrollment.term != null && (
+          <span className="ml-1.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded px-1 font-sans">
+            T{enrollment.term}
+          </span>
+        )}
+      </td>
       <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateStarted)}</td>
       <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateEnded)}</td>
       <td className="py-2 px-2 text-center text-amber-500 text-xs">{"★".repeat(Math.max(1, starValue))}</td>
@@ -849,7 +903,7 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
         setNewRowCount(data.newRowCount || 0);
         setSkippedIdentical(data.skippedIdentical || 0);
         const initialChoices = new Map<number, "db" | "excel">();
-        data.conflicts.forEach((c: ConflictRow) => initialChoices.set(c.rowIndex, "db"));
+        data.conflicts.forEach((_: ConflictRow, i: number) => initialChoices.set(i, "db"));
         setConflictChoices(initialChoices);
       } else {
         setResult(data);
@@ -866,8 +920,7 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
     if (!sessionId || !conflicts) return;
     setResolving(true);
     try {
-      const choices: Record<number, "db" | "excel"> = {};
-      conflictChoices.forEach((v, k) => { choices[k] = v; });
+      const choices: ("db" | "excel")[] = conflicts.map((_, i) => conflictChoices.get(i) ?? "db");
       const res = await fetch("/api/enrollments/import/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -933,12 +986,12 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
               </div>
               <p className="text-sm font-medium">Choose which version to keep for each conflict:</p>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {conflicts.map(c => {
+                {conflicts.map((c, i) => {
                   const student = studentMap.get(c.dbRow.studentId);
                   const course = courseMap.get(c.dbRow.courseId);
-                  const choice = conflictChoices.get(c.rowIndex) || "db";
+                  const choice = conflictChoices.get(i) ?? "db";
                   return (
-                    <div key={c.rowIndex} className="border rounded-lg p-3 space-y-2" data-testid={`conflict-row-${c.rowIndex}`}>
+                    <div key={i} className="border rounded-lg p-3 space-y-2" data-testid={`conflict-row-${i}`}>
                       <p className="text-xs font-medium text-muted-foreground">
                         {student ? `${student.callName} ${student.surname}` : `Student #${c.dbRow.studentId}`} — {course?.icceAlias || course?.aceAlias || `Course #${c.dbRow.courseId}`} — PACE {c.dbRow.number}
                       </p>
@@ -946,8 +999,8 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
                         <button
                           type="button"
                           className={cn("text-left border rounded p-2 text-xs", choice === "db" ? "border-primary bg-primary/10" : "hover:bg-accent")}
-                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(c.rowIndex, "db"); return n; })}
-                          data-testid={`conflict-choose-db-${c.rowIndex}`}
+                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(i, "db"); return n; })}
+                          data-testid={`conflict-choose-db-${i}`}
                         >
                           <p className="font-medium mb-1">Keep database</p>
                           <p>Grade: {c.dbRow.grade ?? "—"}</p>
@@ -957,8 +1010,8 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
                         <button
                           type="button"
                           className={cn("text-left border rounded p-2 text-xs", choice === "excel" ? "border-primary bg-primary/10" : "hover:bg-accent")}
-                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(c.rowIndex, "excel"); return n; })}
-                          data-testid={`conflict-choose-excel-${c.rowIndex}`}
+                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(i, "excel"); return n; })}
+                          data-testid={`conflict-choose-excel-${i}`}
                         >
                           <p className="font-medium mb-1">Use Excel</p>
                           <p>Grade: {c.excelRow.grade ?? "—"}</p>
