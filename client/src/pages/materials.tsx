@@ -148,7 +148,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
   );
 }
 
-function EditableCourseRow({ c, subjectMap, subjectGroupMap, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; colSpan: number; onCancel: () => void; onSaved: () => void }) {
+function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; starValue?: number; colSpan: number; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
   const [icceAlias, setIcceAlias] = useState(c.icceAlias || "");
   const [aceAlias, setAceAlias] = useState(c.aceAlias || "");
@@ -205,6 +205,9 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, colSpan, onCancel, 
               {COURSE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
+        </td>
+        <td className="text-center py-2 px-2 text-amber-600 dark:text-amber-400 font-medium text-xs">
+          {starValue != null && starValue > 0 ? `★ ${starValue}` : "—"}
         </td>
         <td className="text-center py-2 px-2">
           <Switch checked={active} onCheckedChange={setActive} disabled={mutation.isPending} data-testid="switch-edit-course-active" />
@@ -465,6 +468,16 @@ export default function MaterialsPage() {
   }, [courses, selectedSubjectId, subjectGroupIdFilter, search, levelFilter]);
 
   const courseMap = useMemo(() => new Map(courses?.map(c => [c.id, c]) || []), [courses]);
+  const paceMap = useMemo(() => new Map(allPaces?.map(p => [p.id, p]) || []), [allPaces]);
+
+  const courseStarValues = useMemo(() => {
+    const map = new Map<number, number>();
+    paceCourses?.forEach(pc => {
+      const sv = paceMap.get(pc.paceId)?.starValue ?? 1;
+      map.set(pc.courseId, (map.get(pc.courseId) || 0) + sv);
+    });
+    return map;
+  }, [paceCourses, paceMap]);
 
   const displayPaceCourses = useMemo(() => {
     if (!paceCourses) return [];
@@ -648,6 +661,7 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Group</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">★ Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Remarks</th>
@@ -656,14 +670,16 @@ export default function MaterialsPage() {
                   </thead>
                   <tbody>
                     {filteredCourses.map(c => {
-                      const colSpan = 9;
+                      const colSpan = 10;
                       if (editingCourseId === c.id) {
-                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
+                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} starValue={courseStarValues.get(c.id)} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
                       }
                       const subj = c.subjectId ? subjectMap.get(c.subjectId) : null;
                       const grp = c.subjectGroupId ? subjectGroupMap.get(c.subjectGroupId) : null;
+                      const sv = courseStarValues.get(c.id);
                       const isExpanded = expandedCourseIds.has(c.id);
                       const isInactive = (c.active ?? 1) === 0;
+                      const hasLongRemarks = (c.remarks?.length ?? 0) > 80;
                       return (
                         <Fragment key={c.id}>
                           <tr className={`border-b ${isInactive ? "opacity-50" : ""} ${isExpanded ? "border-b-0" : ""}`} data-testid={`row-course-${c.id}`}>
@@ -672,14 +688,30 @@ export default function MaterialsPage() {
                             <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
                             <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
                             <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
+                            <td className="text-center py-3 px-2 font-medium text-amber-600 dark:text-amber-400" data-testid={`text-stars-${c.id}`}>
+                              {sv != null && sv > 0 ? `★ ${sv}` : "—"}
+                            </td>
                             <td className="text-center py-3 px-2">
                               <Badge variant={(c.active ?? 1) === 1 ? "default" : "secondary"}>
                                 {(c.active ?? 1) === 1 ? "Active" : "Inactive"}
                               </Badge>
                             </td>
                             <td className="text-center py-3 px-2 text-muted-foreground">{c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}</td>
-                            <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px]" data-testid={`text-course-remarks-${c.id}`}>
-                              {c.remarks ? <span className="block truncate cursor-help" title={c.remarks}>{c.remarks}</span> : "—"}
+                            <td className="py-3 px-2 text-xs text-muted-foreground max-w-[220px]" data-testid={`text-course-remarks-${c.id}`}>
+                              {c.remarks ? (
+                                <span className="flex items-start gap-1">
+                                  <span className="block truncate">{c.remarks.slice(0, 80)}{hasLongRemarks ? "…" : ""}</span>
+                                  {hasLongRemarks && (
+                                    <button
+                                      className="shrink-0 text-primary underline-offset-2 hover:underline text-[10px] leading-relaxed mt-px"
+                                      onClick={() => setExpandedCourseIds(prev => { const next = new Set(prev); next.has(c.id) ? next.delete(c.id) : next.add(c.id); return next; })}
+                                      data-testid={`button-expand-remarks-${c.id}`}
+                                    >
+                                      {isExpanded ? "less" : "more"}
+                                    </button>
+                                  )}
+                                </span>
+                              ) : "—"}
                             </td>
                             <td className="text-center py-3 px-2">
                               <div className="flex items-center gap-0.5 justify-center">
@@ -702,6 +734,11 @@ export default function MaterialsPage() {
                                   <span><span className="font-medium text-foreground">ACE Alias:</span> {c.aceAlias || "—"}</span>
                                   <span><span className="font-medium text-foreground">Certificate Name:</span> {c.certificateName || "—"}</span>
                                 </div>
+                                {c.remarks && (
+                                  <div className="mt-2 text-xs text-muted-foreground leading-relaxed" data-testid={`text-remarks-full-${c.id}`}>
+                                    <span className="font-medium text-foreground">Remarks: </span>{c.remarks}
+                                  </div>
+                                )}
                               </td>
                             </tr>
                           )}
