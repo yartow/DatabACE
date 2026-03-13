@@ -597,14 +597,13 @@ export async function registerRoutes(
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     const parsed = insertEnrollmentSchema.partial().safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
-    let updateData = parsed.data;
-    if (updateData.dateEnded && updateData.term == null) {
-      await storage.backfillEnrollmentTerms();
-      const updated = await storage.getEnrollment(parseInt(req.params.id));
-      if (updated && updated.term != null) updateData = { ...updateData, term: updated.term };
-    }
-    const enrollment = await storage.updateEnrollment(parseInt(req.params.id), updateData);
+    const enrollment = await storage.updateEnrollment(parseInt(req.params.id), parsed.data);
     if (!enrollment) return res.status(404).json({ message: "Not found" });
+    if (parsed.data.dateEnded) {
+      await storage.backfillEnrollmentTerms();
+      const refreshed = await storage.getEnrollment(parseInt(req.params.id));
+      if (refreshed) return res.json(refreshed);
+    }
     res.json(enrollment);
   });
 
