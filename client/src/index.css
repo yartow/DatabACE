@@ -419,13 +419,12 @@
 }
 
 .yr-course-name-col {
-  width: 257px;
-  min-width: 257px;
+  flex: 1;
+  min-width: 200px;
   font-size: 24px;
   font-weight: 400;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .yr-term-header-group {
@@ -443,7 +442,7 @@
 }
 
 .yr-count-header {
-  width: 28px;
+  width: 36px;
   text-align: center;
 }
 
@@ -467,7 +466,7 @@
 .yr-category-name {
   font-size: 24px;
   font-weight: 700;
-  width: 257px;
+  flex: 1;
   min-width: 200px;
 }
 
@@ -486,7 +485,7 @@
 
 .yr-term-cell-group {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0;
 }
 
@@ -504,8 +503,9 @@
 .yr-count-cell {
   font-size: 21px;
   font-weight: 400;
-  width: 28px;
-  text-align: center;
+  width: 36px;
+  padding-left: 6px;
+  text-align: left;
 }
 
 .yr-avg-row {
@@ -689,15 +689,15 @@
   }
 
   .yr-course-name-col {
-    width: 160px;
-    min-width: 160px;
+    flex: 1;
+    min-width: 120px;
     font-size: 13px;
   }
 
   .yr-category-name {
     font-size: 15px;
-    width: 160px;
-    min-width: 130px;
+    flex: 1;
+    min-width: 120px;
   }
 
   .yr-term-label {
@@ -712,7 +712,8 @@
 
   .yr-count-cell {
     font-size: 11px;
-    width: 18px;
+    width: 22px;
+    padding-left: 3px;
   }
 
   .yr-category-header {
@@ -766,12 +767,7 @@
 
 @media (max-width: 900px) {
   .yr-title {
-    flex-direction: column;
     gap: 8px;
-    text-align: center;
-  }
-  .yr-report-right {
-    align-items: center;
   }
   .yr-info {
     flex-direction: column;
@@ -796,8 +792,8 @@
     font-size: 14px;
   }
   .yr-course-name-col {
-    width: 150px;
-    min-width: 150px;
+    flex: 1;
+    min-width: 120px;
   }
   .yr-term-label {
     width: 60px;
@@ -806,7 +802,8 @@
     width: 60px;
   }
   .yr-count-cell {
-    width: 20px;
+    width: 28px;
+    padding-left: 4px;
   }
   .yr-info-label {
     width: 80px;
