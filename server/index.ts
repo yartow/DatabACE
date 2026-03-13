@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { storage } from "./storage";
 
 const app = express();
 const httpServer = createServer(app);
@@ -66,6 +67,9 @@ app.use((req, res, next) => {
     const { seedDatabase } = await import("./seed");
     await seedDatabase().catch(err => console.error("Seed error:", err));
   }
+
+  const backfilled = await storage.backfillEnrollmentTerms().catch(err => { console.error("Backfill term error:", err); return 0; });
+  if (backfilled > 0) log(`Backfilled term on ${backfilled} enrollment(s)`);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
