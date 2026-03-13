@@ -9,16 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import type { Student, Course, Enrollment, SupplementaryActivity } from "@shared/schema";
+import type { Student, Course, Enrollment, SupplementaryActivity, Pace, PaceCourse, Subject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StudentSearch } from "@/components/student-search";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music, Filter } from "lucide-react";
+import { CalendarIcon, Pencil, Plus, ChevronDown, ChevronRight, Trash2, Upload, Download, AlertCircle, CheckCircle2, Music, Filter, ChevronsDown, ChevronsUp } from "lucide-react";
 import { format, parse } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const SUPP_ACTIVITIES = ["Music", "Physical Education", "Project", "Other"];
+const COL_COUNT = 7;
 
 function computeYearTermFromDate(dateStr: string): string | null {
   if (!dateStr) return null;
@@ -48,6 +50,14 @@ function getCurrentYearTerm(): string {
   return `${s}\u2013${e}`;
 }
 
+function getEffectivePassThreshold(course: Course, isDyslexic: boolean, subjectById: Map<number, Subject>): number {
+  const threshold = course.passThreshold ?? 80;
+  if (isDyslexic && course.subjectId) {
+    const subj = subjectById.get(course.subjectId);
+    if (subj?.subject?.toLowerCase().includes("word building")) return 80;
+  }
+  return threshold;
+}
 
 function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => void; exclude: number[] }) {
   const [query, setQuery] = useState("");
@@ -72,9 +82,7 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -82,25 +90,14 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (!open) return;
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setOpen(false);
-      setHighlightIndex(-1);
-      return;
-    }
+    if (e.key === "Escape") { e.preventDefault(); setOpen(false); setHighlightIndex(-1); return; }
     if (suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIndex(prev => (prev + 1) % suggestions.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-    } else if (e.key === "Enter" && highlightIndex >= 0 && highlightIndex < suggestions.length) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setHighlightIndex(prev => (prev + 1) % suggestions.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightIndex(prev => (prev - 1 + suggestions.length) % suggestions.length); }
+    else if (e.key === "Enter" && highlightIndex >= 0 && highlightIndex < suggestions.length) {
       e.preventDefault();
       onSelect(suggestions[highlightIndex]);
-      setQuery("");
-      setOpen(false);
-      setHighlightIndex(-1);
+      setQuery(""); setOpen(false); setHighlightIndex(-1);
     }
   }
 
@@ -109,40 +106,24 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
       <Input
         placeholder="Type course name..."
         value={query}
-        onChange={e => {
-          setQuery(e.target.value);
-          setOpen(e.target.value.length >= 2);
-          setHighlightIndex(-1);
-        }}
+        onChange={e => { setQuery(e.target.value); setOpen(e.target.value.length >= 2); setHighlightIndex(-1); }}
         onFocus={() => { if (query.length >= 2) setOpen(true); }}
         onKeyDown={handleKeyDown}
         className="w-full"
         data-testid="input-course-search"
       />
       {open && suggestions.length > 0 && (
-        <div
-          className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-auto"
-          data-testid="dropdown-course-suggestions"
-          onMouseDown={e => e.preventDefault()}
-        >
+        <div className="absolute z-50 top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg overflow-hidden max-h-64 overflow-y-auto">
           {suggestions.map((c, i) => (
             <button
               key={c.id}
               type="button"
-              className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between gap-2 first:rounded-t-md last:rounded-b-md transition-colors ${
-                highlightIndex === i
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              }`}
-              onClick={() => {
-                onSelect(c);
-                setQuery("");
-                setOpen(false);
-              }}
+              className={cn("w-full text-left px-3 py-2 text-sm hover:bg-accent", i === highlightIndex && "bg-accent")}
+              onMouseDown={e => { e.preventDefault(); onSelect(c); setQuery(""); setOpen(false); setHighlightIndex(-1); }}
               data-testid={`suggestion-course-${c.id}`}
             >
-              <span className="font-medium truncate">{c.icceAlias || c.aceAlias || `Course ${c.id}`}</span>
-              <span className={`text-xs shrink-0 ${highlightIndex === i ? "text-primary-foreground/70" : "text-muted-foreground"}`}>L{c.level}</span>
+              <span className="font-medium">{c.icceAlias || c.aceAlias}</span>
+              {c.certificateName && <span className="text-muted-foreground ml-2 text-xs">{c.certificateName}</span>}
             </button>
           ))}
         </div>
@@ -159,15 +140,10 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
 function DatePicker({ value, onChange, placeholder }: { value: string | null | undefined; onChange: (val: string | null) => void; placeholder: string }) {
   const [open, setOpen] = useState(false);
   const date = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-[140px] justify-start text-left font-normal text-xs h-9"
-          data-testid={`button-date-${placeholder.toLowerCase().replace(/\s/g, "-")}`}
-        >
+        <Button variant="outline" className="w-[140px] justify-start text-left font-normal text-xs h-9" data-testid={`button-date-${placeholder.toLowerCase().replace(/\s/g, "-")}`}>
           <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
           {value ? format(parse(value, "yyyy-MM-dd", new Date()), "dd MMM yyyy") : <span className="text-muted-foreground">{placeholder}</span>}
         </Button>
@@ -176,10 +152,7 @@ function DatePicker({ value, onChange, placeholder }: { value: string | null | u
         <Calendar
           mode="single"
           selected={date}
-          onSelect={(d) => {
-            onChange(d ? format(d, "yyyy-MM-dd") : null);
-            setOpen(false);
-          }}
+          onSelect={(d) => { onChange(d ? format(d, "yyyy-MM-dd") : null); setOpen(false); }}
           initialFocus
         />
       </PopoverContent>
@@ -202,17 +175,15 @@ interface CourseGroup {
   enrollments: Enrollment[];
   minDateStarted: string | null;
   maxDateEnded: string | null;
-  avgGrade: number | null;
 }
 
-function groupEnrollmentsByCourse(enrollments: Enrollment[], courseMap: Map<number, Course>): CourseGroup[] {
+function groupEnrollmentsByCourse(enrollmentList: Enrollment[], courseMap: Map<number, Course>): CourseGroup[] {
   const groups = new Map<number, Enrollment[]>();
-  for (const e of enrollments) {
+  for (const e of enrollmentList) {
     const arr = groups.get(e.courseId) || [];
     arr.push(e);
     groups.set(e.courseId, arr);
   }
-
   return Array.from(groups.entries()).map(([courseId, rows]) => {
     const course = courseMap.get(courseId);
     const courseName = course?.icceAlias || course?.aceAlias || `Course #${courseId}`;
@@ -222,33 +193,35 @@ function groupEnrollmentsByCourse(enrollments: Enrollment[], courseMap: Map<numb
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
       return String(a.number).localeCompare(String(b.number));
     });
-
-    const dates = sortedRows.map(r => r.dateStarted).filter(Boolean);
-    const minDateStarted = dates.length > 0 ? dates.sort()[0] : "";
-
+    const dates = sortedRows.map(r => r.dateStarted).filter(Boolean) as string[];
+    const minDateStarted = dates.length > 0 ? [...dates].sort()[0] : null;
     const endDates = sortedRows.map(r => r.dateEnded).filter((d): d is string => !!d);
-    const maxDateEnded = endDates.length > 0 ? endDates.sort().reverse()[0] : null;
-
-    const grades = sortedRows.map(r => r.grade).filter((g): g is number => g !== null);
-    const avgGrade = grades.length > 0 ? grades.reduce((s, g) => s + g, 0) / grades.length : null;
-
-    return {
-      courseId,
-      courseName,
-      enrollments: sortedRows,
-      minDateStarted,
-      maxDateEnded,
-      avgGrade,
-    };
+    const maxDateEnded = endDates.length > 0 ? [...endDates].sort().reverse()[0] : null;
+    return { courseId, courseName, enrollments: sortedRows, minDateStarted, maxDateEnded };
   });
 }
 
-function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment; onUpdate: (id: number, data: any) => void; isPending: boolean }) {
+function NumberRow({
+  enrollment,
+  onUpdate,
+  onDelete,
+  isPending,
+  starValue,
+  passThreshold,
+}: {
+  enrollment: Enrollment;
+  onUpdate: (id: number, data: any) => void;
+  onDelete: (id: number) => void;
+  isPending: boolean;
+  starValue: number;
+  passThreshold: number;
+}) {
   const [editing, setEditing] = useState(false);
   const [dateStarted, setDateStarted] = useState(enrollment.dateStarted);
   const [dateEnded, setDateEnded] = useState(enrollment.dateEnded);
   const [grade, setGrade] = useState(enrollment.grade?.toString() || "");
   const [remarks, setRemarks] = useState(enrollment.remarks || "");
+  const [isRepeat, setIsRepeat] = useState(enrollment.isRepeat);
 
   const handleSave = useCallback(() => {
     onUpdate(enrollment.id, {
@@ -256,26 +229,28 @@ function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment
       dateEnded: dateEnded || null,
       grade: grade ? parseFloat(grade) : null,
       remarks: remarks || null,
+      isRepeat,
     });
     setEditing(false);
-  }, [enrollment.id, dateStarted, dateEnded, grade, remarks, onUpdate]);
+  }, [enrollment.id, dateStarted, dateEnded, grade, remarks, isRepeat, onUpdate]);
+
+  const isFailed = enrollment.grade != null && enrollment.grade < passThreshold;
+  const isPassed = enrollment.grade != null && enrollment.grade >= passThreshold;
 
   if (editing) {
     return (
       <tr className="border-b bg-muted/20" data-testid={`row-number-edit-${enrollment.id}`}>
-        <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground">{enrollment.number}</td>
+        <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">{enrollment.number}</td>
         <td className="py-2 px-2">
           <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
         </td>
         <td className="py-2 px-2">
           <DatePicker value={dateEnded} onChange={(v) => setDateEnded(v)} placeholder="Date ended" />
         </td>
+        <td className="py-2 px-2 text-center text-amber-500 text-xs">{"★".repeat(Math.max(1, starValue))}</td>
         <td className="py-2 px-2">
           <Input
-            type="number"
-            step="0.1"
-            min="0"
-            max="100"
+            type="number" step="0.1" min="0" max="100"
             value={grade}
             onChange={e => setGrade(e.target.value)}
             className="w-[80px] h-8 text-xs"
@@ -294,12 +269,25 @@ function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment
           />
         </td>
         <td className="py-2 px-2 text-right">
-          <div className="flex items-center gap-1 justify-end">
+          <div className="flex items-center gap-1 justify-end flex-wrap">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer mr-1">
+              <Checkbox checked={isRepeat} onCheckedChange={(v) => setIsRepeat(!!v)} data-testid="checkbox-is-repeat" />
+              Repeat
+            </label>
             <Button size="sm" variant="default" onClick={handleSave} disabled={isPending} className="h-7 text-xs" data-testid="button-save-number">
               Save
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">
               Cancel
+            </Button>
+            <Button
+              size="sm" variant="ghost"
+              onClick={() => { if (confirm("Delete this PACE enrollment?")) { onDelete(enrollment.id); setEditing(false); } }}
+              disabled={isPending}
+              className="h-7 text-xs text-destructive hover:text-destructive"
+              data-testid={`button-delete-number-${enrollment.id}`}
+            >
+              <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         </td>
@@ -309,11 +297,19 @@ function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/10" data-testid={`row-number-${enrollment.id}`}>
-      <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground">{enrollment.number}</td>
+      <td className="py-2 pl-10 pr-2 text-sm text-muted-foreground font-mono">{enrollment.number}</td>
       <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateStarted)}</td>
       <td className="py-2 px-2 text-sm text-muted-foreground">{formatDate(enrollment.dateEnded)}</td>
-      <td className="py-2 px-2 text-sm text-center">{enrollment.grade != null ? enrollment.grade : "—"}</td>
-      <td className="py-2 px-2 text-xs text-muted-foreground max-w-[200px] truncate">{enrollment.remarks || "—"}</td>
+      <td className="py-2 px-2 text-center text-amber-500 text-xs">{"★".repeat(Math.max(1, starValue))}</td>
+      <td className="py-2 px-2 text-sm text-center">
+        {enrollment.grade != null ? (
+          <span className={cn(isFailed && "text-red-600 italic font-normal")}>
+            {enrollment.grade}
+            {isPassed && enrollment.isRepeat && <sup className="text-[9px] ml-0.5">*</sup>}
+          </span>
+        ) : "—"}
+      </td>
+      <td className="py-2 px-2 text-xs text-muted-foreground max-w-[160px] truncate">{enrollment.remarks || "—"}</td>
       <td className="py-2 px-2 text-right">
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(true)} data-testid={`button-edit-number-${enrollment.id}`}>
           <Pencil className="h-3 w-3" />
@@ -323,20 +319,220 @@ function NumberRow({ enrollment, onUpdate, isPending }: { enrollment: Enrollment
   );
 }
 
-function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending }: {
+function AddPacesContent({
+  studentId,
+  courseId,
+  paceStarMap,
+  alreadyEnrolledNumbers,
+  onCreated,
+  onCancel,
+}: {
+  studentId: number;
+  courseId: number;
+  paceStarMap: Map<string, number>;
+  alreadyEnrolledNumbers: Set<string>;
+  onCreated: () => void;
+  onCancel: () => void;
+}) {
+  const { toast } = useToast();
+  const [selectedTerm, setSelectedTerm] = useState<string>("");
+  const [selectedPaces, setSelectedPaces] = useState<Set<string>>(new Set());
+  const [repeatPaces, setRepeatPaces] = useState<Set<string>>(new Set());
+
+  const allPaceNumbers = useMemo(() =>
+    Array.from(paceStarMap.keys()).sort((a, b) => {
+      const na = parseInt(a, 10), nb = parseInt(b, 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b);
+    }), [paceStarMap]);
+
+  const unenrolledNumbers = useMemo(() => allPaceNumbers.filter(n => !alreadyEnrolledNumbers.has(n)), [allPaceNumbers, alreadyEnrolledNumbers]);
+  const allSelected = unenrolledNumbers.length > 0 && unenrolledNumbers.every(n => selectedPaces.has(n));
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedPaces(prev => {
+      const next = new Set(prev);
+      if (checked) unenrolledNumbers.forEach(n => next.add(n));
+      else unenrolledNumbers.forEach(n => next.delete(n));
+      return next;
+    });
+  }
+
+  function togglePace(n: string, checked: boolean) {
+    setSelectedPaces(prev => {
+      const next = new Set(prev);
+      if (checked) next.add(n);
+      else {
+        next.delete(n);
+        setRepeatPaces(p => { const r = new Set(p); r.delete(n); return r; });
+      }
+      return next;
+    });
+  }
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (selectedPaces.size === 0) throw new Error("Select at least one PACE");
+      const pacesToEnroll = Array.from(selectedPaces).map(n => ({ number: n, isRepeat: repeatPaces.has(n) }));
+      await apiRequest("POST", "/api/enrollments/course", {
+        studentId,
+        courseId,
+        term: selectedTerm ? parseInt(selectedTerm) : null,
+        paces: pacesToEnroll,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/enrollments", studentId.toString()] });
+      toast({ title: `${selectedPaces.size} PACE${selectedPaces.size !== 1 ? "s" : ""} enrolled` });
+      onCreated();
+    },
+    onError: (err: Error) => toast({ title: "Failed to enroll", description: err.message, variant: "destructive" }),
+  });
+
+  if (allPaceNumbers.length === 0) {
+    return (
+      <div className="text-xs text-muted-foreground italic py-2">
+        No PACE numbers configured for this course.
+        <Button size="sm" variant="ghost" onClick={onCancel} className="ml-2 h-6 text-xs">Close</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 max-w-2xl" data-testid="add-paces-content">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm font-medium">Enroll student for term:</span>
+        <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+          <SelectTrigger className="w-[100px] h-8 text-xs" data-testid="select-enrollment-term">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {!selectedTerm && <span className="text-xs text-muted-foreground">(optional)</span>}
+      </div>
+
+      <div className="space-y-2">
+        {unenrolledNumbers.length > 0 && (
+          <label className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none" data-testid="label-select-all-paces">
+            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} data-testid="checkbox-select-all-paces" />
+            Select all unenrolled ({unenrolledNumbers.length})
+          </label>
+        )}
+        {unenrolledNumbers.length === 0 && allPaceNumbers.length > 0 && (
+          <p className="text-xs text-muted-foreground">All PACEs for this course are already enrolled. You can still re-enroll as a Repeat PACE.</p>
+        )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 max-h-52 overflow-y-auto pr-1">
+          {allPaceNumbers.map(n => {
+            const isEnrolled = alreadyEnrolledNumbers.has(n);
+            const isChecked = selectedPaces.has(n);
+            const star = paceStarMap.get(n) ?? 1;
+            return (
+              <div key={n} className={cn("flex items-center gap-1.5 text-xs rounded px-2 py-1.5 border", isEnrolled ? "bg-muted/40 border-muted" : "border-transparent hover:bg-accent/30")}>
+                <Checkbox checked={isChecked} onCheckedChange={(checked) => togglePace(n, !!checked)} data-testid={`checkbox-pace-${n}`} />
+                <span className={cn("font-mono", isEnrolled && "text-muted-foreground")}>{n}</span>
+                <span className="text-amber-500 text-[10px]">{"★".repeat(Math.max(1, star))}</span>
+                {isEnrolled && <span className="text-[10px] text-muted-foreground ml-auto">✓</span>}
+                {isChecked && (
+                  <label className="flex items-center gap-0.5 cursor-pointer ml-auto" title="Mark as Repeat PACE">
+                    <Checkbox
+                      checked={repeatPaces.has(n)}
+                      onCheckedChange={(checked) => {
+                        setRepeatPaces(prev => { const next = new Set(prev); if (checked) next.add(n); else next.delete(n); return next; });
+                      }}
+                      className="h-3 w-3"
+                      data-testid={`checkbox-repeat-${n}`}
+                    />
+                    <span className="text-[10px] text-muted-foreground">R</span>
+                  </label>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-1">
+        <Button
+          size="sm"
+          onClick={() => createMutation.mutate()}
+          disabled={selectedPaces.size === 0 || createMutation.isPending}
+          className="h-7 text-xs"
+          data-testid="button-enroll-paces"
+        >
+          {createMutation.isPending ? "Enrolling..." : `Enroll ${selectedPaces.size || ""} PACE${selectedPaces.size !== 1 ? "s" : ""}`}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs" data-testid="button-cancel-enroll-paces">
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AddPacesForCourseForm(props: Parameters<typeof AddPacesContent>[0]) {
+  return (
+    <tr data-testid="row-add-paces-form">
+      <td colSpan={COL_COUNT} className="py-3 px-6 bg-accent/20 border-b">
+        <AddPacesContent {...props} />
+      </td>
+    </tr>
+  );
+}
+
+function CourseGroupRow({
+  group,
+  courseMap,
+  course,
+  onUpdate,
+  onDelete,
+  onDeleteCourse,
+  isPending,
+  paceStarMap,
+  passThreshold,
+  enrolledNumbers,
+  studentId,
+  forceExpand,
+}: {
   group: CourseGroup;
   courseMap: Map<number, Course>;
+  course: Course | undefined;
   onUpdate: (id: number, data: any) => void;
+  onDelete: (id: number) => void;
   onDeleteCourse: (studentId: number, courseId: number) => void;
   isPending: boolean;
+  paceStarMap: Map<string, number>;
+  passThreshold: number;
+  enrolledNumbers: Set<string>;
+  studentId: number;
+  forceExpand: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const studentId = group.enrollments[0]?.studentId;
+  const [showAddPaces, setShowAddPaces] = useState(false);
+
+  useEffect(() => { setExpanded(forceExpand); }, [forceExpand]);
+
+  const weightedAvg = useMemo(() => {
+    let sumGradeWeight = 0, sumWeight = 0;
+    for (const e of group.enrollments) {
+      if (e.grade == null) continue;
+      const star = paceStarMap.get(e.number) ?? 1;
+      if (e.grade >= passThreshold) {
+        sumGradeWeight += e.grade * star;
+        sumWeight += star;
+      }
+    }
+    return sumWeight > 0 ? sumGradeWeight / sumWeight : null;
+  }, [group.enrollments, paceStarMap, passThreshold]);
+
+  const passedCount = group.enrollments.filter(e => e.grade != null && e.grade >= passThreshold).length;
+  const failedCount = group.enrollments.filter(e => e.grade != null && e.grade < passThreshold).length;
 
   return (
     <>
       <tr
-        className="border-b bg-muted/5 cursor-pointer hover:bg-muted/20"
+        className="border-b bg-muted/5 cursor-pointer hover:bg-muted/20 select-none"
         onClick={() => setExpanded(!expanded)}
         data-testid={`row-course-group-${group.courseId}`}
       >
@@ -344,12 +540,16 @@ function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending 
           <div className="flex items-center gap-2">
             {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
             <span>{group.courseName}</span>
-            <span className="text-xs text-muted-foreground font-normal">({group.enrollments.length} numbers)</span>
+            <span className="text-xs text-muted-foreground font-normal">({group.enrollments.length})</span>
+            {failedCount > 0 && <span className="text-xs text-red-500 font-normal">{failedCount} failed</span>}
           </div>
         </td>
         <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.minDateStarted)}</td>
         <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.maxDateEnded)}</td>
-        <td className="py-3 px-2 text-sm text-center">{group.avgGrade != null ? group.avgGrade.toFixed(1) : "—"}</td>
+        <td className="py-3 px-2"></td>
+        <td className="py-3 px-2 text-sm text-center font-medium">
+          {weightedAvg != null ? weightedAvg.toFixed(1) : "—"}
+        </td>
         <td className="py-3 px-2"></td>
         <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
           <DropdownMenu>
@@ -359,6 +559,10 @@ function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setExpanded(true); setShowAddPaces(true); }} data-testid="menu-add-paces">
+                <Plus className="h-3.5 w-3.5 mr-2" />
+                Add enrollment
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExpanded(true)} data-testid="menu-expand">
                 <ChevronDown className="h-3.5 w-3.5 mr-2" />
                 Expand numbers
@@ -380,73 +584,98 @@ function CourseGroupRow({ group, courseMap, onUpdate, onDeleteCourse, isPending 
           key={enrollment.id}
           enrollment={enrollment}
           onUpdate={onUpdate}
+          onDelete={onDelete}
           isPending={isPending}
+          starValue={paceStarMap.get(enrollment.number) ?? 1}
+          passThreshold={passThreshold}
         />
       ))}
+      {expanded && showAddPaces && (
+        <AddPacesForCourseForm
+          studentId={studentId}
+          courseId={group.courseId}
+          paceStarMap={paceStarMap}
+          alreadyEnrolledNumbers={enrolledNumbers}
+          onCreated={() => setShowAddPaces(false)}
+          onCancel={() => setShowAddPaces(false)}
+        />
+      )}
+      {expanded && (
+        <tr className="border-b bg-green-50/40 dark:bg-green-950/20">
+          <td colSpan={4} className="py-1.5 pl-10 pr-2 text-xs text-muted-foreground italic">
+            Weighted avg ({passedCount} passed PACE{passedCount !== 1 ? "s" : ""})
+          </td>
+          <td className="py-1.5 px-2 text-sm font-semibold text-center">
+            {weightedAvg != null ? weightedAvg.toFixed(1) : "—"}
+          </td>
+          <td colSpan={2} className="py-1.5 px-2 text-right">
+            {!showAddPaces && (
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowAddPaces(true)} data-testid={`button-add-paces-${group.courseId}`}>
+                <Plus className="h-3 w-3 mr-1" />
+                Add enrollment
+              </Button>
+            )}
+          </td>
+        </tr>
+      )}
     </>
   );
 }
 
-function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }: { studentId: number; existingCourseIds: number[]; onCreated: () => void; onCancel: () => void }) {
-  const { toast } = useToast();
+function NewEnrollmentForm({
+  studentId,
+  allEnrollments,
+  paceStarMapByCourse,
+  onCreated,
+  onCancel,
+}: {
+  studentId: number;
+  allEnrollments: Enrollment[];
+  paceStarMapByCourse: Map<number, Map<string, number>>;
+  onCreated: () => void;
+  onCancel: () => void;
+}) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [dateStarted, setDateStarted] = useState<string>("");
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedCourse) throw new Error("Select a course");
-      await apiRequest("POST", "/api/enrollments/course", {
-        studentId,
-        courseId: selectedCourse.id,
-        dateStarted: dateStarted || null,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/enrollments", studentId.toString()] });
-      toast({ title: "Course enrollment created" });
-      setSelectedCourse(null);
-      setDateStarted("");
-      onCreated();
-    },
-    onError: (err: Error) => toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" }),
-  });
+  const existingCourseIds = useMemo(() => {
+    const ids = new Set<number>();
+    allEnrollments.forEach(e => ids.add(e.courseId));
+    return Array.from(ids);
+  }, [allEnrollments]);
 
-  return (
-    <div className="border rounded-lg bg-accent/30 p-4 space-y-4" data-testid="form-new-enrollment">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Course</label>
-        {selectedCourse ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{selectedCourse.icceAlias || selectedCourse.aceAlias}</span>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setSelectedCourse(null)}>Change</Button>
-          </div>
-        ) : (
-          <CourseSearch onSelect={setSelectedCourse} exclude={existingCourseIds} />
-        )}
-      </div>
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Date Started</label>
-          <DatePicker value={dateStarted} onChange={(v) => v && setDateStarted(v)} placeholder="Date started" />
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        All PACE numbers for this course will be enrolled automatically. Start date is optional. You can edit individual numbers after creation.
-      </p>
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => createMutation.mutate()}
-          disabled={!selectedCourse || createMutation.isPending}
-          className="h-8 text-xs"
-          data-testid="button-save-new-enrollment"
-        >
-          {createMutation.isPending ? "Creating..." : "Create enrollment"}
-        </Button>
+  const alreadyEnrolledNumbers = useMemo(() => {
+    if (!selectedCourse) return new Set<string>();
+    return new Set(allEnrollments.filter(e => e.courseId === selectedCourse.id).map(e => e.number));
+  }, [allEnrollments, selectedCourse]);
+
+  if (!selectedCourse) {
+    return (
+      <div className="border rounded-lg bg-accent/30 p-4 space-y-3" data-testid="form-new-enrollment">
+        <p className="text-sm font-medium">Select a course to enroll in:</p>
+        <CourseSearch onSelect={setSelectedCourse} exclude={existingCourseIds} />
         <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-new-enrollment">
           Cancel
         </Button>
       </div>
+    );
+  }
+
+  const paceStarMap = paceStarMapByCourse.get(selectedCourse.id) || new Map<string, number>();
+
+  return (
+    <div className="border rounded-lg bg-accent/30 p-4 space-y-3" data-testid="form-new-enrollment-paces">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold">{selectedCourse.icceAlias || selectedCourse.aceAlias}</span>
+        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setSelectedCourse(null)}>Change</Button>
+      </div>
+      <AddPacesContent
+        studentId={studentId}
+        courseId={selectedCourse.id}
+        paceStarMap={paceStarMap}
+        alreadyEnrolledNumbers={alreadyEnrolledNumbers}
+        onCreated={onCreated}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
@@ -475,28 +704,19 @@ function SuppActivityRow({ sa, onDelete, studentId }: { sa: SupplementaryActivit
   if (editing) {
     return (
       <tr className="border-b bg-muted/20" data-testid={`row-supp-edit-${sa.id}`}>
-        <td className="py-2 px-4 font-medium">{sa.activity}</td>
+        <td className="py-2 px-4 text-sm">{sa.activity}</td>
         <td className="py-2 px-4">
           <Select value={term} onValueChange={setTerm}>
-            <SelectTrigger className="h-8 w-[80px]" data-testid="select-supp-term"><SelectValue placeholder="Term" /></SelectTrigger>
-            <SelectContent>
-              {[1,2,3,4,5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
-            </SelectContent>
+            <SelectTrigger className="w-[80px] h-8 text-xs" data-testid="select-supp-term-edit"><SelectValue placeholder="Term" /></SelectTrigger>
+            <SelectContent>{[1, 2, 3, 4, 5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}</SelectContent>
           </Select>
         </td>
         <td className="py-2 px-4">
-          <Input
-            value={grade}
-            onChange={e => setGrade(e.target.value.slice(0, 4))}
-            maxLength={4}
-            className="h-8 w-[70px] text-xs"
-            placeholder="Grade"
-            data-testid="input-supp-grade"
-          />
+          <Input value={grade} onChange={e => setGrade(e.target.value.slice(0, 4))} maxLength={4} className="w-[80px] h-8 text-xs" data-testid="input-supp-grade-edit" />
         </td>
         <td className="py-2 px-4 text-right">
-          <div className="flex items-center gap-1 justify-end">
-            <Button size="sm" variant="default" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="h-7 text-xs" data-testid="button-save-supp">Save</Button>
+          <div className="flex gap-1 justify-end">
+            <Button size="sm" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="h-7 text-xs" data-testid="button-save-supp">Save</Button>
             <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">Cancel</Button>
           </div>
         </td>
@@ -505,16 +725,16 @@ function SuppActivityRow({ sa, onDelete, studentId }: { sa: SupplementaryActivit
   }
 
   return (
-    <tr className="border-b last:border-0" data-testid={`row-supp-${sa.id}`}>
-      <td className="py-2 px-4 font-medium">{sa.activity}</td>
-      <td className="py-2 px-4 text-muted-foreground">{sa.term ? `T${sa.term}` : "—"}</td>
-      <td className="py-2 px-4 text-muted-foreground">{sa.grade || "—"}</td>
+    <tr className="border-b last:border-0 hover:bg-muted/10" data-testid={`row-supp-${sa.id}`}>
+      <td className="py-2 px-4 text-sm">{sa.activity}</td>
+      <td className="py-2 px-4 text-sm text-muted-foreground">{sa.term ? `T${sa.term}` : "—"}</td>
+      <td className="py-2 px-4 text-sm">{sa.grade || "—"}</td>
       <td className="py-2 px-4 text-right">
-        <div className="flex items-center gap-1 justify-end">
+        <div className="flex gap-1 justify-end">
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(true)} data-testid={`button-edit-supp-${sa.id}`}>
             <Pencil className="h-3 w-3" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete} data-testid={`button-delete-supp-${sa.id}`}>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete} data-testid={`button-delete-supp-${sa.id}`}>
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
@@ -525,29 +745,28 @@ function SuppActivityRow({ sa, onDelete, studentId }: { sa: SupplementaryActivit
 
 function NewSuppActivityForm({ studentId, onCreated, onCancel }: { studentId: number; onCreated: () => void; onCancel: () => void }) {
   const { toast } = useToast();
-  const [selectedActivity, setSelectedActivity] = useState<string>("");
+  const [selectedActivity, setSelectedActivity] = useState("");
   const [customActivity, setCustomActivity] = useState("");
   const [term, setTerm] = useState("");
   const [grade, setGrade] = useState("");
+  const [yearTerm] = useState(() => getCurrentYearTerm());
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const activity = selectedActivity === "Other" ? customActivity : selectedActivity;
-      if (!activity) throw new Error("Select an activity");
+      const activityName = selectedActivity === "Other" ? customActivity : selectedActivity;
+      if (!activityName) throw new Error("Activity name is required");
       await apiRequest("POST", "/api/supplementary-activities", {
         studentId,
-        activity,
+        activity: activityName,
+        yearTerm,
         term: term ? parseInt(term) : null,
         grade: grade || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", studentId.toString()] });
-      toast({ title: "Supplementary activity enrollment created" });
-      setSelectedActivity("");
-      setCustomActivity("");
-      setTerm("");
-      setGrade("");
+      toast({ title: "Supplementary activity added" });
+      setSelectedActivity(""); setCustomActivity(""); setTerm(""); setGrade("");
       onCreated();
     },
     onError: (err: Error) => toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" }),
@@ -561,20 +780,13 @@ function NewSuppActivityForm({ studentId, onCreated, onCancel }: { studentId: nu
         <Label>Activity</Label>
         <Select value={selectedActivity} onValueChange={v => { setSelectedActivity(v); if (v !== "Other") setCustomActivity(""); }}>
           <SelectTrigger data-testid="select-supp-activity"><SelectValue placeholder="Select activity..." /></SelectTrigger>
-          <SelectContent>
-            {SUPP_ACTIVITIES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-          </SelectContent>
+          <SelectContent>{SUPP_ACTIVITIES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
         </Select>
       </div>
       {selectedActivity === "Other" && (
         <div className="space-y-2">
           <Label>Activity Name</Label>
-          <Input
-            value={customActivity}
-            onChange={e => setCustomActivity(e.target.value)}
-            placeholder="Enter activity name..."
-            data-testid="input-custom-activity"
-          />
+          <Input value={customActivity} onChange={e => setCustomActivity(e.target.value)} placeholder="Enter activity name..." data-testid="input-custom-activity" />
         </div>
       )}
       <div className="flex gap-4">
@@ -582,36 +794,19 @@ function NewSuppActivityForm({ studentId, onCreated, onCancel }: { studentId: nu
           <Label>Term (optional)</Label>
           <Select value={term} onValueChange={setTerm}>
             <SelectTrigger className="w-[100px]" data-testid="select-new-supp-term"><SelectValue placeholder="Term" /></SelectTrigger>
-            <SelectContent>
-              {[1,2,3,4,5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{[1, 2, 3, 4, 5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label>Grade (optional)</Label>
-          <Input
-            value={grade}
-            onChange={e => setGrade(e.target.value.slice(0, 4))}
-            maxLength={4}
-            className="w-[100px]"
-            placeholder="e.g. A"
-            data-testid="input-new-supp-grade"
-          />
+          <Input value={grade} onChange={e => setGrade(e.target.value.slice(0, 4))} maxLength={4} className="w-[100px]" placeholder="e.g. A" data-testid="input-new-supp-grade" />
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => createMutation.mutate()}
-          disabled={!activityName || createMutation.isPending}
-          className="h-8 text-xs"
-          data-testid="button-save-supp-activity"
-        >
+        <Button size="sm" onClick={() => createMutation.mutate()} disabled={!activityName || createMutation.isPending} className="h-8 text-xs" data-testid="button-save-supp-activity">
           {createMutation.isPending ? "Creating..." : "Create enrollment"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-supp-activity">
-          Cancel
-        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-8 text-xs" data-testid="button-cancel-supp-activity">Cancel</Button>
       </div>
     </div>
   );
@@ -664,254 +859,159 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/enrollments/import", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
+      const res = await fetch("/api/enrollments/import", { method: "POST", body: formData, credentials: "include" });
       const data = await res.json();
-      if (!res.ok) {
-        toast({ title: "Import failed", description: data.message, variant: "destructive" });
-        if (data.errors) setResult({ imported: 0, skipped: 0, errors: data.errors });
-      } else if (data.status === "conflicts") {
+      if (!res.ok) throw new Error(data.message || "Import failed");
+      if (data.conflicts && data.conflicts.length > 0) {
         setConflicts(data.conflicts);
         setSessionId(data.sessionId);
         setNewRowCount(data.newRowCount || 0);
         setSkippedIdentical(data.skippedIdentical || 0);
-        const defaultChoices = new Map<number, "db" | "excel">();
-        data.conflicts.forEach((_: ConflictRow, i: number) => defaultChoices.set(i, "db"));
-        setConflictChoices(defaultChoices);
-        if (data.errors && data.errors.length > 0) {
-          setResult({ imported: 0, skipped: 0, errors: data.errors });
-        }
+        const initialChoices = new Map<number, "db" | "excel">();
+        data.conflicts.forEach((c: ConflictRow) => initialChoices.set(c.rowIndex, "db"));
+        setConflictChoices(initialChoices);
       } else {
         setResult(data);
         queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
-        toast({ title: `Successfully imported ${data.imported} enrollment(s)` });
       }
     } catch (err: any) {
-      toast({ title: "Import error", description: err.message, variant: "destructive" });
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
     } finally {
       setImporting(false);
     }
   }
 
   async function handleResolve() {
+    if (!sessionId || !conflicts) return;
     setResolving(true);
     try {
-      const choices = conflicts!.map((_, i) => conflictChoices.get(i) || "db");
-
+      const choices: Record<number, "db" | "excel"> = {};
+      conflictChoices.forEach((v, k) => { choices[k] = v; });
       const res = await fetch("/api/enrollments/import/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, choices }),
         credentials: "include",
+        body: JSON.stringify({ sessionId, choices }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        toast({ title: "Resolution failed", description: data.message, variant: "destructive" });
-      } else {
-        const totalImported = data.imported || 0;
-        const totalUpdated = data.updated || 0;
-        setResult({
-          imported: totalImported,
-          skipped: data.skipped || skippedIdentical,
-          updated: totalUpdated,
-        });
-        setConflicts(null);
-        setSessionId(null);
-        queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
-        toast({ title: `Imported ${totalImported}, updated ${totalUpdated} enrollment(s)` });
-      }
+      if (!res.ok) throw new Error(data.message || "Resolve failed");
+      setResult(data);
+      setConflicts(null);
+      setSessionId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/enrollments"] });
     } catch (err: any) {
-      toast({ title: "Resolution error", description: err.message, variant: "destructive" });
+      toast({ title: "Resolve failed", description: err.message, variant: "destructive" });
     } finally {
       setResolving(false);
     }
   }
 
-  function handleClose(v: boolean) {
-    if (!v) {
-      setFile(null);
-      setResult(null);
-      setConflicts(null);
-      setSessionId(null);
-      setNewRowCount(0);
-      setSkippedIdentical(0);
-    }
-    onOpenChange(v);
-  }
-
-  function formatField(label: string, dbVal: any, excelVal: any) {
-    const dbStr = dbVal === null || dbVal === undefined ? "—" : String(dbVal);
-    const excelStr = excelVal === null || excelVal === undefined ? "—" : String(excelVal);
-    const isDiff = dbStr !== excelStr;
-    return (
-      <div key={label} className="grid grid-cols-3 gap-2 text-xs py-0.5">
-        <span className="text-muted-foreground">{label}</span>
-        <span className={isDiff ? "font-medium text-amber-700 dark:text-amber-300" : ""}>{dbStr}</span>
-        <span className={isDiff ? "font-medium text-blue-700 dark:text-blue-300" : ""}>{excelStr}</span>
-      </div>
-    );
+  function handleClose() {
+    setFile(null); setResult(null); setConflicts(null); setSessionId(null);
+    setConflictChoices(new Map()); setNewRowCount(0); setSkippedIdentical(0);
+    onOpenChange(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={conflicts ? "max-w-3xl max-h-[80vh] overflow-y-auto" : "max-w-lg"}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{conflicts ? "Resolve Import Conflicts" : "Import Enrollments from Excel"}</DialogTitle>
+          <DialogTitle>Import Enrollments</DialogTitle>
         </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate} data-testid="button-download-template">
+              <Download className="h-3.5 w-3.5 mr-2" />
+              Download Template
+            </Button>
+          </div>
 
-        {conflicts ? (
-          <div className="space-y-4 pt-2">
-            {newRowCount > 0 && (
-              <div className="rounded-md p-3 text-sm bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>{newRowCount} new row(s) will be imported</span>
-                </div>
-              </div>
-            )}
-            {skippedIdentical > 0 && (
-              <p className="text-sm text-muted-foreground">{skippedIdentical} identical row(s) will be skipped</p>
-            )}
-
-            <p className="text-sm">
-              <span className="font-medium">{conflicts.length} conflict(s) found.</span> For each row below, the data in the database differs from the Excel file. Choose which version to keep.
-            </p>
-
+          {!result && !conflicts && (
             <div className="space-y-3">
-              {conflicts.map((c, i) => {
-                const student = studentMap.get(c.excelRow.studentId);
-                const course = courseMap.get(c.excelRow.courseId);
-                const choice = conflictChoices.get(i) || "db";
-                return (
-                  <div key={i} className="border rounded-lg p-3 space-y-2" data-testid={`conflict-row-${i}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        {student ? `${student.callName} ${student.surname}` : `Student #${c.excelRow.studentId}`}
-                        {" — "}
-                        {course?.icceAlias || course?.aceAlias || `Course #${c.excelRow.courseId}`}
-                        {" — PACE "}
-                        {c.excelRow.number}
-                      </span>
-                    </div>
-                    <div className="bg-muted/50 rounded p-2">
-                      <div className="grid grid-cols-3 gap-2 text-xs font-medium border-b pb-1 mb-1">
-                        <span>Field</span>
-                        <span className="text-amber-700 dark:text-amber-300">Database</span>
-                        <span className="text-blue-700 dark:text-blue-300">Excel</span>
-                      </div>
-                      {formatField("Date Started", c.dbRow.dateStarted, c.excelRow.dateStarted)}
-                      {formatField("Date Ended", c.dbRow.dateEnded, c.excelRow.dateEnded)}
-                      {formatField("Grade", c.dbRow.grade, c.excelRow.grade)}
-                      {formatField("Remarks", c.dbRow.remarks, c.excelRow.remarks)}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        size="sm"
-                        variant={choice === "db" ? "default" : "outline"}
-                        className="h-7 text-xs"
-                        onClick={() => setConflictChoices(prev => new Map(prev).set(i, "db"))}
-                        data-testid={`button-keep-db-${i}`}
-                      >
-                        Keep Database
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={choice === "excel" ? "default" : "outline"}
-                        className="h-7 text-xs"
-                        onClick={() => setConflictChoices(prev => new Map(prev).set(i, "excel"))}
-                        data-testid={`button-use-excel-${i}`}
-                      >
-                        Use Excel
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => {
-                const all = new Map<number, "db" | "excel">();
-                conflicts.forEach((_, i) => all.set(i, "db"));
-                setConflictChoices(all);
-              }} data-testid="button-keep-all-db">Keep all Database</Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => {
-                const all = new Map<number, "db" | "excel">();
-                conflicts.forEach((_, i) => all.set(i, "excel"));
-                setConflictChoices(all);
-              }} data-testid="button-use-all-excel">Use all Excel</Button>
-            </div>
-
-            <Button
-              onClick={handleResolve}
-              disabled={resolving}
-              className="w-full"
-              data-testid="button-resolve-submit"
-            >
-              {resolving ? "Applying..." : "Apply Changes"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4 pt-2">
-            <p className="text-sm text-muted-foreground">
-              Upload an Excel file (.xlsx) with enrollment data. The file should have columns: studentId, courseId, number, dateStarted, dateEnded, grade, remarks.
-            </p>
-
-            <Button variant="outline" onClick={handleDownloadTemplate} className="w-full" data-testid="button-download-template">
-              <Download className="w-4 h-4 mr-2" />
-              Download Excel Template
-            </Button>
-
-            <div className="space-y-2">
-              <Label>Select Excel file</Label>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={e => { setFile(e.target.files?.[0] || null); setResult(null); }}
-                data-testid="input-import-file"
-              />
-            </div>
-
-            {result && (
-              <div className={`rounded-md p-3 text-sm ${result.imported > 0 || (result.updated && result.updated > 0) ? "bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  {result.imported > 0 || (result.updated && result.updated > 0) ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                  )}
-                  <span className="font-medium">
-                    {result.imported > 0 ? `Imported ${result.imported} row(s)` : ""}
-                    {result.imported > 0 && result.updated && result.updated > 0 ? ", " : ""}
-                    {result.updated && result.updated > 0 ? `Updated ${result.updated} row(s)` : ""}
-                    {!result.imported && (!result.updated || result.updated === 0) ? "No rows imported" : ""}
-                  </span>
-                </div>
-                {result.skipped > 0 && (
-                  <p className="text-muted-foreground ml-6">{result.skipped} row(s) skipped (identical or invalid)</p>
-                )}
-                {result.errors && result.errors.length > 0 && (
-                  <ul className="mt-2 ml-6 space-y-1 text-xs text-red-700 dark:text-red-300 max-h-32 overflow-y-auto">
-                    {result.errors.map((err, i) => <li key={i}>{err}</li>)}
-                  </ul>
-                )}
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-accent/30"
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="dropzone-import"
+              >
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">{file ? file.name : "Click to select Excel file (.xlsx)"}</p>
               </div>
-            )}
+              <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} data-testid="input-import-file" />
+              <Button onClick={handleImport} disabled={!file || importing} className="w-full" data-testid="button-import-submit">
+                {importing ? "Importing..." : "Import"}
+              </Button>
+            </div>
+          )}
 
-            <Button
-              onClick={handleImport}
-              disabled={!file || importing}
-              className="w-full"
-              data-testid="button-import-submit"
-            >
-              {importing ? "Importing..." : "Import"}
-            </Button>
-          </div>
-        )}
+          {conflicts && (
+            <div className="space-y-3">
+              <div className="flex gap-4 text-sm">
+                <span className="text-green-600"><CheckCircle2 className="h-4 w-4 inline mr-1" />{newRowCount} new</span>
+                <span className="text-muted-foreground">{skippedIdentical} identical (skipped)</span>
+                <span className="text-amber-600"><AlertCircle className="h-4 w-4 inline mr-1" />{conflicts.length} conflicts</span>
+              </div>
+              <p className="text-sm font-medium">Choose which version to keep for each conflict:</p>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {conflicts.map(c => {
+                  const student = studentMap.get(c.dbRow.studentId);
+                  const course = courseMap.get(c.dbRow.courseId);
+                  const choice = conflictChoices.get(c.rowIndex) || "db";
+                  return (
+                    <div key={c.rowIndex} className="border rounded-lg p-3 space-y-2" data-testid={`conflict-row-${c.rowIndex}`}>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {student ? `${student.callName} ${student.surname}` : `Student #${c.dbRow.studentId}`} — {course?.icceAlias || course?.aceAlias || `Course #${c.dbRow.courseId}`} — PACE {c.dbRow.number}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          className={cn("text-left border rounded p-2 text-xs", choice === "db" ? "border-primary bg-primary/10" : "hover:bg-accent")}
+                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(c.rowIndex, "db"); return n; })}
+                          data-testid={`conflict-choose-db-${c.rowIndex}`}
+                        >
+                          <p className="font-medium mb-1">Keep database</p>
+                          <p>Grade: {c.dbRow.grade ?? "—"}</p>
+                          <p>Started: {c.dbRow.dateStarted || "—"}</p>
+                          <p>Ended: {c.dbRow.dateEnded || "—"}</p>
+                        </button>
+                        <button
+                          type="button"
+                          className={cn("text-left border rounded p-2 text-xs", choice === "excel" ? "border-primary bg-primary/10" : "hover:bg-accent")}
+                          onClick={() => setConflictChoices(prev => { const n = new Map(prev); n.set(c.rowIndex, "excel"); return n; })}
+                          data-testid={`conflict-choose-excel-${c.rowIndex}`}
+                        >
+                          <p className="font-medium mb-1">Use Excel</p>
+                          <p>Grade: {c.excelRow.grade ?? "—"}</p>
+                          <p>Started: {c.excelRow.dateStarted || "—"}</p>
+                          <p>Ended: {c.excelRow.dateEnded || "—"}</p>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Button onClick={handleResolve} disabled={resolving} className="w-full" data-testid="button-resolve-conflicts">
+                {resolving ? "Applying..." : "Apply choices"}
+              </Button>
+            </div>
+          )}
+
+          {result && (
+            <div className="space-y-2">
+              <div className="flex gap-4 text-sm">
+                <span className="text-green-600"><CheckCircle2 className="h-4 w-4 inline mr-1" />{result.imported} imported</span>
+                {result.updated != null && <span className="text-blue-600">{result.updated} updated</span>}
+                <span className="text-muted-foreground">{result.skipped} skipped</span>
+              </div>
+              {result.errors && result.errors.length > 0 && (
+                <div className="text-xs text-red-600 space-y-1">
+                  <p className="font-medium">Errors:</p>
+                  <ul className="list-disc list-inside">{result.errors.slice(0, 10).map((e, i) => <li key={i}>{e}</li>)}</ul>
+                </div>
+              )}
+              <Button onClick={handleClose} className="w-full" data-testid="button-import-done">Done</Button>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -925,6 +1025,8 @@ export default function EnrollmentsPage() {
   const [showImport, setShowImport] = useState(false);
   const [selectedYearTerms, setSelectedYearTerms] = useState<Set<string>>(new Set([getCurrentYearTerm()]));
   const [yearTermFilterOpen, setYearTermFilterOpen] = useState(false);
+  const [termFilter, setTermFilter] = useState<string>("all");
+  const [expandAll, setExpandAll] = useState(false);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
     queryKey: ["/api/enrollments", selectedStudent?.id?.toString() || ""],
@@ -937,6 +1039,9 @@ export default function EnrollmentsPage() {
   });
 
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
+  const { data: paces } = useQuery<Pace[]>({ queryKey: ["/api/paces"] });
+  const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
+  const { data: subjects } = useQuery<Subject[]>({ queryKey: ["/api/subjects"] });
 
   const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
     queryKey: ["/api/supplementary-activities", selectedStudent?.id?.toString() || ""],
@@ -948,20 +1053,32 @@ export default function EnrollmentsPage() {
     enabled: !!selectedStudent,
   });
 
-  const deleteSuppMutation = useMutation({
-    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
-    onSuccess: () => {
-      if (selectedStudent) {
-        queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", selectedStudent.id.toString()] });
-      }
-      toast({ title: "Supplementary activity removed" });
-    },
-    onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
-  });
+  const courseMap = useMemo(() => new Map((courses || []).map(c => [c.id, c])), [courses]);
+  const subjectById = useMemo(() => new Map((subjects || []).map(s => [s.id, s])), [subjects]);
+  const paceById = useMemo(() => new Map((paces || []).map(p => [p.id, p])), [paces]);
 
-  const courseMap = useMemo(() => {
-    return new Map(courses?.map(c => [c.id, c]) || []);
-  }, [courses]);
+  const paceStarMapByCourse = useMemo(() => {
+    const m = new Map<number, Map<string, number>>();
+    for (const pc of paceCourses || []) {
+      if (pc.number == null) continue;
+      const pace = paceById.get(pc.paceId);
+      const star = pace?.starValue ?? 1;
+      let cm = m.get(pc.courseId);
+      if (!cm) { cm = new Map(); m.set(pc.courseId, cm); }
+      cm.set(pc.number, star);
+    }
+    return m;
+  }, [paceCourses, paceById]);
+
+  const enrolledByCourseFull = useMemo(() => {
+    const m = new Map<number, Set<string>>();
+    for (const e of enrollments || []) {
+      let s = m.get(e.courseId);
+      if (!s) { s = new Set(); m.set(e.courseId, s); }
+      s.add(e.number);
+    }
+    return m;
+  }, [enrollments]);
 
   const availableYearTerms = useMemo(() => {
     if (!enrollments) return [];
@@ -976,30 +1093,51 @@ export default function EnrollmentsPage() {
   }, [enrollments]);
 
   const filteredEnrollments = useMemo(() => {
-    if (!enrollments || selectedYearTerms.size === 0) return enrollments || [];
-    return enrollments.filter(e => {
-      if (!e.dateStarted) return false;
-      const yt = computeYearTermFromDate(e.dateStarted);
-      return yt ? selectedYearTerms.has(yt) : false;
-    });
-  }, [enrollments, selectedYearTerms]);
+    if (!enrollments) return [];
+    let result = enrollments;
+    if (selectedYearTerms.size > 0) {
+      result = result.filter(e => {
+        if (!e.dateStarted) return false;
+        const yt = computeYearTermFromDate(e.dateStarted);
+        return yt ? selectedYearTerms.has(yt) : false;
+      });
+    }
+    if (termFilter !== "all") {
+      const tf = parseInt(termFilter);
+      result = result.filter(e => e.term === tf);
+    }
+    return result;
+  }, [enrollments, selectedYearTerms, termFilter]);
 
-  const courseGroups = useMemo(() => {
-    if (!filteredEnrollments) return [];
-    return groupEnrollmentsByCourse(filteredEnrollments, courseMap);
-  }, [filteredEnrollments, courseMap]);
+  const courseGroups = useMemo(() => groupEnrollmentsByCourse(filteredEnrollments, courseMap), [filteredEnrollments, courseMap]);
+
+  const deleteSuppMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
+    onSuccess: () => {
+      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", selectedStudent.id.toString()] });
+      toast({ title: "Supplementary activity removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
+  });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       await apiRequest("PATCH", `/api/enrollments/${id}`, data);
     },
     onSuccess: () => {
-      if (selectedStudent) {
-        queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
-      }
+      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
       toast({ title: "Enrollment updated" });
     },
     onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/enrollments/${id}`); },
+    onSuccess: () => {
+      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
+      toast({ title: "PACE enrollment removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
   });
 
   const deleteCourseEnrollmentMutation = useMutation({
@@ -1007,41 +1145,33 @@ export default function EnrollmentsPage() {
       await apiRequest("DELETE", `/api/enrollments/course/${studentId}/${courseId}`);
     },
     onSuccess: () => {
-      if (selectedStudent) {
-        queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
-      }
+      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
       toast({ title: "Course enrollment removed" });
     },
     onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
   });
 
-  const handleUpdate = useCallback((id: number, data: any) => {
-    updateMutation.mutate({ id, data });
-  }, [updateMutation]);
-
+  const handleUpdate = useCallback((id: number, data: any) => { updateMutation.mutate({ id, data }); }, [updateMutation]);
+  const handleDelete = useCallback((id: number) => { deleteEnrollmentMutation.mutate(id); }, [deleteEnrollmentMutation]);
   const handleDeleteCourse = useCallback((studentId: number, courseId: number) => {
     deleteCourseEnrollmentMutation.mutate({ studentId, courseId });
   }, [deleteCourseEnrollmentMutation]);
 
-  const existingCourseIds = useMemo(() => {
-    return courseGroups.map(g => g.courseId);
-  }, [courseGroups]);
-
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Enrollments</h1>
-          <p className="text-muted-foreground mt-1">Manage student course enrollments. Search for a student to view and edit their enrollments.</p>
+          <h1 className="text-2xl font-bold" data-testid="heading-enrollments">Enrollments</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage student PACE enrollments and grades</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => window.open("/api/enrollments/template", "_blank")} data-testid="button-download-template-header">
-            <Download className="w-4 h-4 mr-2" />
-            Download Template
-          </Button>
-          <Button onClick={() => setShowImport(true)} data-testid="button-import-header">
-            <Upload className="w-4 h-4 mr-2" />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowImport(true)} data-testid="button-import-enrollments">
+            <Upload className="h-4 w-4 mr-2" />
             Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.open("/api/enrollments/export", "_blank")} data-testid="button-export-enrollments">
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
         </div>
       </div>
@@ -1063,6 +1193,9 @@ export default function EnrollmentsPage() {
               {selectedStudent.firstNames && (
                 <span className="text-xs text-muted-foreground">({selectedStudent.firstNames})</span>
               )}
+              {selectedStudent.isDyslexic && (
+                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">Dyslexic</span>
+              )}
             </div>
           )}
         </CardContent>
@@ -1070,99 +1203,120 @@ export default function EnrollmentsPage() {
 
       {selectedStudent && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
             <CardTitle className="text-base">
               Course Enrollments
               {courseGroups.length > 0 && <span className="text-muted-foreground font-normal ml-2">({courseGroups.length} courses)</span>}
             </CardTitle>
-            {availableYearTerms.length > 0 && (
-              <Popover open={yearTermFilterOpen} onOpenChange={setYearTermFilterOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" data-testid="button-yearterm-filter">
-                    <Filter className="h-3.5 w-3.5" />
-                    Year-Term
-                    {selectedYearTerms.size > 0 && (
-                      <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 text-[10px] font-semibold">{selectedYearTerms.size}</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2" align="end">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Filter by year-term</p>
-                    {availableYearTerms.map(yt => (
-                      <label key={yt} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm" data-testid={`checkbox-yearterm-${yt}`}>
-                        <Checkbox
-                          checked={selectedYearTerms.has(yt)}
-                          onCheckedChange={(checked) => {
-                            setSelectedYearTerms(prev => {
-                              const next = new Set(prev);
-                              if (checked) next.add(yt);
-                              else next.delete(yt);
-                              return next;
-                            });
-                          }}
-                        />
-                        {yt}
-                      </label>
-                    ))}
-                    <div className="border-t pt-1 mt-1 flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs flex-1"
-                        onClick={() => setSelectedYearTerms(new Set(availableYearTerms))}
-                        data-testid="button-yearterm-select-all"
-                      >
-                        Select All
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs flex-1"
-                        onClick={() => setSelectedYearTerms(new Set())}
-                        data-testid="button-yearterm-clear"
-                      >
-                        Clear
-                      </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {courseGroups.length > 0 && (
+                <Button
+                  variant="outline" size="sm" className="h-8 text-xs gap-1.5"
+                  onClick={() => setExpandAll(v => !v)}
+                  data-testid="button-expand-all"
+                >
+                  {expandAll ? <ChevronsUp className="h-3.5 w-3.5" /> : <ChevronsDown className="h-3.5 w-3.5" />}
+                  {expandAll ? "Collapse all" : "Expand all"}
+                </Button>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Term:</span>
+                <Select value={termFilter} onValueChange={setTermFilter}>
+                  <SelectTrigger className="h-8 w-[90px] text-xs" data-testid="select-term-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {[1, 2, 3, 4, 5].map(t => <SelectItem key={t} value={String(t)}>T{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {availableYearTerms.length > 0 && (
+                <Popover open={yearTermFilterOpen} onOpenChange={setYearTermFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" data-testid="button-yearterm-filter">
+                      <Filter className="h-3.5 w-3.5" />
+                      Year-Term
+                      {selectedYearTerms.size > 0 && (
+                        <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 text-[10px] font-semibold">{selectedYearTerms.size}</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2" align="end">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Filter by year-term</p>
+                      {availableYearTerms.map(yt => (
+                        <label key={yt} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm" data-testid={`checkbox-yearterm-${yt}`}>
+                          <Checkbox
+                            checked={selectedYearTerms.has(yt)}
+                            onCheckedChange={(checked) => {
+                              setSelectedYearTerms(prev => {
+                                const next = new Set(prev);
+                                if (checked) next.add(yt); else next.delete(yt);
+                                return next;
+                              });
+                            }}
+                          />
+                          {yt}
+                        </label>
+                      ))}
+                      <div className="border-t pt-1 mt-1 flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setSelectedYearTerms(new Set(availableYearTerms))} data-testid="button-yearterm-select-all">Select All</Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setSelectedYearTerms(new Set())} data-testid="button-yearterm-clear">Clear</Button>
+                      </div>
                     </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm" data-testid="table-enrollments">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground min-w-[200px]">Course / Number</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground min-w-[200px]">Course / PACE#</th>
                     <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date Started</th>
                     <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date Ended</th>
+                    <th className="text-center py-3 px-2 font-medium text-muted-foreground text-amber-600">★</th>
                     <th className="text-center py-3 px-2 font-medium text-muted-foreground">Grade</th>
                     <th className="text-left py-3 px-2 font-medium text-muted-foreground">Remarks</th>
-                    <th className="text-right py-3 px-2 font-medium text-muted-foreground w-[80px]"></th>
+                    <th className="text-right py-3 px-2 font-medium text-muted-foreground w-[100px]"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {enrollmentsLoading ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">Loading enrollments...</td>
+                      <td colSpan={COL_COUNT} className="text-center py-8 text-muted-foreground">Loading enrollments...</td>
                     </tr>
                   ) : courseGroups.length > 0 ? (
-                    courseGroups.map(group => (
-                      <CourseGroupRow
-                        key={group.courseId}
-                        group={group}
-                        courseMap={courseMap}
-                        onUpdate={handleUpdate}
-                        onDeleteCourse={handleDeleteCourse}
-                        isPending={updateMutation.isPending}
-                      />
-                    ))
+                    courseGroups.map(group => {
+                      const course = courseMap.get(group.courseId);
+                      const passThreshold = course ? getEffectivePassThreshold(course, selectedStudent.isDyslexic, subjectById) : 80;
+                      const paceStarMap = paceStarMapByCourse.get(group.courseId) || new Map<string, number>();
+                      const enrolledNums = enrolledByCourseFull.get(group.courseId) || new Set<string>();
+                      return (
+                        <CourseGroupRow
+                          key={group.courseId}
+                          group={group}
+                          courseMap={courseMap}
+                          course={course}
+                          onUpdate={handleUpdate}
+                          onDelete={handleDelete}
+                          onDeleteCourse={handleDeleteCourse}
+                          isPending={updateMutation.isPending || deleteEnrollmentMutation.isPending}
+                          paceStarMap={paceStarMap}
+                          passThreshold={passThreshold}
+                          enrolledNumbers={enrolledNums}
+                          studentId={selectedStudent.id}
+                          forceExpand={expandAll}
+                        />
+                      );
+                    })
                   ) : !showNewRow ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No enrollments yet. Click "Add enrollment for course" to get started.
+                      <td colSpan={COL_COUNT} className="text-center py-8 text-muted-foreground">
+                        No enrollments found. Click "Add enrollment for course" to get started.
                       </td>
                     </tr>
                   ) : null}
@@ -1173,16 +1327,13 @@ export default function EnrollmentsPage() {
               {showNewRow ? (
                 <NewEnrollmentForm
                   studentId={selectedStudent.id}
-                  existingCourseIds={existingCourseIds}
+                  allEnrollments={enrollments || []}
+                  paceStarMapByCourse={paceStarMapByCourse}
                   onCreated={() => setShowNewRow(false)}
                   onCancel={() => setShowNewRow(false)}
                 />
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewRow(true)}
-                  data-testid="button-add-enrollment"
-                >
+                <Button variant="outline" onClick={() => setShowNewRow(true)} data-testid="button-add-enrollment">
                   <Plus className="h-4 w-4 mr-2" />
                   Add enrollment for course
                 </Button>
@@ -1225,11 +1376,7 @@ export default function EnrollmentsPage() {
                   onCancel={() => setShowNewSuppRow(false)}
                 />
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewSuppRow(true)}
-                  data-testid="button-add-supp-activity"
-                >
+                <Button variant="outline" onClick={() => setShowNewSuppRow(true)} data-testid="button-add-supp-activity">
                   <Music className="h-4 w-4 mr-2" />
                   Add enrollment for supplementary activity
                 </Button>
