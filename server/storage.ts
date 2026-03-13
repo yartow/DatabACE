@@ -62,7 +62,7 @@ export interface IStorage {
 
   getDates(): Promise<DateEntry[]>;
   getDatesByTerm(term: number): Promise<DateEntry[]>;
-  getTermWeekCounts(): Promise<{ term: number; weeks: number }[]>;
+  getTermWeekCounts(): Promise<{ yearTerm: string; term: number; weeks: number }[]>;
 
   getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]>;
   getAllEnrollments(): Promise<Enrollment[]>;
@@ -233,16 +233,16 @@ export class DatabaseStorage implements IStorage {
   async getDatesByTerm(term: number): Promise<DateEntry[]> {
     return db.select().from(dates).where(eq(dates.term, term));
   }
-  async getTermWeekCounts(): Promise<{ term: number; weeks: number }[]> {
+  async getTermWeekCounts(): Promise<{ yearTerm: string; term: number; weeks: number }[]> {
     const result = await db.execute(sql`
-      SELECT term, COUNT(DISTINCT term_week) AS weeks
+      SELECT year_term, term, MAX(term_week) AS weeks
       FROM dates
-      WHERE holiday = 0 AND term IS NOT NULL AND term_week IS NOT NULL
-      GROUP BY term
-      ORDER BY term
+      WHERE term IS NOT NULL AND term_week IS NOT NULL AND weekend = 0 AND holiday = 0
+      GROUP BY year_term, term
+      ORDER BY year_term, term
     `);
     const rowData: any[] = (result as any).rows ?? result;
-    return rowData.map((r: any) => ({ term: Number(r.term), weeks: Number(r.weeks) }));
+    return rowData.map((r: any) => ({ yearTerm: String(r.year_term), term: Number(r.term), weeks: Number(r.weeks) }));
   }
 
   async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {
