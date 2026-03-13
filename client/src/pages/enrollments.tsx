@@ -513,20 +513,6 @@ function CourseGroupRow({
 
   useEffect(() => { setExpanded(forceExpand); }, [forceExpand]);
 
-  const weightedAvg = useMemo(() => {
-    let sumGradeWeight = 0, sumWeight = 0;
-    for (const e of group.enrollments) {
-      if (e.grade == null) continue;
-      const star = paceStarMap.get(e.number) ?? 1;
-      if (e.grade >= passThreshold) {
-        sumGradeWeight += e.grade * star;
-        sumWeight += star;
-      }
-    }
-    return sumWeight > 0 ? sumGradeWeight / sumWeight : null;
-  }, [group.enrollments, paceStarMap, passThreshold]);
-
-  const passedCount = group.enrollments.filter(e => e.grade != null && e.grade >= passThreshold).length;
   const failedCount = group.enrollments.filter(e => e.grade != null && e.grade < passThreshold).length;
 
   return (
@@ -547,9 +533,7 @@ function CourseGroupRow({
         <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.minDateStarted)}</td>
         <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(group.maxDateEnded)}</td>
         <td className="py-3 px-2"></td>
-        <td className="py-3 px-2 text-sm text-center font-medium">
-          {weightedAvg != null ? weightedAvg.toFixed(1) : "—"}
-        </td>
+        <td className="py-3 px-2"></td>
         <td className="py-3 px-2"></td>
         <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
           <DropdownMenu>
@@ -600,21 +584,13 @@ function CourseGroupRow({
           onCancel={() => setShowAddPaces(false)}
         />
       )}
-      {expanded && (
-        <tr className="border-b bg-green-50/40 dark:bg-green-950/20">
-          <td colSpan={4} className="py-1.5 pl-10 pr-2 text-xs text-muted-foreground italic">
-            Weighted avg ({passedCount} passed PACE{passedCount !== 1 ? "s" : ""})
-          </td>
-          <td className="py-1.5 px-2 text-sm font-semibold text-center">
-            {weightedAvg != null ? weightedAvg.toFixed(1) : "—"}
-          </td>
-          <td colSpan={2} className="py-1.5 px-2 text-right">
-            {!showAddPaces && (
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowAddPaces(true)} data-testid={`button-add-paces-${group.courseId}`}>
-                <Plus className="h-3 w-3 mr-1" />
-                Add enrollment
-              </Button>
-            )}
+      {expanded && !showAddPaces && (
+        <tr className="border-b">
+          <td colSpan={7} className="py-1 px-2 text-right">
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowAddPaces(true)} data-testid={`button-add-paces-${group.courseId}`}>
+              <Plus className="h-3 w-3 mr-1" />
+              Add enrollment
+            </Button>
           </td>
         </tr>
       )}
@@ -1139,6 +1115,7 @@ export default function EnrollmentsPage() {
     const x = z * 2 - 1;
     let sumGradeWeight = 0, sumWeight = 0, totalStars = 0;
     for (const e of filteredEnrollments) {
+      if (e.term !== tf) continue; // only count PACEs explicitly tagged to this term
       const course = courseMap.get(e.courseId);
       if (!course) continue;
       const threshold = getEffectivePassThreshold(course, selectedStudent.isDyslexic, subjectById);
@@ -1260,17 +1237,20 @@ export default function EnrollmentsPage() {
           )}
           data-testid="banner-honor-roll"
         >
-          <p className="font-medium">
-            <span className="font-bold">{honorRoll.x}</span> stars needed for honor roll.
-            {" "}Student has{" "}
-            <span className={cn("font-bold", honorRoll.y >= honorRoll.x ? "text-green-600 dark:text-green-400" : "text-foreground")}>
-              {honorRoll.y}
-            </span>{" "}
-            stars at the moment.
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+            <span className="text-sm font-medium">
+              <span className="font-bold">{honorRoll.x}</span> stars needed for honor roll —{" "}
+              student has{" "}
+              <span className={cn("font-bold", honorRoll.y >= honorRoll.x ? "text-green-600 dark:text-green-400" : "")}>
+                {honorRoll.y}
+              </span> stars this term
+            </span>
             {honorRoll.w != null && (
-              <span className="text-muted-foreground ml-2 text-xs">(weighted avg: {honorRoll.w.toFixed(1)}%)</span>
+              <span className="text-sm font-semibold" data-testid="text-weighted-avg">
+                Weighted average: <span className={cn(honorRoll.score ? "text-green-700 dark:text-green-300" : "")}>{honorRoll.w.toFixed(1)}%</span>
+              </span>
             )}
-          </p>
+          </div>
           {honorRoll.score && (
             <p className="mt-1 font-semibold text-green-700 dark:text-green-300" data-testid="text-honor-roll-achieved">
               The student has passed{" "}
