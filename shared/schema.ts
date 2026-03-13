@@ -109,6 +109,7 @@ export const paces = pgTable("paces", {
   editionOrder: integer("edition_order"),
   type: text("type"),
   weight: smallint("weight"),
+  starValue: smallint("star_value").default(1),
 });
 
 export const paceCourses = pgTable("pace_courses", {
