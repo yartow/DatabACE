@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState, useMemo, useRef } from "react";
+import { Switch } from "@/components/ui/switch";
+import { useState, useMemo, useRef, Fragment } from "react";
 import type { Course, Pace, PaceCourse, Subject, SubjectGroup, UserProfile } from "@shared/schema";
-import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Package, CheckCircle2, XCircle, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -163,23 +164,29 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
   );
 }
 
-function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; courseStarValue: number; onCancel: () => void; onSaved: () => void }) {
+function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; courseStarValue: number; colSpan: number; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
   const [icceAlias, setIcceAlias] = useState(c.icceAlias || "");
+  const [aceAlias, setAceAlias] = useState(c.aceAlias || "");
+  const [certificateName, setCertificateName] = useState(c.certificateName || "");
   const [level, setLevel] = useState(c.level?.toString() || "");
   const [passThreshold, setPassThreshold] = useState(c.passThreshold != null ? Math.round(c.passThreshold * 100).toString() : "");
   const [courseType, setCourseType] = useState(c.courseType || "");
   const [remarks, setRemarks] = useState(c.remarks || "");
+  const [active, setActive] = useState((c.active ?? 1) === 1);
   const [showPacesDialog, setShowPacesDialog] = useState(false);
 
   const mutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/courses/${c.id}`, {
         icceAlias: icceAlias || null,
+        aceAlias: aceAlias || null,
+        certificateName: certificateName || null,
         level: level ? parseInt(level) : null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
         courseType: courseType || null,
         remarks: remarks || null,
+        active: active ? 1 : 0,
       });
     },
     onSuccess: () => {
@@ -195,19 +202,19 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, on
 
   return (
     <>
-      <tr className="border-b bg-muted/20" data-testid={`row-course-edit-${c.id}`}>
+      <tr className="border-b border-b-0 bg-muted/20" data-testid={`row-course-edit-${c.id}`}>
         <td className="py-2 px-2">
-          <Input value={icceAlias} onChange={e => setIcceAlias(e.target.value)} className="h-7 text-xs" data-testid="input-edit-course-name" />
+          <Input value={icceAlias} onChange={e => setIcceAlias(e.target.value)} className="h-7 text-xs" disabled={mutation.isPending} data-testid="input-edit-course-name" />
         </td>
         <td className="text-center py-2 px-2">
           <Badge variant="secondary">{subj?.subject || "—"}</Badge>
         </td>
         <td className="text-center py-2 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
         <td className="text-center py-2 px-2">
-          <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-level" />
+          <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={mutation.isPending} data-testid="input-edit-course-level" />
         </td>
         <td className="text-center py-2 px-2">
-          <Select value={courseType || "none"} onValueChange={v => setCourseType(v === "none" ? "" : v)}>
+          <Select value={courseType || "none"} onValueChange={v => setCourseType(v === "none" ? "" : v)} disabled={mutation.isPending}>
             <SelectTrigger className="h-7 text-xs mx-auto" data-testid="select-edit-course-type"><SelectValue placeholder="— type —" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">— none —</SelectItem>
@@ -217,14 +224,17 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, on
         </td>
         <td className="text-center py-2 px-2 text-muted-foreground text-sm">{courseStarValue > 0 ? courseStarValue : "—"}</td>
         <td className="text-center py-2 px-2">
-          <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" data-testid="input-edit-course-pass" />
+          <Switch checked={active} onCheckedChange={setActive} disabled={mutation.isPending} data-testid="switch-edit-course-active" />
+        </td>
+        <td className="text-center py-2 px-2">
+          <Input value={passThreshold} onChange={e => setPassThreshold(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={mutation.isPending} data-testid="input-edit-course-pass" />
         </td>
         <td className="py-2 px-2">
-          <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} data-testid="input-edit-course-remarks" />
+          <Input value={remarks} onChange={e => setRemarks(e.target.value)} className="h-7 text-xs" maxLength={1000} disabled={mutation.isPending} data-testid="input-edit-course-remarks" />
         </td>
         <td className="text-center py-2 px-2">
           <div className="flex items-center gap-1 justify-center">
-            <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setShowPacesDialog(true)} data-testid={`button-add-edit-paces-${c.id}`}>
+            <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setShowPacesDialog(true)} disabled={mutation.isPending} data-testid={`button-add-edit-paces-${c.id}`}>
               Add/Edit PACEs
             </Button>
             <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => mutation.mutate()} disabled={mutation.isPending} data-testid="button-save-course">
@@ -233,6 +243,21 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, courseStarValue, on
             <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancel} disabled={mutation.isPending} data-testid="button-cancel-course">
               <X className="h-3 w-3" />
             </Button>
+          </div>
+        </td>
+      </tr>
+      <tr className="border-b bg-muted/30" data-testid={`row-course-edit-extra-${c.id}`}>
+        <td colSpan={colSpan} className="py-2 px-3">
+          <div className="flex flex-wrap gap-4 items-center text-xs">
+            <span className="text-muted-foreground font-medium">ICCE ID: <span className="text-foreground font-mono">{c.id}</span></span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-muted-foreground font-medium whitespace-nowrap">ACE Alias</label>
+              <Input value={aceAlias} onChange={e => setAceAlias(e.target.value)} className="h-6 text-xs w-48" disabled={mutation.isPending} data-testid="input-edit-course-ace" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-muted-foreground font-medium whitespace-nowrap">Certificate Name</label>
+              <Input value={certificateName} onChange={e => setCertificateName(e.target.value)} className="h-6 text-xs w-48" disabled={mutation.isPending} data-testid="input-edit-course-cert" />
+            </div>
           </div>
         </td>
       </tr>
@@ -411,7 +436,14 @@ export default function MaterialsPage() {
   const [subjectGroupIdFilter, setSubjectGroupIdFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [expandedCourseIds, setExpandedCourseIds] = useState<Set<number>>(new Set());
   const [editingPcId, setEditingPcId] = useState<number | null>(null);
+
+  const toggleExpand = (id: number) => setExpandedCourseIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importType, setImportType] = useState<"courses" | "pace-courses">("courses");
@@ -660,39 +692,66 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stars</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Pass %</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Remarks</th>
-                      {isTeacher && <th className="w-[50px]" />}
+                      <th className="w-[80px]" />
                     </tr>
                   </thead>
                   <tbody>
                     {filteredCourses.map(c => {
+                      const colSpan = 10;
                       if (editingCourseId === c.id) {
-                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} courseStarValue={courseStarValues.get(c.id) || 0} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
+                        return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} courseStarValue={courseStarValues.get(c.id) || 0} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
                       }
                       const subj = c.subjectId ? subjectMap.get(c.subjectId) : null;
                       const grp = c.subjectGroupId ? subjectGroupMap.get(c.subjectGroupId) : null;
                       const sv = courseStarValues.get(c.id);
+                      const isExpanded = expandedCourseIds.has(c.id);
+                      const isInactive = (c.active ?? 1) === 0;
                       return (
-                        <tr key={c.id} className="border-b last:border-0" data-testid={`row-course-${c.id}`}>
-                          <td className="py-3 px-2 font-medium">{c.icceAlias || c.aceAlias || `Course ${c.id}`}</td>
-                          <td className="text-center py-3 px-2"><Badge variant="secondary">{subj?.subject || "—"}</Badge></td>
-                          <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
-                          <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
-                          <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
-                          <td className="text-center py-3 px-2">{sv != null && sv > 0 ? sv : "—"}</td>
-                          <td className="text-center py-3 px-2 text-muted-foreground">{c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}</td>
-                          <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px]" data-testid={`text-course-remarks-${c.id}`}>
-                            {c.remarks ? <span className="block truncate cursor-help" title={c.remarks}>{c.remarks}</span> : "—"}
-                          </td>
-                          {isTeacher && (
+                        <Fragment key={c.id}>
+                          <tr className={`border-b ${isInactive ? "opacity-50" : ""} ${isExpanded ? "border-b-0" : ""}`} data-testid={`row-course-${c.id}`}>
+                            <td className="py-3 px-2 font-medium">{c.icceAlias || c.aceAlias || `Course ${c.id}`}</td>
+                            <td className="text-center py-3 px-2"><Badge variant="secondary">{subj?.subject || "—"}</Badge></td>
+                            <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
+                            <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
+                            <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
+                            <td className="text-center py-3 px-2">{sv != null && sv > 0 ? sv : "—"}</td>
                             <td className="text-center py-3 px-2">
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingCourseId(c.id)} data-testid={`button-edit-course-${c.id}`}>
-                                <Pencil className="h-3 w-3" />
-                              </Button>
+                              <Badge variant={(c.active ?? 1) === 1 ? "default" : "secondary"}>
+                                {(c.active ?? 1) === 1 ? "Active" : "Inactive"}
+                              </Badge>
                             </td>
+                            <td className="text-center py-3 px-2 text-muted-foreground">{c.passThreshold != null ? `${Math.round(c.passThreshold * 100)}%` : "—"}</td>
+                            <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px]" data-testid={`text-course-remarks-${c.id}`}>
+                              {c.remarks ? <span className="block truncate cursor-help" title={c.remarks}>{c.remarks}</span> : "—"}
+                            </td>
+                            <td className="text-center py-3 px-2">
+                              <div className="flex items-center gap-0.5 justify-center">
+                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => toggleExpand(c.id)} data-testid={`button-expand-course-${c.id}`} title="Show more">
+                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </Button>
+                                {isTeacher && (
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingCourseId(c.id); setExpandedCourseIds(prev => { const next = new Set(prev); next.delete(c.id); return next; }); }} data-testid={`button-edit-course-${c.id}`}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="border-b bg-muted/10" data-testid={`row-course-details-${c.id}`}>
+                              <td colSpan={colSpan} className="py-2 px-4">
+                                <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                                  <span><span className="font-medium text-foreground">ICCE ID:</span> <span className="font-mono">{c.id}</span></span>
+                                  <span><span className="font-medium text-foreground">ACE Alias:</span> {c.aceAlias || "—"}</span>
+                                  <span><span className="font-medium text-foreground">Certificate Name:</span> {c.certificateName || "—"}</span>
+                                </div>
+                              </td>
+                            </tr>
                           )}
-                        </tr>
+                        </Fragment>
                       );
                     })}
                   </tbody>
