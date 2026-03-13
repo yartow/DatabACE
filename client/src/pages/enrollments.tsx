@@ -1042,7 +1042,7 @@ export default function EnrollmentsPage() {
   const { data: paces } = useQuery<Pace[]>({ queryKey: ["/api/paces"] });
   const { data: paceCourses } = useQuery<PaceCourse[]>({ queryKey: ["/api/pace-courses"] });
   const { data: subjects } = useQuery<Subject[]>({ queryKey: ["/api/subjects"] });
-  const { data: termWeeks } = useQuery<{ term: number; weeks: number }[]>({ queryKey: ["/api/dates/term-weeks"] });
+  const { data: termWeeks } = useQuery<{ yearTerm: string; term: number; weeks: number }[]>({ queryKey: ["/api/dates/term-weeks"] });
 
   const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
     queryKey: ["/api/supplementary-activities", selectedStudent?.id?.toString() || ""],
@@ -1105,7 +1105,7 @@ export default function EnrollmentsPage() {
     }
     if (termFilter !== "all") {
       const tf = parseInt(termFilter);
-      result = result.filter(e => e.term === tf);
+      result = result.filter(e => e.term === tf || e.term == null);
     }
     return result;
   }, [enrollments, selectedYearTerms, termFilter]);
@@ -1115,7 +1115,25 @@ export default function EnrollmentsPage() {
   const honorRoll = useMemo(() => {
     if (!selectedStudent || termFilter === "all" || !termWeeks) return null;
     const tf = parseInt(termFilter);
-    const termData = termWeeks.find(t => t.term === tf);
+
+    // Pick the best year-term: prefer the one from the active year-term filter,
+    // else use the most recent complete school year (>= 4 terms) that has this term.
+    let yearTermToUse: string | null = null;
+    if (selectedYearTerms.size === 1) {
+      yearTermToUse = [...selectedYearTerms][0];
+    } else {
+      const termCountByYearTerm = new Map<string, number>();
+      for (const tw of termWeeks) {
+        termCountByYearTerm.set(tw.yearTerm, (termCountByYearTerm.get(tw.yearTerm) ?? 0) + 1);
+      }
+      const candidates = termWeeks
+        .filter(tw => tw.term === tf && (termCountByYearTerm.get(tw.yearTerm) ?? 0) >= 4)
+        .map(tw => tw.yearTerm)
+        .sort();
+      yearTermToUse = candidates.at(-1) ?? null;
+    }
+    if (!yearTermToUse) return null;
+    const termData = termWeeks.find(tw => tw.yearTerm === yearTermToUse && tw.term === tf);
     if (!termData) return null;
     const z = termData.weeks;
     const x = z * 2 - 1;
@@ -1140,7 +1158,7 @@ export default function EnrollmentsPage() {
       else if (w >= 92) score = "B";
     }
     return { x, y, w, z, score };
-  }, [selectedStudent, termFilter, termWeeks, filteredEnrollments, courseMap, subjectById, paceStarMapByCourse]);
+  }, [selectedStudent, termFilter, termWeeks, selectedYearTerms, filteredEnrollments, courseMap, subjectById, paceStarMapByCourse]);
 
   const deleteSuppMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
