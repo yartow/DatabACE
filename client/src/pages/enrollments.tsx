@@ -326,6 +326,7 @@ function AddPacesContent({
   alreadyEnrolledNumbers,
   onCreated,
   onCancel,
+  defaultTerm,
 }: {
   studentId: number;
   courseId: number;
@@ -333,9 +334,10 @@ function AddPacesContent({
   alreadyEnrolledNumbers: Set<string>;
   onCreated: () => void;
   onCancel: () => void;
+  defaultTerm?: string;
 }) {
   const { toast } = useToast();
-  const [selectedTerm, setSelectedTerm] = useState<string>("");
+  const [selectedTerm, setSelectedTerm] = useState<string>(defaultTerm ?? "");
   const [selectedPaces, setSelectedPaces] = useState<Set<string>>(new Set());
   const [repeatPaces, setRepeatPaces] = useState<Set<string>>(new Set());
 
@@ -494,6 +496,7 @@ function CourseGroupRow({
   enrolledNumbers,
   studentId,
   forceExpand,
+  defaultTerm,
 }: {
   group: CourseGroup;
   courseMap: Map<number, Course>;
@@ -507,6 +510,7 @@ function CourseGroupRow({
   enrolledNumbers: Set<string>;
   studentId: number;
   forceExpand: boolean;
+  defaultTerm?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAddPaces, setShowAddPaces] = useState(false);
@@ -582,6 +586,7 @@ function CourseGroupRow({
           alreadyEnrolledNumbers={enrolledNumbers}
           onCreated={() => setShowAddPaces(false)}
           onCancel={() => setShowAddPaces(false)}
+          defaultTerm={defaultTerm}
         />
       )}
       {expanded && !showAddPaces && (
@@ -1072,13 +1077,16 @@ export default function EnrollmentsPage() {
     let result = enrollments;
     if (selectedYearTerms.size > 0) {
       result = result.filter(e => {
+        // Always show enrollments with no date information at all (not yet started)
+        if (!e.yearTerm && !e.dateStarted && !e.dateEnded) return true;
         const yt = e.yearTerm ?? (e.dateStarted ? computeYearTermFromDate(e.dateStarted) : null);
         return yt ? selectedYearTerms.has(yt) : false;
       });
     }
     if (termFilter !== "all") {
       const tf = parseInt(termFilter);
-      result = result.filter(e => e.term === tf || e.term == null);
+      // Use loose equality (==) to handle any integer/string type variance from the DB
+      result = result.filter(e => e.term == tf || e.term == null);
     }
     return result;
   }, [enrollments, selectedYearTerms, termFilter]);
@@ -1367,6 +1375,7 @@ export default function EnrollmentsPage() {
                           enrolledNumbers={enrolledNums}
                           studentId={selectedStudent.id}
                           forceExpand={expandAll}
+                          defaultTerm={termFilter !== "all" ? termFilter : undefined}
                         />
                       );
                     })
