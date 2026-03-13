@@ -12,9 +12,9 @@ function formatGrade(grade: number | null): string {
   return `${parseFloat(grade.toFixed(1))}%`;
 }
 
-function isPassed(grade: number | null, course: Course, isDyslexic: boolean): boolean {
+function isPassed(grade: number | null, course: Course, isDyslexic: boolean, subjectName?: string): boolean {
   if (grade === null || grade === undefined) return false;
-  const isWordBuilding = course.subjectTemp?.toLowerCase() === "word building";
+  const isWordBuilding = subjectName?.toLowerCase() === "word building";
   if (isWordBuilding) {
     return isDyslexic ? grade >= 80 : grade >= 90;
   }
@@ -221,7 +221,7 @@ export default function SPCPage() {
                 <CardContent className="p-4">
                   <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-3">
                     <span className="font-semibold text-sm" data-testid={`text-ace-name-${course.id}`}>
-                      {course.aceAlias || course.course || `Course ${course.id}`}
+                      {course.aceAlias || course.icceAlias || `Course ${course.id}`}
                     </span>
                     <span className="text-xs text-muted-foreground" data-testid={`text-icce-name-${course.id}`}>
                       ICCE: {course.icceAlias || "—"}
@@ -238,7 +238,7 @@ export default function SPCPage() {
                       }}
                       data-testid={`badge-subject-${course.id}`}
                     >
-                      {subject?.subject || course.subjectTemp || "Unknown"}
+                      {subject?.subject || "Unknown"}
                     </span>
                   </div>
 
@@ -260,7 +260,7 @@ export default function SPCPage() {
                           {paceNumbers.map(num => {
                             const enrollment = enrollmentsByNumber.get(num);
                             const grade = enrollment?.grade ?? null;
-                            const passed = isPassed(grade, course, isDyslexic);
+                            const passed = isPassed(grade, course, isDyslexic, subject?.subject);
 
                             return (
                               <td key={num} className="text-center px-1 py-1.5" data-testid={`star-${course.id}-${num}`}>
@@ -279,7 +279,7 @@ export default function SPCPage() {
                           {paceNumbers.map(num => {
                             const enrollment = enrollmentsByNumber.get(num);
                             const grade = enrollment?.grade ?? null;
-                            const passed = isPassed(grade, course, isDyslexic);
+                            const passed = isPassed(grade, course, isDyslexic, subject?.subject);
 
                             return (
                               <td

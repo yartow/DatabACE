@@ -63,12 +63,9 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
     const excludeSet = new Set(exclude);
     return courses.filter(c =>
       !excludeSet.has(c.id) && (
-        (c.course?.toLowerCase().includes(q)) ||
         (c.aceAlias?.toLowerCase().includes(q)) ||
         (c.icceAlias?.toLowerCase().includes(q)) ||
-        (c.certificateName?.toLowerCase().includes(q)) ||
-        (c.subjectTemp?.toLowerCase().includes(q)) ||
-        (c.subjectAbb?.toLowerCase().includes(q))
+        (c.certificateName?.toLowerCase().includes(q))
       )
     ).slice(0, 8);
   }, [courses, query, exclude]);
@@ -144,8 +141,8 @@ function CourseSearch({ onSelect, exclude }: { onSelect: (course: Course) => voi
               }}
               data-testid={`suggestion-course-${c.id}`}
             >
-              <span className="font-medium truncate">{c.course || c.aceAlias || `Course ${c.id}`}</span>
-              <span className={`text-xs shrink-0 ${highlightIndex === i ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{c.subjectAbb} L{c.level}</span>
+              <span className="font-medium truncate">{c.icceAlias || c.aceAlias || `Course ${c.id}`}</span>
+              <span className={`text-xs shrink-0 ${highlightIndex === i ? "text-primary-foreground/70" : "text-muted-foreground"}`}>L{c.level}</span>
             </button>
           ))}
         </div>
@@ -203,7 +200,7 @@ interface CourseGroup {
   courseId: number;
   courseName: string;
   enrollments: Enrollment[];
-  minDateStarted: string;
+  minDateStarted: string | null;
   maxDateEnded: string | null;
   avgGrade: number | null;
 }
@@ -218,7 +215,7 @@ function groupEnrollmentsByCourse(enrollments: Enrollment[], courseMap: Map<numb
 
   return Array.from(groups.entries()).map(([courseId, rows]) => {
     const course = courseMap.get(courseId);
-    const courseName = course?.course || course?.aceAlias || `Course #${courseId}`;
+    const courseName = course?.icceAlias || course?.aceAlias || `Course #${courseId}`;
     const sortedRows = rows.sort((a, b) => {
       const numA = typeof a.number === "string" ? parseInt(a.number, 10) : a.number;
       const numB = typeof b.number === "string" ? parseInt(b.number, 10) : b.number;
@@ -420,7 +417,7 @@ function NewEnrollmentForm({ studentId, existingCourseIds, onCreated, onCancel }
         <label className="text-sm font-medium">Course</label>
         {selectedCourse ? (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{selectedCourse.course || selectedCourse.aceAlias}</span>
+            <span className="text-sm font-medium">{selectedCourse.icceAlias || selectedCourse.aceAlias}</span>
             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setSelectedCourse(null)}>Change</Button>
           </div>
         ) : (
@@ -794,7 +791,7 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
                       <span className="text-sm font-medium">
                         {student ? `${student.callName} ${student.surname}` : `Student #${c.excelRow.studentId}`}
                         {" — "}
-                        {course?.course || course?.aceAlias || `Course #${c.excelRow.courseId}`}
+                        {course?.icceAlias || course?.aceAlias || `Course #${c.excelRow.courseId}`}
                         {" — PACE "}
                         {c.excelRow.number}
                       </span>
