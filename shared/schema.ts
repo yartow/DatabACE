@@ -158,6 +158,8 @@ export const enrollments = pgTable("enrollments", {
   dateEnded: text("date_ended"),
   grade: real("grade"),
   remarks: text("remarks"),
+  term: smallint("term"),
+  isRepeat: boolean("is_repeat").notNull().default(false),
 });
 
 export const supplementaryActivities = pgTable("supplementary_activities", {
