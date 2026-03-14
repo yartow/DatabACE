@@ -92,6 +92,7 @@ export const courses = pgTable("courses", {
   id: integer("id").primaryKey(),
   aceAlias: text("ace_alias"),
   icceAlias: text("icce_alias"),
+  icceId: varchar("icce_id", { length: 10 }),
   certificateName: text("certificate_name"),
   level: integer("level"),
   subjectId: integer("subject_id"),

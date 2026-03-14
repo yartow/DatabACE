@@ -119,12 +119,12 @@ export async function registerRoutes(
         return res.send(Buffer.from(buf));
       }
       const allCourses = await storage.getCourses();
-      const rows = allCourses.map(c => [c.id, c.aceAlias, c.icceAlias, c.certificateName, c.level, c.subjectId, c.subjectGroupId, c.courseType, c.passThreshold != null ? Math.round(c.passThreshold * 100) / 100 : null, c.remarks]);
+      const rows = allCourses.map(c => [c.id, c.aceAlias, c.icceAlias, c.icceId, c.certificateName, c.level, c.subjectId, c.subjectGroupId, c.courseType, c.passThreshold != null ? Math.round(c.passThreshold * 100) / 100 : null, c.remarks]);
       const ws = XLSX.utils.aoa_to_sheet([
-        ["id", "aceAlias", "icceAlias", "certificateName", "level", "subjectId", "subjectGroupId", "courseType", "passThreshold", "remarks"],
+        ["id", "aceAlias", "icceAlias", "icceId", "certificateName", "level", "subjectId", "subjectGroupId", "courseType", "passThreshold", "remarks"],
         ...rows,
       ]);
-      ws["!cols"] = [8,16,24,24,8,10,12,12,14,30].map(w => ({ wch: w }));
+      ws["!cols"] = [8,16,24,12,24,8,10,12,12,14,30].map(w => ({ wch: w }));
       XLSX.utils.book_append_sheet(wb, ws, "Courses");
       const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       res.setHeader("Content-Disposition", "attachment; filename=courses_template.xlsx");
@@ -273,7 +273,8 @@ export async function registerRoutes(
     try {
       const XLSX = await import("xlsx");
       const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-      const sheetName = workbook.SheetNames[0];
+      const targetSheet = importType === "pace-courses" ? "pacecourses" : "courses";
+      const sheetName = workbook.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, "") === targetSheet) || workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const rows: any[] = XLSX.utils.sheet_to_json(sheet);
       if (rows.length === 0) return res.status(400).json({ message: "No data rows found" });
@@ -319,12 +320,28 @@ export async function registerRoutes(
       const conflictCourses: { excelRow: any; dbRow: any }[] = [];
       let skippedIdentical = 0;
       const errors: string[] = [];
+      const seenIds = new Set<number>();
+      let skippedDuplicates = 0;
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const id = parseInt(String(row.id));
-        if (isNaN(id)) { errors.push(`Row ${i+2}: id is required`); continue; }
-        const excelRow = { id, aceAlias: row.aceAlias || null, icceAlias: row.icceAlias || row.course || null, certificateName: row.certificateName || null, level: row.level != null ? parseInt(row.level) : null, subjectId: row.subjectId != null ? parseInt(row.subjectId) : null, subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null, courseType: row.courseType || null, passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null, remarks: row.remarks ? String(row.remarks).slice(0, 3000) : null };
+        if (isNaN(id)) { errors.push(`Row ${i+2}: id is required and must be a whole number`); continue; }
+        if (seenIds.has(id)) { skippedDuplicates++; continue; }
+        seenIds.add(id);
+        const excelRow = {
+          id,
+          aceAlias: row.aceAlias || null,
+          icceAlias: row.icceAlias || row.course || null,
+          icceId: row.icceId ? String(row.icceId).slice(0, 10) : null,
+          certificateName: row.certificateName || null,
+          level: row.level != null ? parseInt(row.level) : null,
+          subjectId: row.subjectId != null ? parseInt(row.subjectId) : null,
+          subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null,
+          courseType: row.courseType || null,
+          passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null,
+          remarks: row.remarks ? String(row.remarks).slice(0, 3000) : null,
+        };
         const existing = existingCourseMap.get(id);
         if (!existing) { newCourses.push(excelRow); continue; }
         const changed = Object.keys(excelRow).some(k => k !== "id" && (excelRow as any)[k] !== (existing as any)[k]);
@@ -332,6 +349,7 @@ export async function registerRoutes(
         conflictCourses.push({ excelRow, dbRow: existing });
       }
 
+      if (skippedDuplicates > 0) errors.push(`${skippedDuplicates} duplicate ID(s) within the file were skipped`);
       courseImportSessions.set(sessionId, { newCourses, conflictCourses, newPcs: [], conflictPcs: [], type: "courses", skippedIdentical, createdAt: Date.now() });
       res.json({ sessionId, newCount: newCourses.length, conflictCount: conflictCourses.length, skippedIdentical, errors, conflicts: conflictCourses.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
     } catch (error: any) {
