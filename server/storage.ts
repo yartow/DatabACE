@@ -48,6 +48,7 @@ export interface IStorage {
   createPace(data: InsertPace): Promise<Pace>;
   getNextPaceId(): Promise<number>;
   upsertPace(data: InsertPace): Promise<Pace>;
+  updatePace(id: number, data: Partial<InsertPace>): Promise<Pace | undefined>;
 
   getPaceCourses(): Promise<PaceCourse[]>;
   getPaceCoursesByPace(paceId: number): Promise<PaceCourse[]>;
@@ -187,6 +188,10 @@ export class DatabaseStorage implements IStorage {
     const [p] = await db.insert(paces).values(data)
       .onConflictDoUpdate({ target: paces.id, set: { ...data } })
       .returning();
+    return p;
+  }
+  async updatePace(id: number, data: Partial<InsertPace>): Promise<Pace | undefined> {
+    const [p] = await db.update(paces).set(data).where(eq(paces.id, id)).returning();
     return p;
   }
 

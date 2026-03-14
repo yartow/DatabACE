@@ -156,6 +156,16 @@ export async function registerRoutes(
     res.json(p);
   });
 
+  app.patch("/api/paces/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const parsed = insertPaceSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    const result = await storage.updatePace(parseInt(req.params.id), parsed.data);
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.json(result);
+  });
+
   app.get("/api/pace-courses", isAuthenticated, async (req: any, res) => {
     const { paceId, courseId } = req.query;
     if (paceId) {
