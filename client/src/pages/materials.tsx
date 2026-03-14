@@ -528,7 +528,12 @@ export default function MaterialsPage() {
           const nb = (courseB?.aceAlias || courseB?.icceAlias || "").toLowerCase();
           return na.localeCompare(nb) * dir;
         }
-        case "number": return (a.number || "").localeCompare(b.number || "") * dir;
+        case "number": {
+          const toNum = (s: string) => { const m = s.match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
+          const na = toNum(a.number || "");
+          const nb = toNum(b.number || "");
+          return na !== nb ? (na - nb) * dir : (a.number || "").localeCompare(b.number || "") * dir;
+        }
         case "star": {
           const svA = paceMap.get(a.paceId)?.starValue ?? 1;
           const svB = paceMap.get(b.paceId)?.starValue ?? 1;
