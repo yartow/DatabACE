@@ -151,6 +151,7 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
 function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan, onCancel, onSaved }: { c: Course; subjectMap: Map<number, Subject>; subjectGroupMap: Map<number, SubjectGroup>; starValue?: number; colSpan: number; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
   const [icceAlias, setIcceAlias] = useState(c.icceAlias || "");
+  const [icceId, setIcceId] = useState(c.icceId || "");
   const [aceAlias, setAceAlias] = useState(c.aceAlias || "");
   const [certificateName, setCertificateName] = useState(c.certificateName || "");
   const [level, setLevel] = useState(c.level?.toString() || "");
@@ -164,6 +165,7 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/courses/${c.id}`, {
         icceAlias: icceAlias || null,
+        icceId: icceId ? icceId.slice(0, 10) : null,
         aceAlias: aceAlias || null,
         certificateName: certificateName || null,
         level: level ? parseInt(level) : null,
@@ -235,7 +237,11 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
       <tr className="border-b bg-muted/30" data-testid={`row-course-edit-extra-${c.id}`}>
         <td colSpan={colSpan} className="py-2 px-3">
           <div className="flex flex-wrap gap-4 items-center text-xs">
-            <span className="text-muted-foreground font-medium">ICCE ID: <span className="text-foreground font-mono">{c.id}</span></span>
+            <span className="text-muted-foreground font-medium">ID: <span className="text-foreground font-mono">{c.id}</span></span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-muted-foreground font-medium whitespace-nowrap">ICCE ID</label>
+              <Input value={icceId} onChange={e => setIcceId(e.target.value)} className="h-6 text-xs w-24" maxLength={10} disabled={mutation.isPending} data-testid="input-edit-course-icceid" />
+            </div>
             <div className="flex items-center gap-1.5">
               <label className="text-muted-foreground font-medium whitespace-nowrap">ACE Alias</label>
               <Input value={aceAlias} onChange={e => setAceAlias(e.target.value)} className="h-6 text-xs w-48" disabled={mutation.isPending} data-testid="input-edit-course-ace" />
@@ -764,7 +770,8 @@ export default function MaterialsPage() {
                             <tr className="border-b bg-muted/10" data-testid={`row-course-details-${c.id}`}>
                               <td colSpan={colSpan} className="py-2 px-4">
                                 <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-                                  <span><span className="font-medium text-foreground">ICCE ID:</span> <span className="font-mono">{c.id}</span></span>
+                                  <span><span className="font-medium text-foreground">ID:</span> <span className="font-mono">{c.id}</span></span>
+                                  {c.icceId && <span><span className="font-medium text-foreground">ICCE ID:</span> <span className="font-mono">{c.icceId}</span></span>}
                                   <span><span className="font-medium text-foreground">ACE Alias:</span> {c.aceAlias || "—"}</span>
                                   <span><span className="font-medium text-foreground">Certificate Name:</span> {c.certificateName || "—"}</span>
                                 </div>
