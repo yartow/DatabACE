@@ -258,24 +258,28 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
   );
 }
 
-function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; courseMap: Map<number, Course>; onCancel: () => void; onSaved: () => void }) {
+function EditablePcRow({ pc, courseMap, paceMap, onCancel, onSaved }: { pc: PaceCourse; courseMap: Map<number, Course>; paceMap: Map<number, Pace>; onCancel: () => void; onSaved: () => void }) {
   const { toast } = useToast();
-  const [number, setNumber] = useState(pc.number || "");
-  const [alias, setAlias] = useState(pc.alias?.toString() || "");
+  const [pcNumber, setPcNumber] = useState(pc.number || "");
+  const [starValue, setStarValue] = useState<string>((paceMap.get(pc.paceId)?.starValue ?? 1).toString());
 
   const course = courseMap.get(pc.courseId);
-  const courseName = course?.icceAlias || course?.aceAlias || `#${pc.courseId}`;
+  const courseName = course?.aceAlias || course?.icceAlias || `#${pc.courseId}`;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/pace-courses/${pc.id}`, {
-        number: number || null,
-        alias: alias ? parseInt(alias) : null,
+        number: pcNumber || null,
       });
+      const sv = parseInt(starValue);
+      if (!isNaN(sv) && sv > 0) {
+        await apiRequest("PATCH", `/api/paces/${pc.paceId}`, { starValue: sv });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pace-courses"] });
-      toast({ title: "PACE-Course updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/paces"] });
+      toast({ title: "PACE updated" });
       onSaved();
     },
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
@@ -301,10 +305,17 @@ function EditablePcRow({ pc, courseMap, onCancel, onSaved }: { pc: PaceCourse; c
       <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
       <td className="py-2 px-2 font-medium text-xs">{courseName}</td>
       <td className="text-center py-2 px-2 font-mono text-xs">
-        <Input value={number} onChange={e => setNumber(e.target.value)} className="h-7 w-24 text-xs text-center mx-auto font-mono" disabled={isBusy} data-testid="input-edit-pc-number" />
+        <Input value={pcNumber} onChange={e => setPcNumber(e.target.value)} className="h-7 w-24 text-xs text-center mx-auto font-mono" disabled={isBusy} data-testid="input-edit-pc-number" />
       </td>
       <td className="text-center py-2 px-2">
-        <Input value={alias} onChange={e => setAlias(e.target.value)} className="h-7 w-20 text-xs text-center mx-auto" disabled={isBusy} data-testid="input-edit-pc-alias" />
+        <Input
+          type="number" min="1" max="10" step="1"
+          value={starValue}
+          onChange={e => setStarValue(e.target.value)}
+          className="h-7 w-16 text-xs text-center mx-auto"
+          disabled={isBusy}
+          data-testid="input-edit-pc-star"
+        />
       </td>
       <td className="text-center py-2 px-2">
         <div className="flex items-center gap-1 justify-center">
@@ -412,15 +423,29 @@ export default function MaterialsPage() {
     return next;
   });
 
+  const [activeTab, setActiveTab] = useState<"courses" | "pace-courses">("courses");
   const [pcSearch, setPcSearch] = useState("");
   const [pcSelectedCourse, setPcSelectedCourse] = useState("all");
   const [pcComboOpen, setPcComboOpen] = useState(false);
-  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "alias">("course");
+  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "star">("course");
   const [pcSortDir, setPcSortDir] = useState<"asc" | "desc">("asc");
 
   const togglePcSort = (col: typeof pcSortCol) => {
     if (pcSortCol === col) setPcSortDir(d => d === "asc" ? "desc" : "asc");
     else { setPcSortCol(col); setPcSortDir("asc"); }
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab === "pace-courses" && activeTab === "courses") {
+      if (filteredCourses.length === 1) {
+        setPcSelectedCourse(filteredCourses[0].id.toString());
+        setPcSearch("");
+      } else if (search.trim()) {
+        setPcSearch(search.trim());
+        setPcSelectedCourse("all");
+      }
+    }
+    setActiveTab(tab as "courses" | "pace-courses");
   };
 
   const [showAddCourse, setShowAddCourse] = useState(false);
@@ -499,16 +524,20 @@ export default function MaterialsPage() {
       const courseB = courseMap.get(b.courseId);
       switch (pcSortCol) {
         case "course": {
-          const na = (courseA?.icceAlias || courseA?.aceAlias || "").toLowerCase();
-          const nb = (courseB?.icceAlias || courseB?.aceAlias || "").toLowerCase();
+          const na = (courseA?.aceAlias || courseA?.icceAlias || "").toLowerCase();
+          const nb = (courseB?.aceAlias || courseB?.icceAlias || "").toLowerCase();
           return na.localeCompare(nb) * dir;
         }
-        case "number": return ((a.number || "") < (b.number || "") ? -1 : 1) * dir;
-        case "alias": return ((a.alias ?? 0) - (b.alias ?? 0)) * dir;
+        case "number": return (a.number || "").localeCompare(b.number || "") * dir;
+        case "star": {
+          const svA = paceMap.get(a.paceId)?.starValue ?? 1;
+          const svB = paceMap.get(b.paceId)?.starValue ?? 1;
+          return (svA - svB) * dir;
+        }
         default: return 0;
       }
     });
-  }, [paceCourses, pcSelectedCourse, pcSearch, pcSortCol, pcSortDir, courseMap]);
+  }, [paceCourses, pcSelectedCourse, pcSearch, pcSortCol, pcSortDir, courseMap, paceMap]);
 
   const handleImportUpload = async (file: File, type: "courses" | "pace-courses") => {
     setImportType(type);
@@ -614,7 +643,7 @@ export default function MaterialsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="courses" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="courses" data-testid="tab-courses">Courses</TabsTrigger>
           <TabsTrigger value="pace-courses" data-testid="tab-pace-courses">PACE-Course Links</TabsTrigger>
@@ -807,24 +836,23 @@ export default function MaterialsPage() {
                 <table className="w-full text-sm" data-testid="table-pace-courses">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">ID</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Code</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground w-[60px]">ID</th>
                       <th className="text-left py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("course")} data-testid="th-sort-course">
                         <div className="flex items-center gap-1 font-medium text-muted-foreground">
-                          Course
+                          ACE Alias
                           {pcSortCol === "course" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
                         </div>
                       </th>
                       <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("number")} data-testid="th-sort-number">
                         <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          PACE #
+                          PACE Number
                           {pcSortCol === "number" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
                         </div>
                       </th>
-                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("alias")} data-testid="th-sort-alias">
+                      <th className="text-center py-3 px-2 cursor-pointer select-none hover:text-foreground" onClick={() => togglePcSort("star")} data-testid="th-sort-star">
                         <div className="flex items-center justify-center gap-1 font-medium text-muted-foreground">
-                          Alias
-                          {pcSortCol === "alias" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                          Star Value
+                          {pcSortCol === "star" ? (pcSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
                         </div>
                       </th>
                       {isTeacher && <th className="w-[50px]" />}
@@ -833,15 +861,19 @@ export default function MaterialsPage() {
                   <tbody>
                     {displayPaceCourses.slice(0, 200).map(pc => {
                       if (editingPcId === pc.id) {
-                        return <EditablePcRow key={pc.id} pc={pc} courseMap={courseMap} onCancel={() => setEditingPcId(null)} onSaved={() => setEditingPcId(null)} />;
+                        return <EditablePcRow key={pc.id} pc={pc} courseMap={courseMap} paceMap={paceMap} onCancel={() => setEditingPcId(null)} onSaved={() => setEditingPcId(null)} />;
                       }
                       const course = courseMap.get(pc.courseId);
+                      const sv = paceMap.get(pc.paceId)?.starValue ?? 1;
                       return (
                         <tr key={pc.id} className="border-b last:border-0" data-testid={`row-pc-${pc.id}`}>
                           <td className="py-2 px-2 text-muted-foreground font-mono text-xs">{pc.id}</td>
-                          <td className="py-2 px-2 font-medium text-xs">{course?.icceAlias || course?.aceAlias || `#${pc.courseId}`}</td>
+                          <td className="py-2 px-2 font-medium text-xs">{course?.aceAlias || course?.icceAlias || `#${pc.courseId}`}</td>
                           <td className="text-center py-2 px-2 font-mono text-xs">{pc.number ?? "—"}</td>
-                          <td className="text-center py-2 px-2 text-muted-foreground text-xs">{pc.alias ?? "—"}</td>
+                          <td className="text-center py-2 px-2 text-xs">
+                            <span className="text-amber-500">{"★".repeat(sv)}</span>
+                            <span className="text-muted-foreground ml-1">({sv})</span>
+                          </td>
                           {isTeacher && (
                             <td className="text-center py-2 px-2">
                               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPcId(pc.id)} data-testid={`button-edit-pc-${pc.id}`}>
