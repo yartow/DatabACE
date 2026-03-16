@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { useState, useMemo, useRef } from "react";
 import { usePersistedState } from "@/lib/persisted-state";
 import type { Course, UserProfile } from "@shared/schema";
-import { ChevronDown, ChevronRight, Download, Upload, Package, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Upload, Package, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 const INVENTORY_STUDENT_IDS = [9996, 9997, 9998, 9999];
 const INVENTORY_NAMES: Record<number, string> = {
@@ -115,6 +115,8 @@ export default function InventoryPage() {
   const [paceNumberSearch, setPaceNumberSearch] = usePersistedState<string>("inventory.paceNumberSearch", "");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ id: number; value: string } | null>(null);
+  const [savingEntry, setSavingEntry] = useState(false);
 
   const { data: inventoryRows, isLoading } = useQuery<InventoryRow[]>({ queryKey: ["/api/inventory"] });
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
@@ -176,6 +178,22 @@ export default function InventoryPage() {
   const studentName = (row: InventoryRow) => {
     if (INVENTORY_STUDENT_IDS.includes(row.studentId)) return INVENTORY_NAMES[row.studentId] || `#${row.studentId}`;
     return `${row.studentCallName} ${row.studentSurname}`.trim() || `#${row.studentId}`;
+  };
+
+  const saveEntryEdit = async () => {
+    if (!editingEntry) return;
+    const qty = parseInt(editingEntry.value);
+    if (isNaN(qty) || qty < 0) { toast({ title: "Ongeldige waarde", variant: "destructive" }); return; }
+    setSavingEntry(true);
+    try {
+      await apiRequest("PATCH", `/api/inventory/${editingEntry.id}`, { numberInPossession: qty });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      setEditingEntry(null);
+    } catch (e: any) {
+      toast({ title: "Opslaan mislukt", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingEntry(false);
+    }
   };
 
   const handleImportUpload = async (file: File) => {
@@ -360,19 +378,56 @@ export default function InventoryPage() {
                                 <tr className="text-muted-foreground">
                                   <th className="text-left py-1 px-2">Student / Location</th>
                                   <th className="text-center py-1 px-2">In possession</th>
+                                  {isTeacher && <th className="w-12" />}
                                 </tr>
                               </thead>
                               <tbody>
-                                {g.entries.map(e => (
-                                  <tr key={e.inventoryId} className="border-t border-muted" data-testid={`row-inv-entry-${e.inventoryId}`}>
-                                    <td className="py-1.5 px-2">
-                                      <span className={INVENTORY_STUDENT_IDS.includes(e.studentId) ? "font-medium text-primary" : ""}>
-                                        {studentName(e)}
-                                      </span>
-                                    </td>
-                                    <td className="py-1.5 px-2 text-center font-semibold">{e.numberInPossession ?? 0}</td>
-                                  </tr>
-                                ))}
+                                {g.entries.map(e => {
+                                  const isEditing = editingEntry?.id === e.inventoryId;
+                                  return (
+                                    <tr key={e.inventoryId} className="border-t border-muted" data-testid={`row-inv-entry-${e.inventoryId}`}>
+                                      <td className="py-1.5 px-2">
+                                        <span className={INVENTORY_STUDENT_IDS.includes(e.studentId) ? "font-medium text-primary" : ""}>
+                                          {studentName(e)}
+                                        </span>
+                                      </td>
+                                      <td className="py-1.5 px-2 text-center font-semibold">
+                                        {isEditing ? (
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={editingEntry!.value}
+                                            onChange={ev => setEditingEntry({ id: e.inventoryId, value: ev.target.value })}
+                                            onKeyDown={ev => { if (ev.key === "Enter") saveEntryEdit(); if (ev.key === "Escape") setEditingEntry(null); }}
+                                            className="h-6 w-16 text-xs text-center mx-auto"
+                                            autoFocus
+                                            data-testid={`input-inv-qty-${e.inventoryId}`}
+                                          />
+                                        ) : (
+                                          e.numberInPossession ?? 0
+                                        )}
+                                      </td>
+                                      {isTeacher && (
+                                        <td className="py-1.5 px-2 text-center">
+                                          {isEditing ? (
+                                            <div className="flex items-center gap-0.5 justify-center">
+                                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={saveEntryEdit} disabled={savingEntry} data-testid={`button-inv-save-${e.inventoryId}`}>
+                                                <Check className="h-3 w-3 text-emerald-600" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setEditingEntry(null)} disabled={savingEntry} data-testid={`button-inv-cancel-${e.inventoryId}`}>
+                                                <X className="h-3 w-3 text-destructive" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <Button size="icon" variant="ghost" className="h-5 w-5 opacity-40 hover:opacity-100" onClick={ev => { ev.stopPropagation(); setEditingEntry({ id: e.inventoryId, value: String(e.numberInPossession ?? 0) }); }} data-testid={`button-inv-edit-${e.inventoryId}`}>
+                                              <Pencil className="h-3 w-3" />
+                                            </Button>
+                                          )}
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </td>
