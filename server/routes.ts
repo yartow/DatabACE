@@ -531,22 +531,70 @@ export async function registerRoutes(
     try {
       const XLSX = await import("xlsx");
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet([
-        ["paceVersionsId", "studentId", "numberInPossession"],
-        [1, 9996, 3],
+
+      const [allPvs, allPaces, invRows] = await Promise.all([
+        storage.getPaceVersions(),
+        storage.getPaces(),
+        storage.getInventoryRich(),
       ]);
-      ws["!cols"] = [{ wch: 16 }, { wch: 12 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+      const paceNumberMap = new Map(allPaces.map(p => [p.id, p.number]));
+      const INV_NAMES: Record<number, string> = { 9996: "Inventory Kindergarten", 9997: "Inventory ABCs", 9998: "Inventory Juniors", 9999: "Inventory Seniors" };
+
+      // ── Sheet 1: PaceVersions ──
+      const pvDataRows = allPvs.map(pv => [pv.id, pv.paceId, paceNumberMap.get(pv.paceId) ?? null, pv.yearRevised, pv.type, pv.edition]);
+      const pvWs = XLSX.utils.aoa_to_sheet([
+        ["id", "paceId", "paceNumber (info)", "yearRevised", "type", "edition"],
+        ...pvDataRows,
+      ]);
+      pvWs["!cols"] = [8, 8, 16, 12, 12, 10].map(w => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, pvWs, "PaceVersions");
+
+      // ── Sheet 2: Inventory ──
+      const seen = new Set<string>();
+      const invDataRows: any[][] = [];
+      for (const r of invRows) {
+        const key = `${r.paceVersionId}-${r.studentId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const name = INV_NAMES[r.studentId] ?? `${r.studentCallName} ${r.studentSurname}`.trim();
+        invDataRows.push([r.paceVersionId, r.studentId, name, r.numberInPossession]);
+      }
+      const invWs = XLSX.utils.aoa_to_sheet([
+        ["paceVersionsId", "studentId", "studentName (info)", "numberInPossession"],
+        ...invDataRows,
+      ]);
+      invWs["!cols"] = [16, 12, 26, 20].map(w => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, invWs, "Inventory");
+
+      // ── Sheet 3: Instructions ──
       const instrWs = XLSX.utils.aoa_to_sheet([
-        ["Inventory Import Template – Instructions"],
+        ["Inventory & PaceVersions Import Template – Instructions"],
         [""],
+        ["Sheet: PaceVersions"],
+        ["Column", "Required", "Description"],
+        ["id", "No (leave empty for new rows)", "Existing PaceVersion ID. If filled and found → update; if empty → insert new."],
+        ["paceId", "Yes", "PACE ID (must exist in paces table)"],
+        ["paceNumber (info)", "No", "Read-only reference column – not imported"],
+        ["yearRevised", "No", "Year the PACE was revised (number)"],
+        ["type", "No", "One of: PACE, Score Key, Material"],
+        ["edition", "No", "Edition number (integer)"],
+        [""],
+        ["Sheet: Inventory"],
         ["Column", "Required", "Description"],
         ["paceVersionsId", "Yes", "PaceVersion ID (must exist in pace_versions table)"],
-        ["studentId", "Yes", "Student ID (use 9996–9999 for inventory locations)"],
+        ["studentId", "Yes", "Student ID (use 9996–9999 for inventory storage locations)"],
+        ["studentName (info)", "No", "Read-only reference column – not imported"],
         ["numberInPossession", "Yes", "Number of copies"],
+        [""],
+        ["Inventory location IDs:"],
+        ["9996", "Inventory Kindergarten"],
+        ["9997", "Inventory ABCs"],
+        ["9998", "Inventory Juniors"],
+        ["9999", "Inventory Seniors"],
       ]);
-      instrWs["!cols"] = [{ wch: 18 }, { wch: 10 }, { wch: 50 }];
+      instrWs["!cols"] = [{ wch: 24 }, { wch: 34 }, { wch: 60 }];
       XLSX.utils.book_append_sheet(wb, instrWs, "Instructions");
+
       const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       res.setHeader("Content-Disposition", "attachment; filename=inventory_template.xlsx");
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -563,9 +611,49 @@ export async function registerRoutes(
     try {
       const XLSX = await import("xlsx");
       const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
-      if (rows.length === 0) return res.status(400).json({ message: "No data rows found" });
+
+      const findSheet = (name: string) => {
+        const key = workbook.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, "") === name);
+        return key ? workbook.Sheets[key] : null;
+      };
+
+      // ── Process PaceVersions sheet (direct upsert) ──
+      let pvInserted = 0; let pvUpdated = 0;
+      const pvErrors: string[] = [];
+      const pvSheet = findSheet("paceversions");
+      if (pvSheet) {
+        const pvRows: any[] = XLSX.utils.sheet_to_json(pvSheet);
+        const allPvsForImport = await storage.getPaceVersions();
+        const pvMapForImport = new Map(allPvsForImport.map(pv => [pv.id, pv]));
+        const allPacesForImport = await storage.getPaces();
+        const paceIdsForImport = new Set(allPacesForImport.map(p => p.id));
+        const VALID_TYPES = ["PACE", "Score Key", "Material"];
+        for (let i = 0; i < pvRows.length; i++) {
+          const row = pvRows[i];
+          const paceId = row.paceId != null ? parseInt(String(row.paceId)) : NaN;
+          if (isNaN(paceId) || !paceIdsForImport.has(paceId)) { pvErrors.push(`PaceVersions row ${i + 2}: invalid paceId`); continue; }
+          const typeVal = row.type ? String(row.type).trim() : null;
+          if (typeVal && !VALID_TYPES.includes(typeVal)) { pvErrors.push(`PaceVersions row ${i + 2}: type must be one of PACE, Score Key, Material`); continue; }
+          const data = {
+            paceId,
+            yearRevised: row.yearRevised != null ? parseInt(String(row.yearRevised)) : null,
+            type: (typeVal as any) || null,
+            edition: row.edition != null ? parseInt(String(row.edition)) : null,
+          };
+          const existingId = row.id != null ? parseInt(String(row.id)) : NaN;
+          if (!isNaN(existingId) && pvMapForImport.has(existingId)) {
+            await storage.updatePaceVersion(existingId, data);
+            pvUpdated++;
+          } else {
+            await storage.createPaceVersion(data);
+            pvInserted++;
+          }
+        }
+      }
+
+      // ── Process Inventory sheet (session-based) ──
+      const invSheet = findSheet("inventory") || workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(invSheet);
 
       const allPvs = await storage.getPaceVersions();
       const pvIds = new Set(allPvs.map(pv => pv.id));
@@ -595,9 +683,12 @@ export async function registerRoutes(
         conflicts.push({ excelRow, dbRow: { paceVersionsId, studentId, numberInPossession: existing.numberInPossession, inventoryId: existing.inventoryId } });
       }
 
-      const sessionId = crypto.randomUUID();
-      inventoryImportSessions.set(sessionId, { newRows, conflicts, skippedIdentical, createdAt: Date.now() });
-      res.json({ sessionId, newCount: newRows.length, conflictCount: conflicts.length, skippedIdentical, errors, conflicts: conflicts.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
+      let sessionId: string | null = null;
+      if (rows.length > 0) {
+        sessionId = crypto.randomUUID();
+        inventoryImportSessions.set(sessionId, { newRows, conflicts, skippedIdentical, createdAt: Date.now() });
+      }
+      res.json({ pvInserted, pvUpdated, pvErrors, sessionId, newCount: newRows.length, conflictCount: conflicts.length, skippedIdentical, errors, conflicts: conflicts.map((c, i) => ({ index: i, excelRow: c.excelRow, dbRow: c.dbRow })) });
     } catch (error: any) {
       res.status(400).json({ message: "Failed to parse file: " + error.message });
     }
