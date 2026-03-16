@@ -173,6 +173,29 @@ export const supplementaryActivities = pgTable("supplementary_activities", {
   activity: text("activity").notNull(),
 });
 
+export const orderLists = pgTable("order_lists", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  term: smallint("term"),
+  yearTerm: text("year_term"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const orderListItems = pgTable("order_list_items", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderListId: integer("order_list_id").notNull().references(() => orderLists.id),
+  paceId: integer("pace_id").references(() => paces.id),
+  courseId: integer("course_id").references(() => courses.id),
+  enrollmentNumber: varchar("enrollment_number", { length: 10 }),
+  studentId: integer("student_id").notNull().references(() => students.id),
+  enrollmentId: integer("enrollment_id").references(() => enrollments.id),
+  quantity: smallint("quantity").notNull().default(1),
+  initiallyToOrder: smallint("initially_to_order"),
+  fromInventory: smallint("from_inventory"),
+  finalToOrder: smallint("final_to_order"),
+  delivered: boolean("delivered").notNull().default(false),
+});
+
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   student: one(students, { fields: [enrollments.studentId], references: [students.id] }),
   course: one(courses, { fields: [enrollments.courseId], references: [courses.id] }),
@@ -214,6 +237,18 @@ export const paceVersionsRelations = relations(paceVersions, ({ one, many }) => 
 export const inventoryRelations = relations(inventory, ({ one }) => ({
   paceVersion: one(paceVersions, { fields: [inventory.paceVersionsId], references: [paceVersions.id] }),
   student: one(students, { fields: [inventory.studentId], references: [students.id] }),
+}));
+
+export const orderListsRelations = relations(orderLists, ({ many }) => ({
+  items: many(orderListItems),
+}));
+
+export const orderListItemsRelations = relations(orderListItems, ({ one }) => ({
+  orderList: one(orderLists, { fields: [orderListItems.orderListId], references: [orderLists.id] }),
+  pace: one(paces, { fields: [orderListItems.paceId], references: [paces.id] }),
+  course: one(courses, { fields: [orderListItems.courseId], references: [courses.id] }),
+  student: one(students, { fields: [orderListItems.studentId], references: [students.id] }),
+  enrollment: one(enrollments, { fields: [orderListItems.enrollmentId], references: [enrollments.id] }),
 }));
 
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
@@ -265,3 +300,11 @@ export type PaceVersion = typeof paceVersions.$inferSelect;
 export type InsertPaceVersion = z.infer<typeof insertPaceVersionSchema>;
 export type Inventory = typeof inventory.$inferSelect;
 export type InsertInventory = z.infer<typeof insertInventorySchema>;
+
+export const insertOrderListSchema = createInsertSchema(orderLists).omit({ id: true, createdAt: true });
+export const insertOrderListItemSchema = createInsertSchema(orderListItems).omit({ id: true });
+
+export type OrderList = typeof orderLists.$inferSelect;
+export type InsertOrderList = z.infer<typeof insertOrderListSchema>;
+export type OrderListItem = typeof orderListItems.$inferSelect;
+export type InsertOrderListItem = z.infer<typeof insertOrderListItemSchema>;

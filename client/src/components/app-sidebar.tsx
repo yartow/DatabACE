@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import {
-  BarChart3, FileText, BookOpen, Users, Upload, Download, LayoutDashboard, LogOut, GraduationCap, ClipboardList, Shield, Package
+  BarChart3, FileText, BookOpen, Users, Upload, Download, LayoutDashboard, LogOut, GraduationCap, ClipboardList, Shield, Package, ShoppingCart
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -19,6 +19,7 @@ const teacherItems = [
   { title: "Courses & PACEs", url: "/materials", icon: BookOpen },
   { title: "Enrollments", url: "/enrollments", icon: ClipboardList },
   { title: "Inventory", url: "/inventory", icon: Package },
+  { title: "Order Materials", url: "/order-materials", icon: ShoppingCart },
   { title: "People", url: "/students", icon: Users },
   { title: "Import Data", url: "/import", icon: Upload },
   { title: "Export Data", url: "/export", icon: Download },
