@@ -185,13 +185,21 @@ export default function InventoryPage() {
       const res = await fetch("/api/inventory/import", { method: "POST", body: formData, credentials: "include" });
       const data = await res.json();
       if (!res.ok) { toast({ title: "Import failed", description: data.message, variant: "destructive" }); return; }
+
+      const pvParts: string[] = [];
+      if ((data.pvInserted || 0) > 0) pvParts.push(`${data.pvInserted} PaceVersions inserted`);
+      if ((data.pvUpdated || 0) > 0) pvParts.push(`${data.pvUpdated} PaceVersions updated`);
+      if ((data.pvErrors || []).length > 0) toast({ title: "PaceVersions errors", description: data.pvErrors.slice(0, 3).join("; "), variant: "destructive" });
+      if (pvParts.length > 0) { toast({ title: "PaceVersions imported", description: pvParts.join(", ") }); queryClient.invalidateQueries({ queryKey: ["/api/inventory"] }); }
+
+      if (!data.sessionId) return;
       if (data.conflictCount === 0 && data.newCount > 0) {
         await fetch("/api/inventory/import/resolve", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ sessionId: data.sessionId, choices: [], overrideAll: false }) });
         queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-        toast({ title: "Import complete", description: `${data.newCount} inserted, ${data.skippedIdentical} skipped` });
+        toast({ title: "Inventory imported", description: `${data.newCount} inserted, ${data.skippedIdentical} skipped` });
       } else if (data.conflictCount > 0 || data.newCount > 0) {
         setImportResult(data);
-      } else {
+      } else if (pvParts.length === 0) {
         toast({ title: "Nothing to import", description: `${data.skippedIdentical} identical rows skipped` });
       }
     } catch (e: any) { toast({ title: "Upload failed", description: e.message, variant: "destructive" }); }
