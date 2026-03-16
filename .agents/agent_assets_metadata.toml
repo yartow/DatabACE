@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "IyWhSQWV7dtDvHJLZ-z18"
+uri = "file://docs/handleiding.md"
+type = "text"
+title = "Handleiding Ceder (Markdown)"

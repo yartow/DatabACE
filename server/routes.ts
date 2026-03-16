@@ -417,6 +417,8 @@ export async function registerRoutes(
   });
 
   app.get("/api/order-materials", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     const term = parseInt(req.query.term as string);
     if (isNaN(term) || term < 1 || term > 5) return res.status(400).json({ message: "Invalid term (1–5 required)" });
     const yearTerm = req.query.yearTerm as string | undefined;
