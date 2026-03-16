@@ -119,12 +119,12 @@ export async function registerRoutes(
         return res.send(Buffer.from(buf));
       }
       const allCourses = await storage.getCourses();
-      const rows = allCourses.map(c => [c.id, c.aceAlias, c.icceAlias, c.icceId, c.certificateName, c.level, c.subjectId, c.subjectGroupId, c.courseType, c.passThreshold != null ? Math.round(c.passThreshold * 100) / 100 : null, c.remarks]);
+      const rows = allCourses.map(c => [c.id, c.aceAlias, c.icceAlias, c.icceId, c.certificateName, c.level, c.subjectId, c.subjectGroupId, c.courseType, c.passThreshold != null ? Math.round(c.passThreshold * 100) / 100 : null, c.credits ?? null, c.remarks]);
       const ws = XLSX.utils.aoa_to_sheet([
-        ["id", "aceAlias", "icceAlias", "icceId", "certificateName", "level", "subjectId", "subjectGroupId", "courseType", "passThreshold", "remarks"],
+        ["id", "aceAlias", "icceAlias", "icceId", "certificateName", "level", "subjectId", "subjectGroupId", "courseType", "passThreshold", "credits", "remarks"],
         ...rows,
       ]);
-      ws["!cols"] = [8,16,24,12,24,8,10,12,12,14,30].map(w => ({ wch: w }));
+      ws["!cols"] = [8,16,24,12,24,8,10,12,12,14,10,30].map(w => ({ wch: w }));
       XLSX.utils.book_append_sheet(wb, ws, "Courses");
       const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       res.setHeader("Content-Disposition", "attachment; filename=courses_template.xlsx");
@@ -340,6 +340,7 @@ export async function registerRoutes(
           subjectGroupId: row.subjectGroupId != null ? parseInt(row.subjectGroupId) : null,
           courseType: row.courseType || null,
           passThreshold: row.passThreshold != null ? parseFloat(row.passThreshold) : null,
+          credits: row.credits != null ? parseFloat(row.credits) : null,
           remarks: row.remarks ? String(row.remarks).slice(0, 3000) : null,
         };
         const existing = existingCourseMap.get(id);
