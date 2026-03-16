@@ -11,7 +11,7 @@ import {
   type PaceVersion, type InsertPaceVersion, type Inventory, type InsertInventory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 import { users } from "@shared/models/auth";
 
 export type InventoryRow = {
@@ -28,6 +28,21 @@ export type InventoryRow = {
   studentSurname: string;
   studentCallName: string;
   numberInPossession: number | null;
+};
+
+export type OrderMaterialRow = {
+  enrollmentId: number;
+  studentId: number;
+  studentCallName: string | null;
+  studentSurname: string | null;
+  courseId: number;
+  courseName: string | null;
+  enrollmentNumber: string | null;
+  paceId: number | null;
+  paceNumber: number | null;
+  quantity: number;
+  fromInventory: number;
+  toOrder: number;
 };
 
 export interface IStorage {
@@ -125,6 +140,8 @@ export interface IStorage {
   updateInventoryEntry(id: number, data: Partial<InsertInventory>): Promise<Inventory | undefined>;
   deleteInventoryEntry(id: number): Promise<void>;
   upsertInventoryEntry(paceVersionsId: number, studentId: number, numberInPossession: number): Promise<Inventory>;
+
+  getOrderMaterials(term: number, yearTerm?: string): Promise<OrderMaterialRow[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -508,6 +525,84 @@ export class DatabaseStorage implements IStorage {
     }
     const [inv] = await db.insert(inventory).values({ paceVersionsId, studentId, numberInPossession }).returning();
     return inv;
+  }
+
+  async getOrderMaterials(term: number, yearTerm?: string): Promise<OrderMaterialRow[]> {
+    // Inventory totals per paceId (from the 4 inventory stock students 9996-9999)
+    const invTotals = await db
+      .select({
+        paceId: paceVersions.paceId,
+        total: sql<number>`COALESCE(SUM(${inventory.numberInPossession}), 0)`,
+      })
+      .from(inventory)
+      .innerJoin(paceVersions, eq(inventory.paceVersionsId, paceVersions.id))
+      .where(sql`${inventory.studentId} IN (9996, 9997, 9998, 9999)`)
+      .groupBy(paceVersions.paceId);
+
+    const invMap = new Map<number, number>(invTotals.map(r => [r.paceId, Number(r.total)]));
+
+    const conditions = [
+      sql`${enrollments.term} = ${term}`,
+      sql`${enrollments.studentId} NOT IN (9996, 9997, 9998, 9999)`,
+    ];
+    if (yearTerm) conditions.push(sql`${enrollments.yearTerm} = ${yearTerm}`);
+
+    const rows = await db
+      .select({
+        enrollmentId: enrollments.id,
+        studentId: students.id,
+        studentCallName: students.callName,
+        studentSurname: students.surname,
+        courseId: courses.id,
+        courseName: courses.icceAlias,
+        enrollmentNumber: enrollments.number,
+        paceId: paces.id,
+        paceNumber: paces.number,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(courses, eq(enrollments.courseId, courses.id))
+      .leftJoin(paceCourses, and(
+        eq(paceCourses.courseId, enrollments.courseId),
+        eq(paceCourses.number, enrollments.number),
+      ))
+      .leftJoin(paces, eq(paces.id, paceCourses.paceId))
+      .where(and(...conditions))
+      .orderBy(asc(paces.number), asc(students.surname), asc(students.callName));
+
+    // Group by paceId to distribute inventory across students
+    const byPace = new Map<string, typeof rows>();
+    for (const row of rows) {
+      const key = row.paceId != null ? `p_${row.paceId}` : `e_${row.enrollmentId}`;
+      if (!byPace.has(key)) byPace.set(key, []);
+      byPace.get(key)!.push(row);
+    }
+
+    const result: OrderMaterialRow[] = [];
+    for (const group of byPace.values()) {
+      const paceId = group[0].paceId;
+      let invRemaining = paceId != null ? (invMap.get(paceId) ?? 0) : 0;
+      for (const row of group) {
+        const fromInventory = invRemaining > 0 ? -1 : 0;
+        if (invRemaining > 0) invRemaining--;
+        result.push({
+          enrollmentId: row.enrollmentId,
+          studentId: row.studentId,
+          studentCallName: row.studentCallName,
+          studentSurname: row.studentSurname,
+          courseId: row.courseId,
+          courseName: row.courseName,
+          enrollmentNumber: row.enrollmentNumber,
+          paceId: row.paceId,
+          paceNumber: row.paceNumber,
+          quantity: 1,
+          fromInventory,
+          toOrder: 1 + fromInventory,
+        });
+      }
+    }
+
+    return result;
   }
 }
 
