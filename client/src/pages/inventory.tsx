@@ -315,6 +315,7 @@ export default function InventoryPage() {
                   <tr className="border-b bg-muted/30">
                     <th className="w-8" />
                     <th className="text-left py-3 px-3 font-medium text-muted-foreground">PACE #</th>
+                    <th className="text-center py-3 px-3 font-medium text-muted-foreground">PACE ID</th>
                     <th className="text-left py-3 px-3 font-medium text-muted-foreground">Course</th>
                     <th className="text-center py-3 px-3 font-medium text-muted-foreground">Type</th>
                     <th className="text-center py-3 px-3 font-medium text-muted-foreground">Year Revised</th>
@@ -336,6 +337,7 @@ export default function InventoryPage() {
                           {expanded ? <ChevronDown className="h-4 w-4 mx-auto" /> : <ChevronRight className="h-4 w-4 mx-auto" />}
                         </td>
                         <td className="py-3 px-3 font-mono font-medium">{g.paceNumber ?? "—"}</td>
+                        <td className="py-3 px-3 text-center font-mono text-muted-foreground text-xs">{g.paceId}</td>
                         <td className="py-3 px-3">{g.courseName || "—"}</td>
                         <td className="py-3 px-3 text-center">{typeLabel(g.type)}</td>
                         <td className="py-3 px-3 text-center text-muted-foreground">{g.yearRevised ?? "—"}</td>
@@ -344,7 +346,7 @@ export default function InventoryPage() {
                       </tr>,
                       expanded && (
                         <tr key={`${g.paceVersionId}-details`}>
-                          <td colSpan={7} className="pb-2 pt-0 px-4 bg-muted/10">
+                          <td colSpan={8} className="pb-2 pt-0 px-4 bg-muted/10">
                             <table className="w-full text-xs mt-1">
                               <thead>
                                 <tr className="text-muted-foreground">
