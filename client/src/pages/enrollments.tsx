@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, Course, Enrollment, SupplementaryActivity, Pace, PaceCourse, Subject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Label } from "@/components/ui/label";
@@ -1053,13 +1054,13 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
 
 export default function EnrollmentsPage() {
   const { toast } = useToast();
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = usePersistedState<Student | null>("enrollments.selectedStudent", null);
   const [showNewRow, setShowNewRow] = useState(false);
   const [showNewSuppRow, setShowNewSuppRow] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [selectedYearTerms, setSelectedYearTerms] = useState<Set<string>>(new Set([getCurrentYearTerm()]));
+  const [selectedYearTerms, setSelectedYearTerms] = usePersistedState<Set<string>>("enrollments.selectedYearTerms", new Set([getCurrentYearTerm()]));
   const [yearTermFilterOpen, setYearTermFilterOpen] = useState(false);
-  const [termFilter, setTermFilter] = useState<string>("all");
+  const [termFilter, setTermFilter] = usePersistedState<string>("enrollments.termFilter", "all");
   const [expandAll, setExpandAll] = useState(false);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, UserProfile, Personnel, Family, Parent } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Pencil, Info } from "lucide-react";
@@ -27,8 +28,8 @@ function stripPhone(phone: string): string {
 
 export default function StudentsPage() {
   const { toast } = useToast();
-  const [view, setView] = useState<ViewType>("students");
-  const [search, setSearch] = useState("");
+  const [view, setView] = usePersistedState<ViewType>("students.view", "students");
+  const [search, setSearch] = usePersistedState<string>("students.search", "");
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const isTeacher = profile?.role === "teacher";
