@@ -423,6 +423,61 @@ export async function registerRoutes(
     res.json(await storage.getOrderMaterials(term, yearTerm || undefined));
   });
 
+  app.get("/api/order-lists", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    res.json(await storage.getOrderLists());
+  });
+
+  app.get("/api/order-lists/:id", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const result = await storage.getOrderListWithItems(parseInt(req.params.id));
+    if (!result) return res.status(404).json({ message: "Order list not found" });
+    res.json(result);
+  });
+
+  app.post("/api/order-lists", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { name, term, yearTerm, items } = req.body;
+    if (!name || !Array.isArray(items)) return res.status(400).json({ message: "name and items[] required" });
+    const list = await storage.createOrderList(
+      { name, term: term ?? null, yearTerm: yearTerm ?? null },
+      items.map((it: any) => ({
+        orderListId: 0,
+        paceId: it.paceId ?? null,
+        courseId: it.courseId ?? null,
+        enrollmentNumber: it.enrollmentNumber ?? null,
+        studentId: it.studentId,
+        enrollmentId: it.enrollmentId ?? null,
+        quantity: it.quantity ?? 1,
+        initiallyToOrder: it.initiallyToOrder ?? null,
+        fromInventory: it.fromInventory ?? null,
+        finalToOrder: it.finalToOrder ?? null,
+        delivered: false,
+      })),
+    );
+    res.json(list);
+  });
+
+  app.patch("/api/order-lists/:listId/items/:itemId", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const { delivered } = req.body;
+    const item = await storage.updateOrderListItem(parseInt(req.params.itemId), { delivered: !!delivered });
+    if (!item) return res.status(404).json({ message: "Item not found" });
+    if (item.orderListId !== parseInt(req.params.listId)) return res.status(403).json({ message: "Item does not belong to this list" });
+    res.json(item);
+  });
+
+  app.post("/api/order-lists/:id/process-delivery", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const count = await storage.processDelivery(parseInt(req.params.id));
+    res.json({ processed: count });
+  });
+
   app.get("/api/inventory", isAuthenticated, async (_req: any, res) => {
     res.json(await storage.getInventoryRich());
   });
