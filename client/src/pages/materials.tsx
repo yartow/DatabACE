@@ -159,6 +159,7 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
   const [passThreshold, setPassThreshold] = useState(c.passThreshold != null ? Math.round(c.passThreshold * 100).toString() : "");
   const [courseType, setCourseType] = useState(c.courseType || "");
   const [remarks, setRemarks] = useState(c.remarks || "");
+  const [credits, setCredits] = useState(c.credits?.toString() || "");
   const [active, setActive] = useState((c.active ?? 1) === 1);
   const [showPacesDialog, setShowPacesDialog] = useState(false);
 
@@ -171,6 +172,7 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
         certificateName: certificateName || null,
         level: level ? parseInt(level) : null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
+        credits: credits ? parseFloat(credits) : null,
         courseType: courseType || null,
         remarks: remarks || null,
         active: active ? 1 : 0,
@@ -199,6 +201,9 @@ function EditableCourseRow({ c, subjectMap, subjectGroupMap, starValue, colSpan,
         <td className="text-center py-2 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
         <td className="text-center py-2 px-2">
           <Input value={level} onChange={e => setLevel(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={mutation.isPending} data-testid="input-edit-course-level" />
+        </td>
+        <td className="text-center py-2 px-2">
+          <Input value={credits} onChange={e => setCredits(e.target.value)} className="h-7 w-16 text-xs text-center mx-auto" disabled={mutation.isPending} data-testid="input-edit-course-credits" placeholder="0" />
         </td>
         <td className="text-center py-2 px-2">
           <Select value={courseType || "none"} onValueChange={v => setCourseType(v === "none" ? "" : v)} disabled={mutation.isPending}>
@@ -701,6 +706,7 @@ export default function MaterialsPage() {
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Subject</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Group</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Level</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Credits</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Type</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">★ Stars</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Active</th>
@@ -711,7 +717,7 @@ export default function MaterialsPage() {
                   </thead>
                   <tbody>
                     {filteredCourses.map(c => {
-                      const colSpan = 10;
+                      const colSpan = 11;
                       if (editingCourseId === c.id) {
                         return <EditableCourseRow key={c.id} c={c} subjectMap={subjectMap} subjectGroupMap={subjectGroupMap} starValue={courseStarValues.get(c.id)} colSpan={colSpan} onCancel={() => setEditingCourseId(null)} onSaved={() => setEditingCourseId(null)} />;
                       }
@@ -728,6 +734,7 @@ export default function MaterialsPage() {
                             <td className="text-center py-3 px-2"><Badge variant="secondary">{subj?.subject || "—"}</Badge></td>
                             <td className="text-center py-3 px-2 text-muted-foreground text-xs">{grp?.subjectGroup || "—"}</td>
                             <td className="text-center py-3 px-2">{c.level ?? "—"}</td>
+                            <td className="text-center py-3 px-2">{c.credits != null ? c.credits : "—"}</td>
                             <td className="text-center py-3 px-2 text-muted-foreground">{c.courseType || "—"}</td>
                             <td className="text-center py-3 px-2 font-medium text-amber-600 dark:text-amber-400" data-testid={`text-stars-${c.id}`}>
                               {sv != null && sv > 0 ? `★ ${sv}` : "—"}
@@ -944,6 +951,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
   const [subjectGroupId, setSubjectGroupId] = useState("");
   const [courseType, setCourseType] = useState("");
   const [passThreshold, setPassThreshold] = useState("");
+  const [credits, setCredits] = useState("");
   const [remarks, setRemarks] = useState("");
   const [paceCount, setPaceCount] = useState("");
   const [paceEntries, setPaceEntries] = useState<{ number: string }[]>([]);
@@ -972,6 +980,7 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
         subjectGroupId: subjectGroupId ? parseInt(subjectGroupId) : null,
         courseType: courseType || null,
         passThreshold: passThreshold ? parseFloat(passThreshold) / 100 : null,
+        credits: credits ? parseFloat(credits) : null,
         remarks: remarks || null,
         paceData: valid.map(e => ({ number: e.number })),
       });
@@ -1036,6 +1045,10 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
           <div className="space-y-1.5">
             <Label>Pass threshold</Label>
             <Input type="number" value={passThreshold} onChange={e => setPassThreshold(e.target.value)} placeholder="e.g. 80" data-testid="input-new-pass-threshold" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Credits</Label>
+            <Input type="number" value={credits} onChange={e => setCredits(e.target.value)} placeholder="e.g. 1" data-testid="input-new-credits" />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Remarks</Label>
