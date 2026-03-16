@@ -416,6 +416,13 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.get("/api/order-materials", isAuthenticated, async (req: any, res) => {
+    const term = parseInt(req.query.term as string);
+    if (isNaN(term) || term < 1 || term > 5) return res.status(400).json({ message: "Invalid term (1–5 required)" });
+    const yearTerm = req.query.yearTerm as string | undefined;
+    res.json(await storage.getOrderMaterials(term, yearTerm || undefined));
+  });
+
   app.get("/api/inventory", isAuthenticated, async (_req: any, res) => {
     res.json(await storage.getInventoryRich());
   });
