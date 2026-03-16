@@ -121,11 +121,11 @@ function AddPacesDialog({ course, onClose, onSaved }: { course: Course; onClose:
                   <div key={i} className="space-y-1">
                     <label className="text-xs text-muted-foreground">#{i + 1}</label>
                     <Input
-                      type="number"
+                      type="text"
                       value={entry.number}
                       onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { number: e.target.value }; return arr; })}
                       onFocus={scrollIntoView}
-                      placeholder="e.g. 1001"
+                      placeholder="bijv. 1001 of 1–2"
                       className="text-center"
                       disabled={isBusy}
                       data-testid={`input-add-pace-number-${i}`}
@@ -1053,10 +1053,10 @@ function AddCourseDialog({ subjects, subjectGroups, onClose, onCreated }: { subj
                   <div key={i} className="space-y-1">
                     <label className="text-xs text-muted-foreground">PACE {i + 1}</label>
                     <Input
-                      type="number"
+                      type="text"
                       value={entry.number}
                       onChange={e => setPaceEntries(prev => { const arr = [...prev]; arr[i] = { number: e.target.value }; return arr; })}
-                      placeholder={`e.g. 100${i + 1}`}
+                      placeholder={`bijv. 100${i + 1} of 1–2`}
                       className="text-center"
                       data-testid={`input-pace-number-${i}`}
                     />
