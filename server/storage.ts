@@ -696,19 +696,8 @@ export class DatabaseStorage implements IStorage {
 
       const existing = await db.select().from(inventory)
         .where(and(eq(inventory.paceVersionsId, latestPv.id), eq(inventory.studentId, item.studentId)));
-
-      if (existing.length > 0) {
-        const current = existing[0].numberInPossession ?? 0;
-        await db.update(inventory)
-          .set({ numberInPossession: current + item.finalToOrder })
-          .where(eq(inventory.id, existing[0].id));
-      } else {
-        await db.insert(inventory).values({
-          paceVersionsId: latestPv.id,
-          studentId: item.studentId,
-          numberInPossession: item.finalToOrder,
-        });
-      }
+      const currentQty = existing.length > 0 ? (existing[0].numberInPossession ?? 0) : 0;
+      await this.upsertInventoryEntry(latestPv.id, item.studentId, currentQty + item.finalToOrder);
       processedIds.push(item.id);
       processed++;
     }
