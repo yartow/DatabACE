@@ -464,10 +464,13 @@ export async function registerRoutes(
   app.patch("/api/order-lists/:listId/items/:itemId", isAuthenticated, async (req: any, res) => {
     const profile = await storage.getUserProfile(req.user.claims.sub);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
+    const listId = parseInt(req.params.listId);
+    const itemId = parseInt(req.params.itemId);
+    const existing = await storage.getOrderListItem(itemId);
+    if (!existing) return res.status(404).json({ message: "Item not found" });
+    if (existing.orderListId !== listId) return res.status(403).json({ message: "Item does not belong to this list" });
     const { delivered } = req.body;
-    const item = await storage.updateOrderListItem(parseInt(req.params.itemId), { delivered: !!delivered });
-    if (!item) return res.status(404).json({ message: "Item not found" });
-    if (item.orderListId !== parseInt(req.params.listId)) return res.status(403).json({ message: "Item does not belong to this list" });
+    const item = await storage.updateOrderListItem(itemId, { delivered: !!delivered });
     res.json(item);
   });
 
