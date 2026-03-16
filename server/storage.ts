@@ -652,7 +652,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(courses, eq(orderListItems.courseId, courses.id))
       .innerJoin(students, eq(orderListItems.studentId, students.id))
       .where(eq(orderListItems.orderListId, id))
-      .orderBy(asc(paces.number), asc(students.surname));
+      .orderBy(asc(paces.number), asc(students.surname), asc(orderListItems.id));
 
     return { list, items };
   }

@@ -461,7 +461,6 @@ export default function OrderMaterialsPage() {
                 <TableHead>Course</TableHead>
                 <TableHead className="w-24">PACE #</TableHead>
                 <TableHead className="w-20 text-right">Qty</TableHead>
-                <TableHead>Student</TableHead>
                 <TableHead className="w-28 text-right">Initially to order</TableHead>
                 <TableHead className="w-28 text-right">From Inventory</TableHead>
                 <TableHead className="w-28 text-right">Final to order</TableHead>
@@ -475,13 +474,12 @@ export default function OrderMaterialsPage() {
                   <TableCell>{r.courseName ?? "—"}</TableCell>
                   <TableCell className="font-mono">{r.paceNumber ?? r.enrollmentNumber ?? "—"}</TableCell>
                   <TableCell className="text-right">{r.quantity ?? 1}</TableCell>
-                  <TableCell>{r.studentSurname}, {r.studentCallName}</TableCell>
                   <TableCell className="text-right">{r.initiallyToOrder ?? 1}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{(r.fromInventory ?? 0) !== 0 ? r.fromInventory : "—"}</TableCell>
                   <TableCell className="text-right font-medium">{r.finalToOrder ?? 0}</TableCell>
                   <TableCell className="text-center">
                     <Checkbox
-                      checked={r.delivered}
+                      checked={!!r.delivered}
                       onCheckedChange={(v) => toggleDelivered(r.id, Boolean(v))}
                       data-testid={`checkbox-delivered-${r.id}`}
                     />
@@ -491,7 +489,6 @@ export default function OrderMaterialsPage() {
               <TableRow className="font-semibold bg-muted/50">
                 <TableCell colSpan={3} className="text-right pr-4">Total</TableCell>
                 <TableCell className="text-right">{totals.qty}</TableCell>
-                <TableCell />
                 <TableCell className="text-right">{totals.init}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{totals.inv !== 0 ? totals.inv : "—"}</TableCell>
                 <TableCell className="text-right">{totals.final}</TableCell>
