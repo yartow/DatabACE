@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { useState, useMemo, useRef, Fragment } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Course, Pace, PaceCourse, Subject, SubjectGroup, UserProfile } from "@shared/schema";
 import { BookOpen, Package, Link2, Pencil, Check, X, Plus, Upload, Download, ChevronDown, ChevronUp, ChevronsUpDown, ArrowUp, ArrowDown, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -415,10 +416,10 @@ function ImportConflictDialog({ result, onResolve, onClose, importType }: { resu
 }
 
 export default function MaterialsPage() {
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
-  const [levelFilter, setLevelFilter] = useState("");
-  const [subjectGroupIdFilter, setSubjectGroupIdFilter] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = usePersistedState<string>("materials.selectedSubjectId", "all");
+  const [levelFilter, setLevelFilter] = usePersistedState<string>("materials.levelFilter", "");
+  const [subjectGroupIdFilter, setSubjectGroupIdFilter] = usePersistedState<string>("materials.subjectGroupIdFilter", "all");
+  const [search, setSearch] = usePersistedState<string>("materials.search", "");
   const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
   const [expandedCourseIds, setExpandedCourseIds] = useState<Set<number>>(new Set());
   const [editingPcId, setEditingPcId] = useState<number | null>(null);
@@ -429,12 +430,12 @@ export default function MaterialsPage() {
     return next;
   });
 
-  const [activeTab, setActiveTab] = useState<"courses" | "pace-courses">("courses");
-  const [pcSearch, setPcSearch] = useState("");
-  const [pcSelectedCourse, setPcSelectedCourse] = useState("all");
+  const [activeTab, setActiveTab] = usePersistedState<"courses" | "pace-courses">("materials.activeTab", "courses");
+  const [pcSearch, setPcSearch] = usePersistedState<string>("materials.pcSearch", "");
+  const [pcSelectedCourse, setPcSelectedCourse] = usePersistedState<string>("materials.pcSelectedCourse", "all");
   const [pcComboOpen, setPcComboOpen] = useState(false);
-  const [pcSortCol, setPcSortCol] = useState<"course" | "number" | "star">("course");
-  const [pcSortDir, setPcSortDir] = useState<"asc" | "desc">("asc");
+  const [pcSortCol, setPcSortCol] = usePersistedState<"course" | "number" | "star">("materials.pcSortCol", "course");
+  const [pcSortDir, setPcSortDir] = usePersistedState<"asc" | "desc">("materials.pcSortDir", "asc");
 
   const togglePcSort = (col: typeof pcSortCol) => {
     if (pcSortCol === col) setPcSortDir(d => d === "asc" ? "desc" : "asc");

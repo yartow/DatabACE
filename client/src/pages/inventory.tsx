@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useState, useMemo, useRef } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Course, UserProfile } from "@shared/schema";
 import { ChevronDown, ChevronRight, Download, Upload, Package, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -108,10 +109,10 @@ export default function InventoryPage() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [showInventoryOnly, setShowInventoryOnly] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [courseFilter, setCourseFilter] = useState<string>("all");
-  const [paceNumberSearch, setPaceNumberSearch] = useState("");
+  const [showInventoryOnly, setShowInventoryOnly] = usePersistedState<boolean>("inventory.showInventoryOnly", false);
+  const [typeFilter, setTypeFilter] = usePersistedState<string>("inventory.typeFilter", "all");
+  const [courseFilter, setCourseFilter] = usePersistedState<string>("inventory.courseFilter", "all");
+  const [paceNumberSearch, setPaceNumberSearch] = usePersistedState<string>("inventory.paceNumberSearch", "");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, Course, Enrollment, Subject, DateEntry, PaceCourse, UserProfile } from "@shared/schema";
 import { Star } from "lucide-react";
 import { StudentSearch } from "@/components/student-search";
@@ -40,7 +41,7 @@ function getTermLabel(dateStarted: string | null, datesMap: Map<string, DateEntr
 }
 
 export default function SPCPage() {
-  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("spc.selectedStudentId", "");
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });
