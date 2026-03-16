@@ -489,7 +489,8 @@ export default function OrderMaterialsPage() {
                 </TableRow>
               ))}
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-right pr-4">Total</TableCell>
+                <TableCell colSpan={3} className="text-right pr-4">Total</TableCell>
+                <TableCell className="text-right">{totals.qty}</TableCell>
                 <TableCell />
                 <TableCell className="text-right">{totals.init}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{totals.inv !== 0 ? totals.inv : "—"}</TableCell>
@@ -528,7 +529,8 @@ export default function OrderMaterialsPage() {
                 </TableRow>
               ))}
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-right pr-4">Total</TableCell>
+                <TableCell colSpan={3} className="text-right pr-4">Total</TableCell>
+                <TableCell className="text-right">{totals.qty}</TableCell>
                 <TableCell />
                 <TableCell className="text-right">{totals.init}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{totals.inv !== 0 ? totals.inv : "—"}</TableCell>

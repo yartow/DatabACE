@@ -153,6 +153,7 @@ export interface IStorage {
 
   getOrderLists(): Promise<OrderList[]>;
   getOrderListWithItems(id: number): Promise<{ list: OrderList; items: OrderListItemRich[] } | undefined>;
+  getOrderListItem(id: number): Promise<OrderListItem | undefined>;
   createOrderList(data: InsertOrderList, items: InsertOrderListItem[]): Promise<OrderList>;
   updateOrderListItem(id: number, data: Partial<InsertOrderListItem>): Promise<OrderListItem | undefined>;
   processDelivery(orderListId: number): Promise<number>;
@@ -656,13 +657,20 @@ export class DatabaseStorage implements IStorage {
     return { list, items };
   }
 
+  async getOrderListItem(id: number): Promise<OrderListItem | undefined> {
+    const [item] = await db.select().from(orderListItems).where(eq(orderListItems.id, id));
+    return item;
+  }
+
   async createOrderList(data: InsertOrderList, items: InsertOrderListItem[]): Promise<OrderList> {
-    const [list] = await db.insert(orderLists).values(data).returning();
-    if (items.length > 0) {
-      const withListId = items.map(item => ({ ...item, orderListId: list.id }));
-      await db.insert(orderListItems).values(withListId);
-    }
-    return list;
+    return db.transaction(async (tx) => {
+      const [list] = await tx.insert(orderLists).values(data).returning();
+      if (items.length > 0) {
+        const withListId = items.map(item => ({ ...item, orderListId: list.id }));
+        await tx.insert(orderListItems).values(withListId);
+      }
+      return list;
+    });
   }
 
   async updateOrderListItem(id: number, data: Partial<InsertOrderListItem>): Promise<OrderListItem | undefined> {
