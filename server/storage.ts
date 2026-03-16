@@ -1,7 +1,7 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
   personnel, families, parents, supplementaryActivities, subjectGroups, invitations,
-  paceVersions, inventory,
+  paceVersions, inventory, orderLists, orderListItems,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
   type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
   type Invitation, type InsertInvitation,
@@ -9,9 +9,10 @@ import {
   type InsertPersonnel, type InsertFamily, type InsertParent, type InsertSupplementaryActivity,
   type InsertCourse, type InsertPaceCourse, type InsertPace,
   type PaceVersion, type InsertPaceVersion, type Inventory, type InsertInventory,
+  type OrderList, type InsertOrderList, type OrderListItem, type InsertOrderListItem,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull, sql, asc } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, desc } from "drizzle-orm";
 import { users } from "@shared/models/auth";
 
 export type InventoryRow = {
@@ -43,6 +44,13 @@ export type OrderMaterialRow = {
   quantity: number;
   fromInventory: number;
   toOrder: number;
+};
+
+export type OrderListItemRich = OrderListItem & {
+  paceNumber: number | null;
+  courseName: string | null;
+  studentCallName: string | null;
+  studentSurname: string | null;
 };
 
 export interface IStorage {
@@ -142,6 +150,12 @@ export interface IStorage {
   upsertInventoryEntry(paceVersionsId: number, studentId: number, numberInPossession: number): Promise<Inventory>;
 
   getOrderMaterials(term: number, yearTerm?: string): Promise<OrderMaterialRow[]>;
+
+  getOrderLists(): Promise<OrderList[]>;
+  getOrderListWithItems(id: number): Promise<{ list: OrderList; items: OrderListItemRich[] } | undefined>;
+  createOrderList(data: InsertOrderList, items: InsertOrderListItem[]): Promise<OrderList>;
+  updateOrderListItem(id: number, data: Partial<InsertOrderListItem>): Promise<OrderListItem | undefined>;
+  processDelivery(orderListId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -603,6 +617,103 @@ export class DatabaseStorage implements IStorage {
     }
 
     return result;
+  }
+
+  async getOrderLists(): Promise<OrderList[]> {
+    return db.select().from(orderLists).orderBy(desc(orderLists.createdAt));
+  }
+
+  async getOrderListWithItems(id: number): Promise<{ list: OrderList; items: OrderListItemRich[] } | undefined> {
+    const [list] = await db.select().from(orderLists).where(eq(orderLists.id, id));
+    if (!list) return undefined;
+
+    const items = await db
+      .select({
+        id: orderListItems.id,
+        orderListId: orderListItems.orderListId,
+        paceId: orderListItems.paceId,
+        courseId: orderListItems.courseId,
+        enrollmentNumber: orderListItems.enrollmentNumber,
+        studentId: orderListItems.studentId,
+        enrollmentId: orderListItems.enrollmentId,
+        quantity: orderListItems.quantity,
+        initiallyToOrder: orderListItems.initiallyToOrder,
+        fromInventory: orderListItems.fromInventory,
+        finalToOrder: orderListItems.finalToOrder,
+        delivered: orderListItems.delivered,
+        paceNumber: paces.number,
+        courseName: courses.icceAlias,
+        studentCallName: students.callName,
+        studentSurname: students.surname,
+      })
+      .from(orderListItems)
+      .leftJoin(paces, eq(orderListItems.paceId, paces.id))
+      .leftJoin(courses, eq(orderListItems.courseId, courses.id))
+      .innerJoin(students, eq(orderListItems.studentId, students.id))
+      .where(eq(orderListItems.orderListId, id))
+      .orderBy(asc(paces.number), asc(students.surname));
+
+    return { list, items };
+  }
+
+  async createOrderList(data: InsertOrderList, items: InsertOrderListItem[]): Promise<OrderList> {
+    const [list] = await db.insert(orderLists).values(data).returning();
+    if (items.length > 0) {
+      const withListId = items.map(item => ({ ...item, orderListId: list.id }));
+      await db.insert(orderListItems).values(withListId);
+    }
+    return list;
+  }
+
+  async updateOrderListItem(id: number, data: Partial<InsertOrderListItem>): Promise<OrderListItem | undefined> {
+    const [item] = await db.update(orderListItems).set(data).where(eq(orderListItems.id, id)).returning();
+    return item;
+  }
+
+  async processDelivery(orderListId: number): Promise<number> {
+    const items = await db.select().from(orderListItems)
+      .where(and(eq(orderListItems.orderListId, orderListId), eq(orderListItems.delivered, true)));
+
+    let processed = 0;
+    const processedIds: number[] = [];
+    for (const item of items) {
+      if (!item.paceId || !item.finalToOrder || item.finalToOrder <= 0) continue;
+
+      const [latestPv] = await db.select().from(paceVersions)
+        .where(eq(paceVersions.paceId, item.paceId))
+        .orderBy(desc(paceVersions.id))
+        .limit(1);
+
+      if (!latestPv) continue;
+
+      const existing = await db.select().from(inventory)
+        .where(and(eq(inventory.paceVersionsId, latestPv.id), eq(inventory.studentId, item.studentId)));
+
+      if (existing.length > 0) {
+        const current = existing[0].numberInPossession ?? 0;
+        await db.update(inventory)
+          .set({ numberInPossession: current + item.finalToOrder })
+          .where(eq(inventory.id, existing[0].id));
+      } else {
+        await db.insert(inventory).values({
+          paceVersionsId: latestPv.id,
+          studentId: item.studentId,
+          numberInPossession: item.finalToOrder,
+        });
+      }
+      processedIds.push(item.id);
+      processed++;
+    }
+
+    if (processedIds.length > 0) {
+      for (const pid of processedIds) {
+        await db.update(orderListItems)
+          .set({ delivered: false })
+          .where(eq(orderListItems.id, pid));
+      }
+    }
+
+    return processed;
   }
 }
 
