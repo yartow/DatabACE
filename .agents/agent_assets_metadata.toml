@@ -6,3 +6,9 @@ id = "IyWhSQWV7dtDvHJLZ-z18"
 uri = "file://docs/handleiding.md"
 type = "text"
 title = "Handleiding Ceder (Markdown)"
+
+[[outputs]]
+id = "BZvmKVkTYf47EqYxCAN2h"
+uri = "file://README.md"
+type = "text"
+title = "README.md — Ceder"
