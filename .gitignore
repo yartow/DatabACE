@@ -1,6 +1,34 @@
+# Dependencies
 node_modules
+
+# Build output
 dist
-.DS_Store
-server/public
+
+# Environment variables (important - keep secrets out of git)
+.env
+.env.local
+.env.*.local
+
+# Vite
 vite.config.ts.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Server static files
+server/public
+
+# Archives & data files
 *.tar.gz
+*.xlsx
+
+# R stuff (if no longer needed, can remove these)
+.Rproj.user
+*.RData*
+
+# Your data/project folders
+01. Data/*
+03. Code/*
+04. Examples/*
+05. Other/*

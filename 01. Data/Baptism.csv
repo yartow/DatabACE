@@ -1,0 +1,20 @@
+ID,Baptism,Type,Age,Group,Remarks
+1,No,,,,
+2,"Yes, Immersion (Immersion, Orthodox)",Immersion,Child,Orthodox,"Greek, Armenian or Other"
+3,"Yes, Drip (Drip, Catholic)",Drip,Child,Catholic,
+4,"Yes, Drip (Drip, Reformed)",Drip,Child,Reformed,
+5,"Yes, Immersion (Immersion, Orthodox)",Immersion,Adult,Orthodox,"Greek, Armenian or Other"
+6,"Yes, Drip (Drip, Catholic)",Drip,Adult,Catholic,
+7,"Yes, Drip (Drip, Reformed)",Drip,Adult,Reformed,
+8,"Yes, Immersion (Immersion, Baptist)",Immersion,Adult,Baptist,
+9,"Yes, Immersion (Immersion, Orthodox - Orthodox)",Immersion,Child and Adult,Orthodox - Orthodox,
+10,"Yes, Immersion - Drip (Immersion - Drip, Orthodox - Catholic)",Immersion - Drip,Child and Adult,Orthodox - Catholic,
+11,"Yes, Immersion - Drip (Immersion - Drip, Orthodox - Reformed)",Immersion - Drip,Child and Adult,Orthodox - Reformed,
+12,"Yes, Immersion (Immersion, Orthodox - Baptist)",Immersion,Child and Adult,Orthodox - Baptist,
+13,"Yes, Drip (Drip, Catholic - Catholic)",Drip,Child and Adult,Catholic - Catholic,
+14,"Yes, Drip - Immersion (Drip - Immersion, Catholic - Orthodox)",Drip - Immersion,Child and Adult,Catholic - Orthodox,
+15,"Yes, Drip (Drip, Catholic - Reformed)",Drip,Child and Adult,Catholic - Reformed,
+16,"Yes, Drip - Immersion (Drip - Immersion, Catholic - Baptist)",Drip - Immersion,Child and Adult,Catholic - Baptist,
+17,"Yes, Drip - Immersion (Drip - Immersion, Reformed - Orthodox)",Drip - Immersion,Child and Adult,Reformed - Orthodox,
+18,"Yes, Drip (Drip, Reformed - Catholic)",Drip,Child and Adult,Reformed - Catholic,
+19,"Yes, Drip - Immersion (Drip - Immersion, Reformed - Baptist)",Drip - Immersion,Child and Adult,Reformed - Baptist,
