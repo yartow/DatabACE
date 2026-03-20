@@ -15,6 +15,9 @@ export const userProfiles = pgTable("user_profiles", {
   role: roleEnum("role").notNull().default("parent"),
   familyId: integer("family_id"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  email: text("email"),
 });
 
 export const invitations = pgTable("invitations", {
