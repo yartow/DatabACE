@@ -42,6 +42,13 @@ export async function registerRoutes(
     return res.status(403).json({ message: "Account creation requires an invitation. Please contact your school administrator." });
   });
 
+  app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { firstName, lastName, email } = req.body;
+    const updated = await storage.updateUserProfile(userId, { firstName: firstName ?? null, lastName: lastName ?? null, email: email ?? null });
+    res.json(updated);
+  });
+
   app.get("/api/students", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);
