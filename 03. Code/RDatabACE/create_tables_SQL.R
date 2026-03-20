@@ -2,21 +2,7 @@
 
 source(paste0(getwd(), "/loadLibraries.R"))
 
-HOME_DIRECTORY <- "/Users/andrewyong/Documents/GitHub/DatabACE/"
-setwd(HOME_DIRECTORY)
-CODE_FOLDER <- "03. Code/"
-DATA_FOLDER <- "01. Data/"
-CODE_DIRECTORY_SQL <- paste0(HOME_DIRECTORY, CODE_FOLDER)
-CODE_DIRECTORY_R <- paste0(HOME_DIRECTORY, CODE_FOLDER, "RDatabACE/")
-
-dbFileName <- "db.xlsx"
-dbFileLocation <- paste0(HOME_DIRECTORY, DATA_FOLDER, dbFileName)
-
-# Static variables
-EXT_SQL <- ".sql"
-CHAR <- "character"
-DATE <- "Date"
-IGNORE_CHAR = "__"
+source(paste0(getwd(), "/credentials.R"))
 
 # this file gets info on the database, including table names
 source(paste0(CODE_DIRECTORY_R, "db_info.R"))
@@ -37,6 +23,9 @@ names(my_data) <- tableNames
 
 # after loading all the data, separate this into tables
 source(paste0(getwd(), "/03. Code/RDatabACE/separateTables.R"))
+
+# Now the next step is to create these tables *in SQL SERVER*. 
+# see uploadDataToSQL.R
 
 # next step: create queries to join tables
 # see create_vw_grades.R

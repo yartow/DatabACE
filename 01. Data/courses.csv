@@ -1,148 +1,164 @@
-ID;Alias;Level;PaceNrStart;PaceNrEnd;;StarValue;SubjectID;Subject_temp;SubjectAbb;Alternative Name;Remarks;Specification;SubjectGroupID;SubjectGroup;CourseType
-1;Maths Reading Readiness;0;1;12;12;12;1;Maths;MA;;;RR;2;Core Academic Studies;Core
-2;Maths Level 1;1;1;12;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-3;English Level 1;1;1;12;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-4;Word Building Level 1;1;1;12;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-5;Literature and Creative Writing Level 1;1;1;12;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-6;Science Level 1;1;1;12;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-7;Social Studies Level 1;1;1;12;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-8;Bible Reading Level 1;1;1;12;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-9;Maths Level 2;2;13;24;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-10;English Level 2;2;13;24;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-11;Word Building Level 2;2;13;24;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-12;Literature and Creative Writing Level 2;2;13;24;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-13;Science Level 2;2;13;24;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-14;Social Studies Level 2;2;13;24;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-15;Bible Reading Level 2;2;13;24;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-16;Maths Level 3;3;25;36;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-17;English Level 3;3;25;36;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-18;Word Building Level 3;3;25;36;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-19;Literature and Creative Writing Level 3;3;25;36;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-20;Science Level 3;3;25;36;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-21;Social Studies Level 3;3;25;36;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-22;Bible Reading Level 3;3;25;36;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-23;Maths Level 4;4;37;48;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-24;English Level 4;4;37;48;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-25;Word Building Level 4;4;37;48;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-26;Literature and Creative Writing Level 4;4;37;48;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-27;Science Level 4;4;37;48;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-28;Social Studies Level 4;4;37;48;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-29;Bible Reading Level 4;4;37;48;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-30;Maths Level 5;5;49;60;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-31;English Level 5;5;49;60;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-32;Word Building Level 5;5;49;60;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-33;Literature and Creative Writing Level 5;5;49;60;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-34;Science Level 5;5;49;60;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-35;Social Studies Level 5;5;49;60;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-36;Bible Reading Level 5;5;49;60;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-37;Maths Level 6;6;61;72;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-38;English Level 6;6;61;72;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-39;Word Building Level 6;6;61;72;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-40;Literature and Creative Writing Level 6;6;61;72;12;12;4;Literature;LI;;;LC;2;Core Academic Studies;Core
-41;Science Level 6;6;61;72;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-42;Social Studies Level 6;6;61;72;12;12;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-43;Bible Reading Level 6;6;61;72;12;12;7;Biblical Studies;BS;;;BR;1;Christian Studies;Core
-44;Maths Level 7;7;73;84;12;12;1;Maths;MA;;;MA;2;Core Academic Studies;Core
-45;English Level 7;7;73;84;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-46;Beginning Art;7;73;84;12;12;3;Word Building;WB;;;BA;2;Core Academic Studies;Core
-47;Word Building Level 7;7;73;84;12;12;3;Word Building;WB;;;WB;2;Core Academic Studies;Core
-48;Literature Level 7;7;74;84;11;;4;Literature;LI;;Alleen even getallen hebben PACE beschikbaar;LC;2;Core Academic Studies;Core
-49;Science Level 7;7;73;84;12;12;5;Science;SC;;;SC;2;Core Academic Studies;Core
-50;Social Studies Level 7;7;73;78;6;;6;Social Studies;SS;;;SS;2;Core Academic Studies;Core
-51;Staatsinrichting;7;1;3;3;3;6;Social Studies;SS;;;SI;2;Core Academic Studies;Core
-52;?;7;73;84;12;12;7;Biblical Studies;BS;;Geen BS dit jaar?;?;2;Core Academic Studies;Core
-53;General Maths;8;85;96;12;12;1;Maths;MA;;;GM;2;Core Academic Studies;Core
-54;General English;8;85;96;12;12;2;Language;LA;;;EN;1;Christian Studies;Core
-55;Word Building Level 8;8;85;96;12;12;3;Word Building;WB;;;WB;1;Christian Studies;Core
-56;Literature Level 8;8;86;96;11;;4;Literature;LI;;Alleen even getallen hebben PACE beschikbaar;LC;1;Christian Studies;Core
-57;Earth Science Level 8;8;85;96;12;12;5;Science;SC;;;ES;2;Core Academic Studies;Core
-58;British and European History;8;85;96;12;12;6;Social Studies;SS;;;UK;1;Christian Studies;Further Credit Option
-59;World History;8;85;96;12;12;6;Social Studies;SS;;;WH;1;Christian Studies;Further Credit Option
-60;New Testament Survey;8;97;102;6;;7;Biblical Studies;BS;;;NT;1;Christian Studies;Core
-61;Algebra I;9;97;108;12;12;1;Maths;MA;;;AL;1;Christian Studies;Core
-62;English I;9;97;108;12;12;2;Language;LA;;;EN;1;Christian Studies;Core
-63;French I;9;97;108;12;12;2;Language;LA;;;FR;1;Christian Studies;Further Credit Option
-64;Rosetta Stone Level 9;9;1;2;2;;2;Language;LA;;Extended Levels only;RS;1;Christian Studies;Further Credit Option
-65;Spanish I;9;1;12;12;12;2;Language;LA;;;ES;1;Christian Studies;Further Credit Option
-66;Advanced Art;9;97;108;12;12;10;Supplementary;SU;;;AA;2;Core Academic Studies;Further Credit Option
-67;Complete Art;9;1;10;10;;10;Supplementary;SU;;;CA;2;Core Academic Studies;Further Credit Option
-68;Etymology;9;97;108;12;12;3;Word Building;WB;;;ET;1;Christian Studies;Core
-69;Music;9;1;6;6;;10;Supplementary;SU;;;MU;3;Core Expanded Studies;Further Credit Option
-70;Music Theory/Performance Grade 5;9;5;6;2;12;10;Supplementary;SU;;;MT;3;Core Expanded Studies;Further Credit Option
-71;Music Theory/Performance;9;5;6;2;12;10;Supplementary;SU;;Is duplicate of 70? Or perhaps the other one is theory and this one is performance;MT;3;Core Expanded Studies;Further Credit Option
-72;Speech;9;1;6;6;;3;Word Building;WB;;;SP;3;Core Expanded Studies;Core
-73;ICCE Literature Level 9;9;1;4;4;6;4;Literature;LI;;;I9;2;Core Academic Studies;Core
-146;Literature Level 9;9;98;108;11;;4;Literature;LI;;Alleen even getallen hebben PACE beschikbaar;LC;2;Core Academic Studies;Core
-74;Astronomy;9;1;5;5;;5;Science;SC;;;AS;2;Core Academic Studies;Further Credit Option
-75;Biology Level 9;9;97;108;12;12;5;Science;SC;;;BI;2;Core Academic Studies;Core
-76;Health;9;1;6;6;;5;Science;SC;;;HE;2;Core Academic Studies;Further Credit Option
-77;Nutrition Science;9;1;6;6;;5;Science;SC;;;NS;2;Core Academic Studies;Further Credit Option
-78;Sport + Health;9;1;4;4;12;5;Science;SC;;Is een combinatie vak dat alleen met Health samen gedaan kan worden? ON HOLD Informatie moet nog bevestigd worden;SP;3;Core Expanded Studies;Further Credit Option
-79;A.C.E. Training;9;;;;6;10;Supplementary;SU;;;AC;4;Applied Studies;Further Credit Option
-80;World Geography;9;97;108;12;12;6;Social Studies;SS;;;WG;2;Core Academic Studies;Core
-81;Apologetics I;9;1;2;2;6;7;Biblical Studies;BS;;;AP;1;Christian Studies;Core
-82;Missions;9;1;6;6;6;7;Biblical Studies;BS;;;MI;1;Christian Studies;Further Credit Option
-83;Successful Living;9;1;12;12;12;7;Biblical Studies;BS;;;SL;1;Christian Studies;Core
-84;A.C.E. Training + 30 hours of service;9;;;1;12;10;Supplementary;SU;;;AT;4;Applied Studies;Further Credit Option
-85;ECDL Course;9;1;8;8;;10;Supplementary;SU;;Wat is dit? ;ED;3;Core Expanded Studies;Core
-86;Geometry;10;109;120;12;12;1;Maths;MA;;;GE;2;Core Academic Studies;Core
-87;English II;10;109;120;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-88;Rosetta Stone Level 10;10;3;5;3;6;2;Language;LA;;Each six stars;RS;2;Core Academic Studies;Further Credit Option
-89;Music Theory/Performance Grade 6;10;;;1;12;10;Supplementary;SU;;;MT;3;Core Expanded Studies;Further Credit Option
-90;Physical Science;10;109;120;12;12;5;Science;SC;;Dat klopt;PS;2;Core Academic Studies;Core
-91;History of Civilisation I;10;1;10;10;;6;Social Studies;SS;;;HC;2;Core Academic Studies;Core
-92;Apologetics II;10;3;4;2;6;7;Biblical Studies;BS;;Hier mag gekozen worden voor Apologetics II (i.e. boekjes 3 en 4) of uit Groep 1 (i.e. Christian Studies, van Intermediate);AP;1;Christian Studies;Further Credit Option
-93;Christian Counselling I;10;1;5;5;;7;Biblical Studies;BS;;Correct gespeld? Is Amerikaans materiaal maar Britse spelling?;CC;1;Christian Studies;Further Credit Option
-94;Life of Christ I;10;133;138;6;;7;Biblical Studies;BS;;;LC;1;Christian Studies;Further Credit Option
-95;Old Testament Survey;10;109;120;12;12;7;Biblical Studies;BS;;;OT;1;Christian Studies;Core
-96;Auto Mechanics;10;109;114;6;;10;Supplementary;SU;;;AM;3;Core Expanded Studies;Further Credit Option
-97;ICT Course;10;;;1;12;10;Supplementary;SU;;From approved list;IC;3;Core Expanded Studies;Further Credit Option
-98;Algebra II;11;121;132;12;12;1;Maths;MA;;;AL;2;Core Academic Studies;Core
-99;British Literature;11;1;5;5;;2;Language;LA;;;BL;2;Core Academic Studies;Core
-100;Dutch Language Staatsexamen HAVO;11;;;1;18;2;Language;LA;;Staatsexamen Havo, where is VWO?;NL;2;Core Academic Studies;Core
-101;English III;11;121;132;12;12;2;Language;LA;;;EN;2;Core Academic Studies;Core
-102;ICCE Literature 10 Part 1;11;1;3;3;6;4;Literature;LI;;"Beide vakken hebben dezelfde naam. Specification is niet duidelijk, is moeilijk met twee karakters. Beter is ""I10"" vs ""I09"". ";I1;2;Core Academic Studies;Further Credit Option
-103;ICCE Literature 10 Part 2;11;1;6;6;;4;Literature;LI;;Overlap with the previous one and the same name;I1;2;Core Academic Studies;Further Credit Option
-104;N.T. Greek I;11;121;132;12;12;2;Language;LA;;;GR;2;Core Academic Studies;Further Credit Option
-105;Chemistry;11;121;132;12;12;5;Science;SC;;;CH;2;Core Academic Studies;Core
-106;New Testament Church History;12;121;132;12;12;7;Biblical Studies;BS;;Heeft overlap met NT Ch. Hist. II?;NC;1;Christian Studies;Core
-107;Accounting (US);12;121;132;12;12;1;Maths;MA;;;AC;3;Core Expanded Studies;Further Credit Option
-108;College Maths I;12;1;10;10;;1;Maths;MA;;;CM;2;Core Academic Studies;Further Credit Option
-109;College Maths II;12;11;20;10;;1;Maths;MA;;;CM;2;Core Academic Studies;Further Credit Option
-110;Higher Maths;12;139;144;6;;1;Maths;MA;;;HM;2;Core Academic Studies;Further Credit Option
-111;Trigonometry;12;133;138;6;;1;Maths;MA;;;TR;2;Core Academic Studies;Further Credit Option
-112;English Composition II;12;1;10;10;;2;Language;LA;;Where is English Composition I?;EC;2;Core Academic Studies;Further Credit Option
-113;English IV;12;133;144;12;12;2;Language;LA;;mogelijk English IV te kiezen als III nog niet gedaan is? ;EN;2;Core Academic Studies;Core
-114;N.T. Greek II;12;11;20;10;;2;Language;LA;;Nieuwe nummering?;GR;2;Core Academic Studies;Further Credit Option
-115;Music Theory/Performance Grade 7/8;12;7;8;2;;10;Supplementary;SU;;;MT;3;Core Expanded Studies;Further Credit Option
-116;College Physical Science;12;1;10;10;;5;Science;SC;;;CP;2;Core Academic Studies;Further Credit Option
-117;Physics;12;133;144;12;12;5;Science;SC;;;PH;2;Core Academic Studies;Further Credit Option
-118;American History;12;85;96;12;12;6;Social Studies;SS;;Credit Option;AH;2;Core Academic Studies;Further Credit Option
-119;Civics and Economics;12;133;144;12;12;6;Social Studies;SS;;;CE;2;Core Academic Studies;Further Credit Option
-120;Collectivism;12;133;138;6;;6;Social Studies;SS;;Over communisme en zo;CO;1;Christian Studies;Further Credit Option
-121;History of Civilisation II;12;11;20;10;;6;Social Studies;SS;;Dit staat ook onder FCO, maar is verplicht!?;HC;2;Core Academic Studies;Core
-122;US Constitution;12;133;136;4;6;6;Social Studies;SS;;;UC;2;Core Academic Studies;Further Credit Option
-123;Christian Counselling II;12;6;10;5;;7;Biblical Studies;BS;;Apologetics option only?;CC;1;Christian Studies;Further Credit Option
-124;Christian Growth I;12;133;138;6;;7;Biblical Studies;BS;;;CG;1;Christian Studies;Further Credit Option
-125;Life of Christ II;12;139;144;6;;7;Biblical Studies;BS;;Only possible to choose this as an option for Apologetics III;LC;1;Christian Studies;Further Credit Option
-126;New Testament Church History II;12;127;132;6;;7;Biblical Studies;BS;;Apologetics option only? ;NC;1;Christian Studies;Further Credit Option
-127;English Composition I;10;1;10;10;;2;Language;LA;;Welk level? Staat niet op het blad;EC;2;Core Academic Studies;Core
-128;Apologetics III;12;;;1;12;7;Biblical Studies;BS;;Hier mag gekozen worden uit Groep 1 (i.e. Christian Studies, van Advanced). Deze regel moet verwijderd worden, is namelijk geen aparte course.;AP;1;Christian Studies;Further Credit Option
-129;ICCE Biology;9;1;6;6;;5;Science;SC;;;IB;2;Core Academic Studies;Further Credit Option
-130;Biology Apologia;10;1;16;16;;5;Science;SC;;;BA;2;Core Academic Studies;Further Credit Option
-131;Life of Christ;12;133;144;12;12;7;Biblical Studies;BS;;;LC;1;Christian Studies;Further Credit Option
-132;Dutch Language Staatsexamen VMBO;9;;;;12;2;Language;LA;;;NL;2;Core Academic Studies;Further Credit Option
-133;Social Studies Essay General;9;;;;3;6;Social Studies;SS;;;ES;7;Coursework;CourseWork
-134;Science Essay General;9;;;;3;5;Science;SC;;;ES;7;Coursework;CourseWork
-135;Biblical Studies Essay Intermediate;10;;;;2;7;Biblical Studies;BS;;;ES;7;Coursework;CourseWork
-136;English Essay Intermediate;10;;;;2;2;Language;LA;;;ES;7;Coursework;CourseWork
-137;Social Studies Essay Intermediate;10;;;;2;6;Social Studies;SS;;;ES;7;Coursework;CourseWork
-138;Science Essay Intermediate;10;;;;2;5;Science;SC;;;ES;7;Coursework;CourseWork
-139;Biblical Studies Essay Advanced;12;;;;2;7;Biblical Studies;BS;;;ES;7;Coursework;CourseWork
-140;Maths Paper Advanced;12;;;;2;1;Maths;MA;;;ES;7;Coursework;CourseWork
-141;English Essay Advanced;12;;;;2;2;Language;LA;;;ES;7;Coursework;CourseWork
-142;Social Studies Essay Advanced;12;;;;2;6;Social Studies;SS;;;ES;7;Coursework;CourseWork
-143;Sciences Project Advanced;12;;;;2;5;Science;SC;;;PR;7;Coursework;CourseWork
-144;Sciences Essay Advanced;12;;;;2;5;Science;SC;;;ES;7;Coursework;CourseWork
-145;English III Dissertation;12;;;;2;2;Language;LA;;;DS;7;Coursework;CourseWork
-147;;;;;;;;;;;;;;;
+ID,Name,Alias,ICCE-Alias,Level,SubjectID,Remarks,Specification,SubjectGroupID,CourseType,Course,PassThreshold,Status
+1,,Maths Reading Readiness,,0,1,,RR,2,Core,Maths Reading Readiness,0.8,
+2,,Maths Level 1,,1,1,,MA,2,Core,Maths Level 1,0.8,
+3,,English Level 1,,1,2,,EN,2,Core,English Level 1,0.8,
+4,,Word Building Level 1,,1,3,,WB,2,Core,Word Building Level 1,0.9,#NAAM?
+5,,Literature and Creative Writing Level 1,,1,4,,LC,2,Core,Literature and Creative Writing Level 1,0.8,
+6,Science 1,Science Level 1,,1,5,,SC,2,Core,Science Level 1,0.8,
+7,,Social Studies Level 1,,1,6,,SS,2,Core,Social Studies Level 1,0.8,
+8,,Bible Reading Level 1,,1,7,,BR,1,Core,Bible Reading Level 1,0.8,
+9,,Maths Level 2,,2,1,,MA,2,Core,Maths Level 2,0.8,
+10,,English Level 2,,2,2,,EN,2,Core,English Level 2,0.8,
+11,,Word Building Level 2,,2,3,,WB,2,Core,Word Building Level 2,0.9,
+12,,Literature and Creative Writing Level 2,,2,4,,LC,2,Core,Literature and Creative Writing Level 2,0.8,
+13,Science 2,Science Level 2,,2,5,,SC,2,Core,Science Level 2,0.8,
+14,,Social Studies Level 2,,2,6,,SS,2,Core,Social Studies Level 2,0.8,
+15,,Bible Reading Level 2,,2,7,,BR,1,Core,Bible Reading Level 2,0.8,
+16,,Maths Level 3,,3,1,,MA,2,Core,Maths Level 3,0.8,
+17,,English Level 3,,3,2,,EN,2,Core,English Level 3,0.8,
+18,,Word Building Level 3,,3,3,,WB,2,Core,Word Building Level 3,0.9,
+19,,Literature and Creative Writing Level 3,,3,4,,LC,2,Core,Literature and Creative Writing Level 3,0.8,
+20,Science 3,Science Level 3,,3,5,,SC,2,Core,Science Level 3,0.8,
+21,,Social Studies Level 3,,3,6,,SS,2,Core,Social Studies Level 3,0.8,
+22,,Bible Reading Level 3,,3,7,,BR,1,Core,Bible Reading Level 3,0.8,
+23,,Maths Level 4,,4,1,,MA,2,Core,Maths Level 4,0.8,
+24,,English Level 4,,4,2,,EN,2,Core,English Level 4,0.8,
+25,,Word Building Level 4,,4,3,,WB,2,Core,Word Building Level 4,0.9,
+26,,Literature and Creative Writing Level 4,,4,4,,LC,2,Core,Literature and Creative Writing Level 4,0.8,
+27,Science 4,Science Level 4,,4,5,,SC,2,Core,Science Level 4,0.8,
+28,,Social Studies Level 4,,4,6,,SS,2,Core,Social Studies Level 4,0.8,
+29,,Bible Reading Level 4,,4,7,,BR,1,Core,Bible Reading Level 4,0.8,
+30,,Maths Level 5,,5,1,,MA,2,Core,Maths Level 5,0.8,
+31,,English Level 5,,5,2,,EN,2,Core,English Level 5,0.8,
+32,,Word Building Level 5,,5,3,,WB,2,Core,Word Building Level 5,0.9,
+33,,Literature and Creative Writing Level 5,,5,4,,LC,2,Core,Literature and Creative Writing Level 5,0.8,
+34,Science 5,Science Level 5,,5,5,,SC,2,Core,Science Level 5,0.8,
+35,,Social Studies Level 5,,5,6,,SS,2,Core,Social Studies Level 5,0.8,
+36,,Bible Reading Level 5,,5,7,,BR,1,Core,Bible Reading Level 5,0.8,
+37,,Maths Level 6,,6,1,,MA,2,Core,Maths Level 6,0.8,
+38,,English Level 6,,6,2,,EN,2,Core,English Level 6,0.8,
+39,,Word Building Level 6,,6,3,,WB,2,Core,Word Building Level 6,0.9,
+40,,Literature and Creative Writing Level 6,,6,4,,LC,2,Core,Literature and Creative Writing Level 6,0.8,
+41,Science 6,Science Level 6,,6,5,,SC,2,Core,Science Level 6,0.8,
+42,,Social Studies Level 6,,6,6,,SS,2,Core,Social Studies Level 6,0.8,
+43,,Bible Reading Level 6,,6,7,,BR,1,Core,Bible Reading Level 6,0.8,
+44,,Maths Level 7,,7,1,,MA,2,Core,Maths Level 7,0.8,
+45,,English Level 7,,7,2,,EN,2,Core,English Level 7,0.8,
+46,,Beginning Art,,7,3,,BA,2,Core,Beginning Art,0.8,
+47,,Word Building Level 7,,7,3,,WB,2,Core,Word Building Level 7,0.9,
+48,,Literature Level 7,,7,4,Alleen even getallen hebben PACE beschikbaar,LC,2,Core,Literature Level 7,0.8,
+49,Science 7,Science Level 7,,7,5,,SC,2,Core,Science Level 7,0.8,
+50,,Social Studies Level 7,,7,6,"Deze zes PACEs gaan over ""Career"" en de volgende zes (79-84) over ""American Constitution"", maar die worden niet gedaan in Nederland. In plaats daarvan worden drie PACEs ""Staatsinrichting"" gedaan.",SS,2,Core,Social Studies Level 7,0.8,
+51,,Staatsinrichting,,7,6,Bij bestellen rekening houden dat dit 1 boek is. ,SI,2,Core,Staatsinrichting,0.8,
+52,,Bible Reading Level 7,,7,7,Dit bestaat nog niet. Misschien komt er later nog materiaal beschikbaar voor dit niveau. ,BR,2,Core,Bible Reading Level 7,0.8,
+53,,General Maths,,8,1,,GM,2,Core,General Maths,0.8,
+54,,General English,,8,2,,EN,1,Core,General English,0.8,
+55,,Word Building Level 8,,8,3,,WB,1,Core,Word Building Level 8,0.9,
+56,,Literature Level 8,,8,4,Alleen even getallen hebben PACE beschikbaar,LC,1,Core,Literature Level 8,0.8,
+57,Science 8,Earth Science,,8,5,,ES,2,Core,Science Level 8,0.8,
+58,,British and European History,Social Studies I-B,8,6,SS Level 8 bestaat uit History en Geography. Binnen History moet gekozen worden voor dit vak (British European) OF voor American History. Daarna volgt World Geography,UK,1,Further Credit Option,Social Studies Level 8 British and European History,0.8,
+59,World History,World History,Social Studies II-B,10,6,"Dit was tot 1/1/2024 een optie voor het Enrollment-Course ""British and European History /  World History"" binnen General (level 8), waarbij de leerling mag kiezen tussen Eur. of World History (alleen de 3rd Edition mocht dan gebruikt worden). Na deze periode is dit een keuzevak geworden binnen Intermediate (level 10) en alleen met de 4th Editions.",WH,1,Further Credit Option,Social Studies Level 9 World History,0.8,Inactive
+60,Biblical Studies I: New Testament Survey,New Testament Survey,,8,7,,NT,1,Core,New Testament Survey,0.8,
+61,,Algebra I,Mathematics-IA,9,1,,AL,1,Core,Algebra I,0.8,
+62,,English I,,9,2,,EN,1,Core,English I,0.8,
+63,,French I,,9,2,,FR,1,Further Credit Option,French I,0.8,
+64,,Rosetta Stone Level 9,,9,2,Extended Levels only,RS,1,Further Credit Option,Rosetta Stone Level 9,0.8,
+65,,Spanish I,,9,2,,ES,1,Further Credit Option,Spanish I,0.8,
+66,,Advanced Art,,9,10,,AA,2,Further Credit Option,Advanced Art,0.8,
+67,,Complete Art,,9,10,,CA,2,Further Credit Option,Complete Art,0.8,
+68,,Word Building / Etymology,,9,3,,ET,1,Core,Word Building Level 9,0.9,
+69,,Music,,9,10,,MU,3,Further Credit Option,Music,0.8,
+70,,Music Theory/Performance Grade 5,,9,10,,MT,3,Further Credit Option,Music Theory/Performance Grade 5,0.8,
+71,,Music Theory/Performance,,9,10,Is duplicate of 70? Or perhaps the other one is theory and this one is performance,MT,3,Further Credit Option,Music Theory/Performance,0.8,
+72,,Speech,,9,3,,SP,3,Core,Speech,0.8,
+73,,ICCE Literature Level 9,,9,4,Voor Essays vanaf een bepaald niveau worden er geen sterren gegeven. Dit vak heeft geen lesmateriaal. Het zijn gewoon vier boeken waar een essay voor moet worden geschreven.,I9,2,Core,ICCE Literature Level 9,0.8,
+74,,Astronomy,,9,5,,AS,2,Further Credit Option,Astronomy,0.8,
+75,Science 9,Biology / Science Level 9,,9,5,,BI,2,Core,Science Level 9,0.8,
+76,,Health,,9,5,,HE,2,Further Credit Option,Health,0.8,
+77,,Nutrition Science,,9,5,,NS,2,Further Credit Option,Nutrition Science,0.8,
+78,,Sport + Health,,9,5,Is een combinatie vak dat alleen met Health samen gedaan kan worden? ON HOLD Informatie moet nog bevestigd worden,SP,3,Further Credit Option,Sport + Health,0.8,
+79,,A.C.E. Training,,9,10,,AC,4,Further Credit Option,A.C.E. Training,0.8,
+80,,World Geography,Social Studies I-C,9,6,,WG,2,Core,Social Studies Level 9 World Geography,0.8,
+81,,Apologetics I,Apologetics I-A (2022),9,7,"Dit zijn resp. PACE's 97,102 in de oude editie (2018). 2 sterren voor de twee toetsen, en 1 ster voor het essay",AP,1,Core,Apologetics I,0.8,
+82,,Missions,,9,7,,MI,1,Further Credit Option,Missions,0.8,
+83,Successful Living,Successful Living,,9,7,Vroeger kwam dit na BS Level 9 (NTS). Dit is vanaf 2024-01 een keuze voor General en Intermediate geworden (verplichting is vervallen). In plaats daarvan is ICCE Phys Science verplicht geworden in Level 9.,SL,1,Core,Successful Living,0.8,
+84,,A.C.E. Training + 30 hours of service,,9,10,,AT,4,Further Credit Option,A.C.E. Training + 30 hours of service,0.8,
+85,,ECDL Course,,9,10,Wat is dit? ,ED,3,Core,ECDL Course,0.8,
+86,,Geometry,Mathematics-IIA,10,1,,GE,2,Core,Geometry,0.8,
+87,,English II,,10,2,,EN,2,Core,English II,0.8,
+88,,Rosetta Stone Level 10,,10,2,Each six stars,RS,2,Further Credit Option,Rosetta Stone Level 10,0.8,
+89,,Music Theory/Performance Grade 6,,10,10,,MT,3,Further Credit Option,Music Theory/Performance Grade 6,0.8,
+90,Science 10,Physical Science,,10,5,Dat klopt,PS,2,Core,Science Level 10,0.8,
+91,History of Civilisation I,History of Civilisation I,Social Studies II-B,10,6,,HC,2,Core,Social Studies Level 10,0.8,
+92,,Apologetics II,Apologetics I-B (2022),10,7,"De oude nummering hiervan is resp. PACE's 98-101 (nu dus 7-10). Hier mag gekozen worden voor Apologetics II (i.e. boekjes 3 en 4) of uit Groep 1 (i.e. Christian Studies, van Intermediate). Klopt deze laatste opmerking (keuze uit Groep 1)? Er is geen toets bij Apologetics II, maar wel een essay, waar drie sterren voor worden gegeven.",AP,1,Further Credit Option,Apologetics II,0.8,
+93,,Christian Counselling I,,10,7,Correct gespeld? Is Amerikaans materiaal maar Britse spelling?,CC,1,Further Credit Option,Christian Counselling I,0.8,
+94,,Life of Christ I,,10,7,,LC,1,Further Credit Option,Life of Christ I,0.8,
+95,Biblical Studies II,Old Testament Survey,Biblical Studies II: Old Testament Survey ICCE-C25,10,7,"Ik kan alleen PACEs 1-10 vinden, zijn waarschijnlijk oude edities",OT,1,Core,Old Testament Survey,0.8,
+96,,Auto Mechanics,,10,10,,AM,3,Further Credit Option,Auto Mechanics,0.8,
+97,,ICT Course,,10,10,From approved list,IC,3,Further Credit Option,ICT Course,0.8,
+98,,Algebra II,,11,1,,AL,2,Core,Algebra II,0.8,
+99,,British Literature,,11,4,,BL,2,Core,British Literature,0.8,
+100,,Dutch Language Staatsexamen HAVO,,11,2,"Staatsexamen Havo, where is VWO?",NL,2,Core,Dutch Language Staatsexamen HAVO,0.8,
+101,,English III,,11,2,,EN,2,Core,English III,0.8,
+102,,ICCE Literature 10 Part 1,,10,4,"Beide vakken hebben dezelfde naam. Specification is niet duidelijk, is moeilijk met twee karakters. Beter is ""I10"" vs ""I09"". ",I1,2,Further Credit Option,ICCE Literature 10 Part 1,0.8,
+103,,ICCE Literature 10,,10,4,Overlap with the previous one and the same name,I1,2,Further Credit Option,ICCE Literature 10,0.8,
+104,,N.T. Greek I,,11,2,,GR,2,Further Credit Option,N.T. Greek I,0.8,
+105,Science 11,Chemistry,,11,5,,CH,2,Core,Science Level 11,0.8,
+106,Basic New Testament Church History,New Testament Church History,ICCE-C26,12,7,,NC,1,Core,New Testament Church History,0.8,
+107,,Accounting (US),,12,1,,AC,3,Further Credit Option,Accounting (US),0.8,
+108,Basic Mathematics I,College Maths I,,12,1,,CM,2,Further Credit Option,College Maths I,0.8,
+109,Basic Mathematics II Precalculus,College Maths II,,12,1,,CM,2,Further Credit Option,College Maths II,0.8,
+110,,Higher Maths,,12,1,,HM,2,Further Credit Option,Higher Maths,0.8,
+111,,Trigonometry,,12,1,,TR,2,Further Credit Option,Trigonometry,0.8,
+112,,English Composition II,,12,2,Where is English Composition I?,EC,2,Further Credit Option,English Composition II,0.8,
+113,,English IV,,12,2,mogelijk English IV te kiezen als III nog niet gedaan is? ,EN,2,Core,English IV,0.8,
+114,,N.T. Greek II,,12,2,Nieuwe nummering?,GR,2,Further Credit Option,N.T. Greek II,0.8,
+115,,Music Theory/Performance Grade 7/8,,12,10,,MT,3,Further Credit Option,Music Theory/Performance Grade 7/8,0.8,
+116,Basic Intro. to Physical Science,College Physical Science,,12,5,,CP,2,Further Credit Option,College Physical Science,0.8,
+117,Science 12,Physics,,12,5,,PH,2,Further Credit Option,Science Level 12,0.8,
+118,,American History,Social Studies I-A,8,6,Credit Option,AH,2,Further Credit Option,Social Studies Level 8 American History,0.8,
+119,Civics and Economics,Civics and Economics,,12,6,Is een combinatie van twee vakken,CE,2,Further Credit Option,Social Studies Level 12,0.8,
+120,,Collectivism,,12,6,Over communisme en zo,CO,1,Further Credit Option,Social Studies Level 12 Collectivism,0.8,
+121,History of Civilisation II,History of Civilisation II,,11,6,"Dit staat ook onder FCO, maar is verplicht!?",HC,2,Core,Social Studies Level 11,0.8,
+122,,US Constitution,,12,6,,UC,2,Further Credit Option,Social Studies Level 12 US Constitution,0.8,
+123,,Christian Counselling II,,12,7,Apologetics option only?,CC,1,Further Credit Option,Christian Counselling II,0.8,
+124,Basic Christian Growth,Christian Growth,ICCE-C48,12,7,,CG,1,Further Credit Option,Christian Growth,0.8,
+125,,Life of Christ II,,12,7,Only possible to choose this as an option for Apologetics III,LC,1,Further Credit Option,Life of Christ II,0.8,
+126,Basic New Testament Church History,New Testament Church History II,,12,7,Only possible to choose this as an option for Apologetics III,NC,1,Further Credit Option,New Testament Church History II,0.8,Active
+127,,English Composition I,,10,2,Welk level? Staat niet op het blad,EC,2,Core,English Composition I,0.8,
+128,,,,,,,,,,,,
+129,,ICCE Biology,,9,5,,IB,2,Further Credit Option,ICCE Biology,0.8,
+130,,Biology Apologia,,10,5,,BA,2,Further Credit Option,Biology Apologia,0.8,
+131,,Life of Christ,,12,7,,LC,1,Further Credit Option,Life of Christ,0.8,Active
+132,,Dutch Language Staatsexamen VMBO,,9,2,,NL,2,Further Credit Option,Dutch Language Staatsexamen VMBO,0.8,
+133,,Social Studies Essay General,,9,6,,ES,7,CourseWork,Social Studies Essay General,0.8,
+134,,Science Essay General,,9,5,,ES,7,CourseWork,Science Essay General,0.8,
+135,,Biblical Studies Essay Intermediate,,10,7,,ES,7,CourseWork,Biblical Studies Essay Intermediate,0.8,Active
+136,,English Essay Intermediate,,10,2,,ES,7,CourseWork,English Essay Intermediate,0.8,
+137,,Social Studies Essay Intermediate,,10,6,,ES,7,CourseWork,Social Studies Essay Intermediate,0.8,
+138,,Science Essay Intermediate,,10,5,,ES,7,CourseWork,Science Essay Intermediate,0.8,
+139,,Biblical Studies Essay Advanced,,12,7,,ES,7,CourseWork,Biblical Studies Essay Advanced,0.8,Active
+140,,Maths Paper Advanced,,12,1,,ES,7,CourseWork,Maths Paper Advanced,0.8,
+141,,English Essay Advanced,,12,2,,ES,7,CourseWork,English Essay Advanced,0.8,
+142,,Social Studies Essay Advanced,,12,6,,ES,7,CourseWork,Social Studies Essay Advanced,0.8,
+143,,Sciences Project Advanced,,12,5,,PR,7,CourseWork,Sciences Project Advanced,0.8,
+144,,Sciences Essay Advanced,,12,5,,ES,7,CourseWork,Sciences Essay Advanced,0.8,
+145,,English III Dissertation,,12,2,,DS,7,CourseWork,English III Dissertation,0.8,
+146,,Literature Level 9,,9,4,"Alleen even getallen hebben PACE beschikbaar. 106 is niet meer te verkrijgen, dus is vervangen door Poetry of After the Flood. Daarom staat er ipv 106 ""106P"". Er moeten zes PACEs in totaal worden gedaan met de keuze uit deze vijf beschikbare, of Poetry 1 of 2, of After the Flood. ",LC,2,Core,Literature Level 9,0.8,
+147,,UK Social Studies,,5,6,,UK,2,Core,Social Studies Level 5 UK,0.8,
+148,,US History,,10,6,,UH,2,Further Credit Option,Social Studies Level 10 American History,0.8,
+149,,Animal Science,,2,5,,AS,2,Core,Science Level 2 Animal,0.8,
+150,English Grammar,Grammar,,6,2,Elective,EG,2,Further Credit Option,English Grammar,0.8,
+151,,Apologetics I,Apologetics I-A (2019),9,7,"Dit zijn alleen twee PACE's 97,102. Vroeger waren dit aparte PACEs, maar nu gebundeld in ‚‚n PACE ""Apologetics 01"".",AP,1,Core,,0.8,Active
+152,,Apologetics II,Apologetics I-B (2019),10,7,"Dit zijn alleen vier PACE's 98-101. De sterren worden niet gegeven voor de toetsen maar voor de essays voor de boeken die ze moeten lezen. Vroeger waren dit aparte PACEs, maar nu gebundeld in ‚‚n PACE ""Apologetics 02"".",AP,1,Core,,0.8,Active
+153,World History,World History,,10,6,Dit lijkt op ID59 maar zie opmerking daar. Dit valt ook onder een andere SubjectGroupID (klopt dat?). ,WH,2,Core,Social Studies Level 12 World History,0.8,Active
+154,,Algebra I & Geometry I,Mathematics-IB,12,1,"Dit is een nieuwe optie waarbij de leerling de eerste helft van Algebra 1 en Geometry I mag doen, en dan bij Intermediate de tweede helft van Algebra 1 en Geometry. ",MA,2,Core,Algebra I & Geometry I,0.8,
+155,,Algebra I & Geometry II,Mathematics-IIB,12,1,"De naamgeving is misleidend, er staat ""Geometry II"" maar hiermee wordt bedoeld de tweede helft van Geometry",MA,2,Core,Algebra I & Geometry II,0.8,
+159,,ICCE Physical Science,AEE Physical Science I-B (part 1),9,5,"Dit is verplicht vanaf 2024-01 voor General. De formele naam is ""ICCE ?"" maar de publisher is ""AEE"", dit is samen met vak ID=160 ‚‚n vak. ",SC,2,Core,AEE Physical Science,0.8,
+160,,ICCE Physical Science,AEE Physical Science I-B (part 2),9,5,"Dit is verplicht vanaf 2024-01 voor General. De formele naam is ""ICCE ?"" maar de publisher is ""AEE"", dit is samen met vak ID=159 ‚‚n vak. ",SC,2,Core,AEE Physical Science,0.8,
+999,,Rosetta Stone Language X,,,,Moet ik dit toevoegen voor elke unit en taal?,RS,2,Core,,0.8,
+161,Basic New Testament Church History,New Testament Church History I,,12,7,Only possible to choose this as an option for Apologetics II,NC,1,Further Credit Option,New Testament Church History I,0.8,Active
+162,Basic Biographies of Christians,Biographies of Christians,,12,7,,BC,1,Further Credit Option,Biographies of Christians,0.8,Active
+163,College Basic Old Testament Survey,College Old Testament Survey,,12,7,,COTS,1,Further Credit Option,College Old Testament Survey,0.8,Inactive
+164,U.S. Civics,Civics,,12,6,,USCI,2,Further Credit Option,Social Studies Level 12,0.8,
+165,Economics,Economics,,12,6,,ECON,2,Further Credit Option,Social Studies Level 12,0.8,
