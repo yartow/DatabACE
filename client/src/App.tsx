@@ -23,6 +23,7 @@ import SetupProfilePage from "@/pages/setup-profile";
 import InvitePage from "@/pages/invite";
 import InventoryPage from "@/pages/inventory";
 import OrderMaterialsPage from "@/pages/order-materials";
+import GradesPage from "@/pages/grades";
 import type { UserProfile } from "@shared/schema";
 
 function AuthenticatedRouter() {
@@ -38,6 +39,7 @@ function AuthenticatedRouter() {
       <Route path="/export" component={ExportPage} />
       <Route path="/inventory" component={InventoryPage} />
       <Route path="/order-materials" component={OrderMaterialsPage} />
+      <Route path="/grades" component={GradesPage} />
       <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
