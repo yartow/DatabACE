@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Replit-managed files — always keep the current branch's version on merge
+# (requires: git config merge.ours.driver true  — run once per machine)
+.replit merge=ours
