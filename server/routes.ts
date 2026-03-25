@@ -377,7 +377,7 @@ export async function registerRoutes(
     try {
       let inserted = 0; let updated = 0;
       if (session.type === "pace-courses") {
-        for (const row of session.newPcs) await storage.upsertPaceCourse(row) && inserted++;
+        for (const row of session.newPcs) { await storage.upsertPaceCourse(row); inserted++; }
         const resolvedChoices = overrideAll ? session.conflictPcs.map(() => "excel") : (choices || []);
         for (let i = 0; i < session.conflictPcs.length; i++) {
           if (resolvedChoices[i] === "excel") { await storage.upsertPaceCourse(session.conflictPcs[i].excelRow); updated++; }
@@ -992,18 +992,18 @@ export async function registerRoutes(
       const studentIds = new Set(allStudents.map(s => s.id));
       const courseIds = new Set(allCourses.map(c => c.id));
 
-      function parseExcelDate(val: any): string | null {
+      function parseExcelDate(val: any): string | null | undefined {
         if (!val) return null;
         if (typeof val === "number") {
           const d = new Date(Date.UTC(1899, 11, 30 + val));
           return d.toISOString().split("T")[0];
         }
         const s = String(val).trim();
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined as any;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
         const parts = s.split("-");
         const month = parseInt(parts[1]);
         const day = parseInt(parts[2]);
-        if (month < 1 || month > 12 || day < 1 || day > 31) return undefined as any;
+        if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
         return s;
       }
 
