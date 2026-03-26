@@ -10,48 +10,11 @@ import {
   type InsertCourse, type InsertPaceCourse, type InsertPace,
   type PaceVersion, type InsertPaceVersion, type Inventory, type InsertInventory,
   type OrderList, type InsertOrderList, type OrderListItem, type InsertOrderListItem,
+  type InventoryRow, type OrderMaterialRow, type OrderListItemRich,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, sql, asc, desc } from "drizzle-orm";
 import { users } from "@shared/models/auth";
-
-export type InventoryRow = {
-  inventoryId: number;
-  paceVersionId: number;
-  yearRevised: number | null;
-  type: "PACE" | "Score Key" | "Material" | null;
-  edition: number | null;
-  paceId: number;
-  paceNumber: number | null;
-  courseId: number | null;
-  courseName: string | null;
-  studentId: number;
-  studentSurname: string;
-  studentCallName: string;
-  numberInPossession: number | null;
-};
-
-export type OrderMaterialRow = {
-  enrollmentId: number;
-  studentId: number;
-  studentCallName: string | null;
-  studentSurname: string | null;
-  courseId: number;
-  courseName: string | null;
-  enrollmentNumber: string | null;
-  paceId: number | null;
-  paceNumber: number | null;
-  quantity: number;
-  fromInventory: number;
-  toOrder: number;
-};
-
-export type OrderListItemRich = OrderListItem & {
-  paceNumber: number | null;
-  courseName: string | null;
-  studentCallName: string | null;
-  studentSurname: string | null;
-};
 
 export interface IStorage {
   getStudents(): Promise<Student[]>;
@@ -502,8 +465,8 @@ export class DatabaseStorage implements IStorage {
         edition: paceVersions.edition,
         paceId: paces.id,
         paceNumber: paces.number,
-        courseId: paceCourses.courseId,
-        courseName: courses.icceAlias,
+        courseId: sql<number | null>`(SELECT pc.course_id FROM pace_courses pc WHERE pc.pace_id = ${paces.id} LIMIT 1)`,
+        courseName: sql<string | null>`(SELECT c.icce_alias FROM pace_courses pc JOIN courses c ON c.id = pc.course_id WHERE pc.pace_id = ${paces.id} LIMIT 1)`,
         studentId: students.id,
         studentSurname: students.surname,
         studentCallName: students.callName,
@@ -512,9 +475,7 @@ export class DatabaseStorage implements IStorage {
       .from(inventory)
       .innerJoin(paceVersions, eq(inventory.paceVersionsId, paceVersions.id))
       .innerJoin(paces, eq(paceVersions.paceId, paces.id))
-      .innerJoin(students, eq(inventory.studentId, students.id))
-      .leftJoin(paceCourses, eq(paceCourses.paceId, paces.id))
-      .leftJoin(courses, eq(paceCourses.courseId, courses.id));
+      .innerJoin(students, eq(inventory.studentId, students.id));
     return rows as InventoryRow[];
   }
   async createInventoryEntry(data: InsertInventory): Promise<Inventory> {
@@ -679,38 +640,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async processDelivery(orderListId: number): Promise<number> {
-    const items = await db.select().from(orderListItems)
-      .where(and(eq(orderListItems.orderListId, orderListId), eq(orderListItems.delivered, true)));
+    return db.transaction(async (tx) => {
+      const items = await tx.select().from(orderListItems)
+        .where(and(eq(orderListItems.orderListId, orderListId), eq(orderListItems.delivered, true)));
 
-    let processed = 0;
-    const processedIds: number[] = [];
-    for (const item of items) {
-      if (!item.paceId || !item.finalToOrder || item.finalToOrder <= 0) continue;
+      let processed = 0;
+      const processedIds: number[] = [];
+      for (const item of items) {
+        if (!item.paceId || !item.finalToOrder || item.finalToOrder <= 0) continue;
 
-      const [latestPv] = await db.select().from(paceVersions)
-        .where(eq(paceVersions.paceId, item.paceId))
-        .orderBy(desc(paceVersions.id))
-        .limit(1);
+        const [latestPv] = await tx.select().from(paceVersions)
+          .where(eq(paceVersions.paceId, item.paceId))
+          .orderBy(desc(paceVersions.id))
+          .limit(1);
 
-      if (!latestPv) continue;
+        if (!latestPv) continue;
 
-      const existing = await db.select().from(inventory)
-        .where(and(eq(inventory.paceVersionsId, latestPv.id), eq(inventory.studentId, item.studentId)));
-      const currentQty = existing.length > 0 ? (existing[0].numberInPossession ?? 0) : 0;
-      await this.upsertInventoryEntry(latestPv.id, item.studentId, currentQty + item.finalToOrder);
-      processedIds.push(item.id);
-      processed++;
-    }
+        const existing = await tx.select().from(inventory)
+          .where(and(eq(inventory.paceVersionsId, latestPv.id), eq(inventory.studentId, item.studentId)));
+        const currentQty = existing.length > 0 ? (existing[0].numberInPossession ?? 0) : 0;
+        const newQty = currentQty + item.finalToOrder;
 
-    if (processedIds.length > 0) {
+        if (existing.length > 0) {
+          await tx.update(inventory)
+            .set({ numberInPossession: newQty })
+            .where(eq(inventory.id, existing[0].id));
+        } else {
+          await tx.insert(inventory).values({ paceVersionsId: latestPv.id, studentId: item.studentId, numberInPossession: newQty });
+        }
+
+        processedIds.push(item.id);
+        processed++;
+      }
+
       for (const pid of processedIds) {
-        await db.update(orderListItems)
+        await tx.update(orderListItems)
           .set({ delivered: false })
           .where(eq(orderListItems.id, pid));
       }
-    }
 
-    return processed;
+      return processed;
+    });
   }
 }
 

@@ -312,3 +312,41 @@ export type OrderList = typeof orderLists.$inferSelect;
 export type InsertOrderList = z.infer<typeof insertOrderListSchema>;
 export type OrderListItem = typeof orderListItems.$inferSelect;
 export type InsertOrderListItem = z.infer<typeof insertOrderListItemSchema>;
+
+export type InventoryRow = {
+  inventoryId: number;
+  paceVersionId: number;
+  yearRevised: number | null;
+  type: "PACE" | "Score Key" | "Material" | null;
+  edition: number | null;
+  paceId: number;
+  paceNumber: number | null;
+  courseId: number | null;
+  courseName: string | null;
+  studentId: number;
+  studentSurname: string;
+  studentCallName: string;
+  numberInPossession: number | null;
+};
+
+export type OrderMaterialRow = {
+  enrollmentId: number;
+  studentId: number;
+  studentCallName: string | null;
+  studentSurname: string | null;
+  courseId: number;
+  courseName: string | null;
+  enrollmentNumber: string | null;
+  paceId: number | null;
+  paceNumber: number | null;
+  quantity: number;
+  fromInventory: number;
+  toOrder: number;
+};
+
+export type OrderListItemRich = OrderListItem & {
+  paceNumber: number | null;
+  courseName: string | null;
+  studentCallName: string | null;
+  studentSurname: string | null;
+};
