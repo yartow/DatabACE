@@ -22,7 +22,7 @@ A school grading management web application for an ACE/PACE curriculum school. B
 
 ## Data Model (PACE Curriculum)
 - `users` / `sessions` - Auth tables (managed by Replit Auth integration)
-- `userProfiles` - Extends users with role (teacher/parent) and familyId
+- `userProfiles` - Extends users with role (teacher/parent), familyId, and optional firstName/lastName/email overrides
 - `students` - Student records (auto-generated ID, surname, firstNames, callName, alias, isDyslexic, active, reasonInactive, remarks, dateOfBirth, familyId FK→families, group: Kindergarten/ABCs/Juniors/Seniors)
 - `families` - Family records (id, firstName, lastName, address max 120 chars, city, postalCode)
 - `personnel` - Staff records (id, firstName, lastName, group: Kindergarten/ABCs/Juniors/Seniors, type: Supervisor/Monitor/Intern/Secretary/Board Member/Principal, rank: integer)
