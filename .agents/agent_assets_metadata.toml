@@ -12,3 +12,9 @@ id = "BZvmKVkTYf47EqYxCAN2h"
 uri = "file://README.md"
 type = "text"
 title = "README.md — Ceder"
+
+[[outputs]]
+id = "Hk9Dn_FxbRApJye2PVmaZ"
+uri = "file://DOCKER_SETUP.md"
+type = "text"
+title = "Docker Setup Gids — Ceder lokaal draaien"
