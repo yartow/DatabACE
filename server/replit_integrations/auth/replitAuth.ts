@@ -8,6 +8,19 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 
+const LOCAL_DEV = process.env.LOCAL_DEV === "true";
+const LOCAL_DEV_USER_ID = process.env.LOCAL_DEV_USER_ID ?? "local-admin";
+
+const LOCAL_DEV_USER = {
+  id: LOCAL_DEV_USER_ID,
+  email: "admin@ceder.local",
+  firstName: "Local",
+  lastName: "Admin",
+  profileImageUrl: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
@@ -19,7 +32,7 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
-  const sessionTtlSec = 30 * 24 * 60 * 60; // 30 days in seconds
+  const sessionTtlSec = 30 * 24 * 60 * 60;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -34,7 +47,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: !LOCAL_DEV,
       maxAge: sessionTtlSec * 1000,
     },
   });
@@ -61,6 +74,14 @@ async function upsertUser(claims: any) {
 }
 
 export async function setupAuth(app: Express) {
+  if (LOCAL_DEV) {
+    app.use(getSession());
+    app.get("/api/login", (req, res) => res.redirect("/"));
+    app.get("/api/logout", (req, res) => res.redirect("/"));
+    console.log(`[local-dev] Auth bypass active — user: ${LOCAL_DEV_USER_ID}`);
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -78,10 +99,8 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
-  // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
     const strategyName = `replitauth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
@@ -131,6 +150,14 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (LOCAL_DEV) {
+    (req as any).user = {
+      claims: { sub: LOCAL_DEV_USER_ID },
+      expires_at: Math.floor(Date.now() / 1000) + 86400,
+    };
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
