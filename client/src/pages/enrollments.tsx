@@ -1054,7 +1054,7 @@ function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
 
 export default function EnrollmentsPage() {
   const { toast } = useToast();
-  const [selectedStudent, setSelectedStudent] = usePersistedState<Student | null>("enrollments.selectedStudent", null);
+  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("shared.selectedStudentId", "");
   const [showNewRow, setShowNewRow] = useState(false);
   const [showNewSuppRow, setShowNewSuppRow] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -1063,14 +1063,20 @@ export default function EnrollmentsPage() {
   const [termFilter, setTermFilter] = usePersistedState<string>("enrollments.termFilter", "all");
   const [expandAll, setExpandAll] = useState(false);
 
+  const { data: students } = useQuery<Student[]>({ queryKey: ["/api/students"] });
+  const selectedStudent = useMemo(() => {
+    if (!selectedStudentId || !students) return null;
+    return students.find(s => s.id === parseInt(selectedStudentId)) || null;
+  }, [selectedStudentId, students]);
+
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
-    queryKey: ["/api/enrollments", selectedStudent?.id?.toString() || ""],
+    queryKey: ["/api/enrollments", selectedStudentId],
     queryFn: async () => {
-      const res = await fetch(`/api/enrollments?studentId=${selectedStudent!.id}`, { credentials: "include" });
+      const res = await fetch(`/api/enrollments?studentId=${selectedStudentId}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch enrollments");
       return res.json();
     },
-    enabled: !!selectedStudent,
+    enabled: !!selectedStudentId,
   });
 
   const { data: courses } = useQuery<Course[]>({ queryKey: ["/api/courses"] });
@@ -1080,13 +1086,13 @@ export default function EnrollmentsPage() {
   const { data: termWeeks } = useQuery<{ yearTerm: string; term: number; weeks: number }[]>({ queryKey: ["/api/dates/term-weeks"] });
 
   const { data: suppActivities } = useQuery<SupplementaryActivity[]>({
-    queryKey: ["/api/supplementary-activities", selectedStudent?.id?.toString() || ""],
+    queryKey: ["/api/supplementary-activities", selectedStudentId],
     queryFn: async () => {
-      const res = await fetch(`/api/supplementary-activities?studentId=${selectedStudent!.id}`, { credentials: "include" });
+      const res = await fetch(`/api/supplementary-activities?studentId=${selectedStudentId}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch supplementary activities");
       return res.json();
     },
-    enabled: !!selectedStudent,
+    enabled: !!selectedStudentId,
   });
 
   const courseMap = useMemo(() => new Map((courses || []).map(c => [c.id, c])), [courses]);
@@ -1199,7 +1205,7 @@ export default function EnrollmentsPage() {
   const deleteSuppMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/supplementary-activities/${id}`); },
     onSuccess: () => {
-      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", selectedStudent.id.toString()] });
+      if (selectedStudentId) queryClient.invalidateQueries({ queryKey: ["/api/supplementary-activities", selectedStudentId] });
       toast({ title: "Supplementary activity removed" });
     },
     onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
@@ -1210,7 +1216,7 @@ export default function EnrollmentsPage() {
       await apiRequest("PATCH", `/api/enrollments/${id}`, data);
     },
     onSuccess: () => {
-      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
+      if (selectedStudentId) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
       toast({ title: "Enrollment updated" });
     },
     onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
@@ -1219,7 +1225,7 @@ export default function EnrollmentsPage() {
   const deleteEnrollmentMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/enrollments/${id}`); },
     onSuccess: () => {
-      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
+      if (selectedStudentId) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
       toast({ title: "PACE enrollment removed" });
     },
     onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
@@ -1230,7 +1236,7 @@ export default function EnrollmentsPage() {
       await apiRequest("DELETE", `/api/enrollments/course/${studentId}/${courseId}`);
     },
     onSuccess: () => {
-      if (selectedStudent) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudent.id.toString()] });
+      if (selectedStudentId) queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
       toast({ title: "Course enrollment removed" });
     },
     onError: (err: Error) => toast({ title: "Failed to delete", description: err.message, variant: "destructive" }),
@@ -1268,7 +1274,7 @@ export default function EnrollmentsPage() {
           <CardTitle className="text-base">Select Student</CardTitle>
         </CardHeader>
         <CardContent>
-          <StudentSearch onSelect={(s) => { setSelectedStudent(s); setShowNewRow(false); }} selectedStudent={selectedStudent} className="max-w-md" />
+          <StudentSearch onSelect={(s) => { setSelectedStudentId(String(s.id)); setShowNewRow(false); }} selectedStudent={selectedStudent} className="max-w-md" />
           {selectedStudent && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Selected:</span>

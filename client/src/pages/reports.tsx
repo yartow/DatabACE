@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, Course, Enrollment, DateEntry, Personnel, SupplementaryActivity, UserProfile } from "@shared/schema";
 import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 import { Download } from "lucide-react";
@@ -48,7 +49,7 @@ interface CategoryBlock {
 }
 
 export default function ReportsPage() {
-  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("shared.selectedStudentId", "");
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });

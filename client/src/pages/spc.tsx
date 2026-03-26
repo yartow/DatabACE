@@ -41,7 +41,7 @@ function getTermLabel(dateStarted: string | null, datesMap: Map<string, DateEntr
 }
 
 export default function SPCPage() {
-  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("spc.selectedStudentId", "");
+  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("shared.selectedStudentId", "");
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ["/api/students"] });

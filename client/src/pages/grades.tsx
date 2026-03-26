@@ -63,7 +63,7 @@ type DialogState = {
 };
 
 export default function GradesPage() {
-  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("grades.selectedStudentId", "");
+  const [selectedStudentId, setSelectedStudentId] = usePersistedState<string>("shared.selectedStudentId", "");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
