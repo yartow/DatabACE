@@ -6,7 +6,15 @@ import { insertStudentSchema, insertEnrollmentSchema, insertPersonnelSchema, ins
 import multer from "multer";
 import crypto from "crypto";
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+function validateXlsx(req: any, res: any): boolean {
+  if (req.file && req.file.mimetype !== XLSX_MIME && !req.file.originalname?.toLowerCase().endsWith(".xlsx")) {
+    res.status(400).json({ message: "Only .xlsx files are accepted" });
+    return false;
+  }
+  return true;
+}
 
 type ImportSessionRow = { studentId: number; courseId: number; number: string; dateStarted: string | null; dateEnded: string | null; grade: number | null; remarks: string | null };
 type ImportConflict = { excelRow: ImportSessionRow; dbId: number };
@@ -275,6 +283,7 @@ export async function registerRoutes(
     const profile = await storage.getUserProfile(req.user.claims.sub);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!validateXlsx(req, res)) return;
     const importType = (req.query.type as string) || "courses";
 
     try {
@@ -487,7 +496,10 @@ export async function registerRoutes(
   app.post("/api/order-lists/:id/process-delivery", isAuthenticated, async (req: any, res) => {
     const profile = await storage.getUserProfile(req.user.claims.sub);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
-    const count = await storage.processDelivery(parseInt(req.params.id));
+    const listId = parseInt(req.params.id);
+    const listData = await storage.getOrderListWithItems(listId);
+    if (!listData) return res.status(404).json({ message: "Order list not found" });
+    const count = await storage.processDelivery(listId);
     res.json({ processed: count });
   });
 
@@ -500,7 +512,9 @@ export async function registerRoutes(
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     const { paceVersionsId, studentId, numberInPossession } = req.body;
     if (!paceVersionsId || !studentId) return res.status(400).json({ message: "paceVersionsId and studentId required" });
-    const inv = await storage.upsertInventoryEntry(parseInt(paceVersionsId), parseInt(studentId), parseInt(numberInPossession) || 0);
+    const qty = parseInt(numberInPossession);
+    if (isNaN(qty)) return res.status(400).json({ message: "numberInPossession must be a number" });
+    const inv = await storage.upsertInventoryEntry(parseInt(paceVersionsId), parseInt(studentId), qty);
     res.json(inv);
   });
 
@@ -615,6 +629,7 @@ export async function registerRoutes(
     const profile = await storage.getUserProfile(req.user.claims.sub);
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!validateXlsx(req, res)) return;
     try {
       const XLSX = await import("xlsx");
       const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
@@ -818,7 +833,9 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.get("/api/personnel", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/personnel", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     res.json(await storage.getPersonnel());
   });
 
@@ -855,7 +872,9 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.get("/api/families", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/families", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     res.json(await storage.getFamilies());
   });
 
@@ -884,7 +903,9 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.get("/api/parents", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/parents", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
     res.json(await storage.getParents());
   });
 
@@ -975,6 +996,7 @@ export async function registerRoutes(
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
 
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!validateXlsx(req, res)) return;
 
     try {
       const XLSX = await import("xlsx");
@@ -1282,6 +1304,7 @@ export async function registerRoutes(
     if (!profile || profile.role !== "teacher") return res.status(403).json({ message: "Forbidden" });
 
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    if (!validateXlsx(req, res)) return;
 
     try {
       const XLSX = await import("xlsx");
@@ -1347,7 +1370,6 @@ export async function registerRoutes(
       role: inv.role,
       familyId: inv.familyId,
       familyName: family ? `${family.firstName} ${family.lastName}` : null,
-      email: inv.email,
       expired,
       used: !!inv.usedBy,
     });
@@ -1398,6 +1420,12 @@ export async function registerRoutes(
     if (targetUserId === req.user.claims.sub) return res.status(400).json({ message: "Cannot delete your own account" });
     await storage.deleteUserProfile(targetUserId);
     res.json({ success: true });
+  });
+
+  // Global error handler — catches errors passed via next(err) or synchronous throws
+  app.use((err: any, _req: any, res: any, _next: any) => {
+    console.error("Unhandled route error:", err);
+    res.status(500).json({ message: "Internal server error" });
   });
 
   return httpServer;

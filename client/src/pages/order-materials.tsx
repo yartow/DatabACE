@@ -30,8 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { OrderMaterialRow, OrderListItemRich } from "../../../server/storage";
-import type { OrderList, Student, Pace, PaceCourse, Course } from "@shared/schema";
+import type { OrderMaterialRow, OrderListItemRich, OrderList, Student, Pace, PaceCourse, Course } from "@shared/schema";
 
 const YEAR_TERM_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const y = 22 + i;
