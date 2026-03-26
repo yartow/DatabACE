@@ -38,3 +38,6 @@ server/public
 11. Web design/
 
 .replit
+
+# Claude Code local state
+.claude/
