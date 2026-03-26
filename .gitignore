@@ -27,10 +27,14 @@ server/public
 .Rproj.user
 *.RData*
 
-# Your data/project folders
-01. Data/*
-03. Code/*
-04. Examples/*
-05. Other/*
+# Personal data folders (local only, never commit)
+01. Data/
+02. Documentation/
+03. Code/
+04. Examples/
+05. Other/
+06. Database/
+10. Images/
+11. Web design/
 
 .replit
