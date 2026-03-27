@@ -55,13 +55,13 @@ export default function ExportPage() {
   const [exporting, setExporting] = useState(false);
   const [preview, setPreview] = useState<Record<string, any>[] | null>(null);
 
-  if (profile && profile.role !== "teacher") {
+  if (profile && (!profile.isAdmin || profile.role !== "teacher")) {
     return (
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ShieldAlert className="w-12 h-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold" data-testid="text-access-denied">Access Denied</h2>
-          <p className="text-muted-foreground mt-2">Only teachers can export data.</p>
+          <p className="text-muted-foreground mt-2">Only admins can export data.</p>
         </div>
       </div>
     );

@@ -60,6 +60,8 @@ type DialogState = {
   courseLabel: string;
   grade: string;
   dateEnded: string;
+  isNew: boolean;
+  courseId: number | null;
 };
 
 export default function GradesPage() {
@@ -101,6 +103,8 @@ export default function GradesPage() {
     courseLabel: "",
     grade: "",
     dateEnded: "",
+    isNew: false,
+    courseId: null,
   });
 
   const subjectMap = useMemo(() => {
@@ -215,10 +219,51 @@ export default function GradesPage() {
       courseLabel,
       grade: currentGrade !== null ? String(currentGrade) : "",
       dateEnded: currentDate ?? "",
+      isNew: false,
+      courseId: null,
     });
   }, [editMode, pendingChanges]);
 
-  const commitEdit = useCallback(() => {
+  const openNewDialog = useCallback((courseId: number, paceNum: number, courseLabel: string) => {
+    if (!editMode) return;
+    setDialog({
+      open: true,
+      enrollmentId: null,
+      paceNum,
+      courseLabel,
+      grade: "",
+      dateEnded: "",
+      isNew: true,
+      courseId,
+    });
+  }, [editMode]);
+
+  const commitEdit = useCallback(async () => {
+    if (dialog.isNew) {
+      if (!dialog.courseId || !selectedStudent || dialog.paceNum === null) return;
+      try {
+        const rawGrade = dialog.grade.trim() === "" ? null : parseFloat(dialog.grade.replace("%", ""));
+        const res = await apiRequest("POST", "/api/enrollments/course", {
+          studentId: selectedStudent.id,
+          courseId: dialog.courseId,
+          selectedPaces: [{ number: String(dialog.paceNum), isRepeat: false }],
+        });
+        const created: Enrollment[] = await res.json();
+        const newEnrollment = created[0];
+        if (newEnrollment && (rawGrade !== null || dialog.dateEnded)) {
+          await apiRequest("PATCH", `/api/enrollments/${newEnrollment.id}`, {
+            grade: rawGrade === null || isNaN(rawGrade) ? null : rawGrade,
+            dateEnded: dialog.dateEnded || null,
+          });
+        }
+        await queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
+      } catch (err: any) {
+        toast({ title: "Failed to create enrollment", description: err.message, variant: "destructive" });
+      }
+      setDialog(d => ({ ...d, open: false }));
+      return;
+    }
+
     if (dialog.enrollmentId === null || !enrollments) return;
     const enrollment = enrollments.find(e => e.id === dialog.enrollmentId);
     if (!enrollment) return;
@@ -240,7 +285,7 @@ export default function GradesPage() {
     setUndoStack(s => [...s, edit]);
     setRedoStack([]);
     setDialog(d => ({ ...d, open: false }));
-  }, [dialog, pendingChanges, enrollments, applyEdit]);
+  }, [dialog, pendingChanges, enrollments, applyEdit, selectedStudent, selectedStudentId, queryClient, toast]);
 
   const undo = useCallback(() => {
     if (undoStack.length === 0) return;
@@ -466,22 +511,20 @@ export default function GradesPage() {
                                 key={num}
                                 className={[
                                   "text-center px-1 py-1.5 font-mono rounded transition-colors",
-                                  editMode && enrollment
-                                    ? "cursor-pointer hover:bg-accent/60"
-                                    : "",
+                                  editMode ? "cursor-pointer hover:bg-accent/60" : "",
                                   grade !== null
                                     ? "text-foreground font-medium"
                                     : "text-muted-foreground/30",
                                   changed ? "bg-amber-50 dark:bg-amber-950/30" : "",
                                 ].join(" ")}
-                                onClick={() =>
-                                  enrollment &&
-                                  openDialog(
-                                    enrollment,
-                                    num,
-                                    course.aceAlias || course.icceAlias || `Course ${course.id}`,
-                                  )
-                                }
+                                onClick={() => {
+                                  const label = course.aceAlias || course.icceAlias || `Course ${course.id}`;
+                                  if (enrollment) {
+                                    openDialog(enrollment, num, label);
+                                  } else {
+                                    openNewDialog(course.id, num, label);
+                                  }
+                                }}
                               >
                                 {formatGrade(grade)}
                               </td>
@@ -502,19 +545,17 @@ export default function GradesPage() {
                                 key={num}
                                 className={[
                                   "text-center px-1 py-1 text-muted-foreground rounded transition-colors",
-                                  editMode && enrollment
-                                    ? "cursor-pointer hover:bg-accent/60"
-                                    : "",
+                                  editMode ? "cursor-pointer hover:bg-accent/60" : "",
                                   changed ? "bg-amber-50 dark:bg-amber-950/30" : "",
                                 ].join(" ")}
-                                onClick={() =>
-                                  enrollment &&
-                                  openDialog(
-                                    enrollment,
-                                    num,
-                                    course.aceAlias || course.icceAlias || `Course ${course.id}`,
-                                  )
-                                }
+                                onClick={() => {
+                                  const label = course.aceAlias || course.icceAlias || `Course ${course.id}`;
+                                  if (enrollment) {
+                                    openDialog(enrollment, num, label);
+                                  } else {
+                                    openNewDialog(course.id, num, label);
+                                  }
+                                }}
                               >
                                 {formatDate(dateEnded)}
                               </td>
@@ -537,6 +578,7 @@ export default function GradesPage() {
           <DialogHeader>
             <DialogTitle>
               {dialog.courseLabel} — PACE {dialog.paceNum}
+              {dialog.isNew && <span className="text-muted-foreground font-normal text-sm ml-2">(new)</span>}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">

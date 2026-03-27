@@ -1,7 +1,7 @@
 import {
   students, courses, paces, paceCourses, dates, userProfiles, enrollments, subjects,
   personnel, families, parents, supplementaryActivities, subjectGroups, invitations,
-  paceVersions, inventory, orderLists, orderListItems,
+  paceVersions, inventory, orderLists, orderListItems, appSettings,
   type Student, type Course, type Pace, type PaceCourse, type DateEntry, type UserProfile, type Enrollment, type Subject,
   type Personnel, type Family, type Parent, type SupplementaryActivity, type SubjectGroup,
   type Invitation, type InsertInvitation,
@@ -11,6 +11,7 @@ import {
   type PaceVersion, type InsertPaceVersion, type Inventory, type InsertInventory,
   type OrderList, type InsertOrderList, type OrderListItem, type InsertOrderListItem,
   type InventoryRow, type OrderMaterialRow, type OrderListItemRich,
+  type AppSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, sql, asc, desc } from "drizzle-orm";
@@ -120,6 +121,9 @@ export interface IStorage {
   createOrderList(data: InsertOrderList, items: InsertOrderListItem[]): Promise<OrderList>;
   updateOrderListItem(id: number, data: Partial<InsertOrderListItem>): Promise<OrderListItem | undefined>;
   processDelivery(orderListId: number): Promise<number>;
+
+  getAppSettings(): Promise<AppSettings>;
+  updateAppSettings(data: Partial<Omit<AppSettings, "id">>): Promise<AppSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -681,6 +685,24 @@ export class DatabaseStorage implements IStorage {
 
       return processed;
     });
+  }
+
+  async getAppSettings(): Promise<AppSettings> {
+    const [s] = await db.select().from(appSettings).where(eq(appSettings.id, 1));
+    if (!s) {
+      const [created] = await db.insert(appSettings).values({ id: 1 }).returning();
+      return created;
+    }
+    return s;
+  }
+
+  async updateAppSettings(data: Partial<Omit<AppSettings, "id">>): Promise<AppSettings> {
+    const [updated] = await db
+      .insert(appSettings)
+      .values({ id: 1, ...data })
+      .onConflictDoUpdate({ target: appSettings.id, set: data })
+      .returning();
+    return updated;
   }
 }
 

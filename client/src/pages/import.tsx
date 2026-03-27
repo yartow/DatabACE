@@ -1,12 +1,26 @@
 import { useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Upload, FileSpreadsheet, ShieldAlert } from "lucide-react";
+import type { UserProfile } from "@shared/schema";
 
 export default function ImportPage() {
+  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
+
+  if (profile && (!profile.isAdmin || profile.role !== "teacher")) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <ShieldAlert className="w-12 h-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold">Access Denied</h2>
+          <p className="text-muted-foreground mt-2">Only admins can import data.</p>
+        </div>
+      </div>
+    );
+  }
   const { toast } = useToast();
   const [parsedData, setParsedData] = useState<any>(null);
   const [selectedSheet, setSelectedSheet] = useState<string>("");

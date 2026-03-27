@@ -1,7 +1,7 @@
 export * from "./models/auth";
 
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, integer, real, boolean, pgEnum, varchar, timestamp, smallint } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, boolean, pgEnum, varchar, timestamp, smallint, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
@@ -312,6 +312,37 @@ export type OrderList = typeof orderLists.$inferSelect;
 export type InsertOrderList = z.infer<typeof insertOrderListSchema>;
 export type OrderListItem = typeof orderListItems.$inferSelect;
 export type InsertOrderListItem = z.infer<typeof insertOrderListItemSchema>;
+
+// App settings types
+export type GoldStarRule = {
+  levelFrom: number;
+  levelTo: number;
+  paceFrom: number;
+  paceTo: number;
+  minScore: number; // percentage, e.g. 99.5
+};
+
+export type ClubThresholds = {
+  bronze: number;
+  silver: number;
+  gold: number;
+  platinum: number;
+};
+
+export type HonorRollThresholds = {
+  b: number;
+  a: number;
+  aPlus: number;
+};
+
+export const appSettings = pgTable("app_settings", {
+  id: integer("id").primaryKey().default(1),
+  goldStarRules: jsonb("gold_star_rules").$type<GoldStarRule[]>().notNull().default(sql`'[]'::jsonb`),
+  clubThresholds: jsonb("club_thresholds").$type<ClubThresholds>().notNull().default(sql`'{"bronze":10,"silver":20,"gold":30,"platinum":40}'::jsonb`),
+  honorRollThresholds: jsonb("honor_roll_thresholds").$type<HonorRollThresholds>().notNull().default(sql`'{"b":95,"a":97,"aPlus":99}'::jsonb`),
+});
+
+export type AppSettings = typeof appSettings.$inferSelect;
 
 export type InventoryRow = {
   inventoryId: number;

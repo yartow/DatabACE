@@ -22,8 +22,6 @@ const teacherItems = [
   { title: "Inventory", url: "/inventory", icon: Package },
   { title: "Order Materials", url: "/order-materials", icon: ShoppingCart },
   { title: "People", url: "/students", icon: Users },
-  { title: "Import Data", url: "/import", icon: Upload },
-  { title: "Export Data", url: "/export", icon: Download },
 ];
 
 const parentItems = [

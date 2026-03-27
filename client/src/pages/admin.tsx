@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Copy, Trash2, ShieldAlert } from "lucide-react";
-import type { Invitation, Family, UserProfile } from "@shared/schema";
+import { Plus, Copy, Trash2, ShieldAlert, AlertTriangle, Upload, Download } from "lucide-react";
+import { Link } from "wouter";
+import type { Invitation, Family, UserProfile, AppSettings, GoldStarRule, ClubThresholds, HonorRollThresholds } from "@shared/schema";
 
 type UserProfileWithUser = UserProfile & {
   email?: string | null;
@@ -332,6 +333,184 @@ function UsersTab() {
   );
 }
 
+const defaultClubThresholds: ClubThresholds = { bronze: 10, silver: 20, gold: 30, platinum: 40 };
+const defaultHonorRoll: HonorRollThresholds = { b: 95, a: 97, aPlus: 99 };
+
+function SettingsSection() {
+  const { toast } = useToast();
+
+  const { data: settings, isLoading } = useQuery<AppSettings>({
+    queryKey: ["/api/settings"],
+  });
+
+  const [goldStarRules, setGoldStarRules] = useState<GoldStarRule[]>([]);
+  const [clubThresholds, setClubThresholds] = useState<ClubThresholds>(defaultClubThresholds);
+  const [honorRoll, setHonorRoll] = useState<HonorRollThresholds>(defaultHonorRoll);
+  const [initialized, setInitialized] = useState(false);
+
+  if (settings && !initialized) {
+    setGoldStarRules(settings.goldStarRules ?? []);
+    setClubThresholds(settings.clubThresholds ?? defaultClubThresholds);
+    setHonorRoll(settings.honorRollThresholds ?? defaultHonorRoll);
+    setInitialized(true);
+  }
+
+  const saveSettings = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PUT", "/api/settings", {
+        goldStarRules,
+        clubThresholds,
+        honorRollThresholds: honorRoll,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Settings saved" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to save settings", description: err.message, variant: "destructive" }),
+  });
+
+  function addRule() {
+    setGoldStarRules(rules => [...rules, { levelFrom: 1, levelTo: 12, paceFrom: 1, paceTo: 144, minScore: 100 }]);
+  }
+
+  function removeRule(index: number) {
+    setGoldStarRules(rules => rules.filter((_, i) => i !== index));
+  }
+
+  function updateRule(index: number, field: keyof GoldStarRule, value: number) {
+    setGoldStarRules(rules => rules.map((r, i) => i === index ? { ...r, [field]: value } : r));
+  }
+
+  if (isLoading) return <p className="text-muted-foreground text-sm">Loading settings...</p>;
+
+  return (
+    <div className="space-y-8">
+      {/* Gold Star Rules */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Gold Star Rules</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              A student earns a gold star for each passed test meeting the minimum score for their level and PACE number range.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">Level from</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">Level to</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">PACE # from</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">PACE # to</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">Min score (%)</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {goldStarRules.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-center text-muted-foreground text-sm">No rules defined. Add one below.</td>
+                  </tr>
+                )}
+                {goldStarRules.map((rule, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    {(["levelFrom", "levelTo", "paceFrom", "paceTo", "minScore"] as (keyof GoldStarRule)[]).map(field => (
+                      <td key={field} className="py-1.5 px-2">
+                        <Input
+                          type="number"
+                          className="w-20 h-8 text-sm"
+                          value={rule[field]}
+                          onChange={e => updateRule(i, field, parseFloat(e.target.value))}
+                        />
+                      </td>
+                    ))}
+                    <td className="py-1.5 px-2">
+                      <Button variant="ghost" size="icon" onClick={() => removeRule(i)} className="text-destructive h-8 w-8">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Button variant="outline" size="sm" onClick={addRule}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add rule
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Club Membership Thresholds */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Club Membership Thresholds</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Number of gold stars required to reach each club level. Gold stars accumulate over the school year and reset at the start of a new year.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {(["bronze", "silver", "gold", "platinum"] as (keyof ClubThresholds)[]).map(level => (
+              <div key={level} className="space-y-2">
+                <Label className="capitalize">{level}</Label>
+                <Input
+                  type="number"
+                  value={clubThresholds[level]}
+                  onChange={e => setClubThresholds(t => ({ ...t, [level]: parseInt(e.target.value) }))}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Honor Roll Thresholds */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Honor Roll Thresholds</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Minimum weighted average score (%) required for each honor roll level. Honor roll is calculated per term and resets each term.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>B Honor Roll (%)</Label>
+              <Input
+                type="number"
+                value={honorRoll.b}
+                onChange={e => setHonorRoll(h => ({ ...h, b: parseFloat(e.target.value) }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>A Honor Roll (%)</Label>
+              <Input
+                type="number"
+                value={honorRoll.a}
+                onChange={e => setHonorRoll(h => ({ ...h, a: parseFloat(e.target.value) }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>A+ Honor Roll (%)</Label>
+              <Input
+                type="number"
+                value={honorRoll.aPlus}
+                onChange={e => setHonorRoll(h => ({ ...h, aPlus: parseFloat(e.target.value) }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
+        {saveSettings.isPending ? "Saving..." : "Save Settings"}
+      </Button>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { data: profile, isLoading } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
 
@@ -356,24 +535,64 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-12">
       <div>
         <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Administration</h1>
-        <p className="text-muted-foreground mt-1">Manage invitations and user accounts.</p>
       </div>
 
-      <Tabs defaultValue="invitations">
-        <TabsList data-testid="tabs-admin">
-          <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-        </TabsList>
-        <TabsContent value="invitations" className="mt-4">
-          <InvitationsTab />
-        </TabsContent>
-        <TabsContent value="users" className="mt-4">
-          <UsersTab />
-        </TabsContent>
-      </Tabs>
+      {/* Section 1: User management */}
+      <section className="space-y-4">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Manage invitations and user accounts</h2>
+        </div>
+        <Tabs defaultValue="invitations">
+          <TabsList data-testid="tabs-admin">
+            <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
+            <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
+          </TabsList>
+          <TabsContent value="invitations" className="mt-4">
+            <InvitationsTab />
+          </TabsContent>
+          <TabsContent value="users" className="mt-4">
+            <UsersTab />
+          </TabsContent>
+        </Tabs>
+      </section>
+
+      {/* Section 2: Gold stars, clubs, honor roll */}
+      <section className="space-y-4">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Manage settings for gold stars, club memberships and honor roll</h2>
+        </div>
+        <SettingsSection />
+      </section>
+
+      {/* Section 3: Import & Export */}
+      <section className="space-y-4">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Import and Export data</h2>
+        </div>
+        <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+            Do not use this unless you know what you're doing.
+          </p>
+        </div>
+        <div className="flex gap-4">
+          <Button variant="outline" asChild>
+            <Link href="/import">
+              <Upload className="w-4 h-4 mr-2" />
+              Import Data
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/export">
+              <Download className="w-4 h-4 mr-2" />
+              Export Data
+            </Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

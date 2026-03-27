@@ -1422,6 +1422,21 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const settings = await storage.getAppSettings();
+    res.json(settings);
+  });
+
+  app.put("/api/settings", isAuthenticated, async (req: any, res) => {
+    const profile = await storage.getUserProfile(req.user.claims.sub);
+    if (!profile || profile.role !== "teacher" || !profile.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const { goldStarRules, clubThresholds, honorRollThresholds } = req.body;
+    const updated = await storage.updateAppSettings({ goldStarRules, clubThresholds, honorRollThresholds });
+    res.json(updated);
+  });
+
   // Global error handler — catches errors passed via next(err) or synchronous throws
   app.use((err: any, _req: any, res: any, _next: any) => {
     console.error("Unhandled route error:", err);
