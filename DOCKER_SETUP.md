@@ -32,7 +32,7 @@ De eerste keer duurt dit 2–5 minuten omdat Docker:
 
 ## Stap 4 — App openen
 
-Ga naar **http://localhost:5000**
+Ga naar **http://localhost:5001**
 
 Je bent direct ingelogd als beheerder (Local Admin) — je hoeft niet in te loggen via Replit.
 
@@ -102,14 +102,14 @@ LOCAL_DEV=true \
 npm run dev
 ```
 
-Ga dan naar **http://localhost:5000** — je bent direct ingelogd.
+Ga dan naar **http://localhost:5001** — je bent direct ingelogd.
 
 ---
 
 ## Problemen oplossen
 
-**Port 5000 al in gebruik?**
-Pas in `docker-compose.yml` `"5000:5000"` aan naar bijv. `"5001:5000"` en ga naar http://localhost:5001.
+**Port 5001 al in gebruik?**
+Pas in `docker-compose.yml` `"5001:5000"` aan naar bijv. `"5002:5000"` en ga naar http://localhost:5002.
 
 **Port 5432 al in gebruik?**
 Pas `"5432:5432"` aan naar `"5433:5432"` in `docker-compose.yml`.
