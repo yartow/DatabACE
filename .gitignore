@@ -1,9 +1,43 @@
+# Dependencies
+node_modules
 
-*$*.xlsx
+# Build output
+dist
+
+# Environment variables (important - keep secrets out of git)
+.env
+.env.local
+.env.*.local
+
+# Vite
+vite.config.ts.*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Server static files
+server/public
+
+# Archives & data files
+*.tar.gz
+*.xlsx
+
+# R stuff (if no longer needed, can remove these)
 .Rproj.user
 *.RData*
-*03. Code/RDatabACE/.Rhistory
-03. Code/RDatabACE/.Rhistory
-03. Code/RDatabACE/.RData
-01. Data/~*
+
+# Personal data folders (local only, never commit)
+01. Data/
+02. Documentation/
+03. Code/
+04. Examples/
+05. Other/
+06. Database/
+10. Images/
+11. Web design/
+
+.replit
+
+# Claude Code local state
+.claude/

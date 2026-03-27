@@ -1,0 +1,27 @@
+No, don't automatically populate start dates. Leave it empty. It is up to the user to populate the start and end dates of each "number". 
+
+I see you haven't implemented the Student Progress Chart-view in the way that I requested. It needs to be like the SPC-worksheet in Excel. This means that it needs to look like this. 
+
+At the top: Select the student. 
+
+Then, a few rows below that the courses to which the student is enrolled are listed, as follows. Suppose one of the courses the student is enlisted to is "General Maths". 
+Three times the course name as per the worksheet named "Course": (1) ACE_Alias; (2) ICCE_Alias; (3) Certificate Name
+
+In the case of this example the three names would be
+General Maths     General Maths    General Maths
+
+Then, below that row all "numbers" of the respective course are numbered from left to right. In the case of this example, we know that "General Maths" has courseID=53. 
+So this means then that the SPC-view should have twelve columns with each a number. The most left cell should have the number 85 and each cell to the right  should have increments of one, up until 96 for the outermost right right. 
+
+The table "Subject" has a column named "Color", which indicates the color. Please add another column named "Color_code" which contains the hex value of the colors in the column "Color". 
+
+In the row below the level-values there are initially grey stars in each cell by default. However, when a level of a course is passed, the star must have the color as per its respective course's subject. The definition of "Passed" for all courses except for the course "Word Building" (for all levels" is if a grade is equal to or higher than 80%. For "Word Building" the threshold is that the grade needs to equal to or higher than 90% in order to be passed, for all students, except for students with dyslexia. Therefore, another column needs to be added to the Person-table, named "IsDyslexic", of type Boolean. 
+When a new student is added, there must thus be an option "Is dyslexic?" with values "Yes" and "No", which correspond to this column. 
+Also, when a new student is added, in the UI, there should be no "ID". This needs to be auto-incremented by the database and cannot be changed by the user. 
+Also, another column needs to be added to the Person-table, named "Active", also of type Boolean. One more column needs to be added, named "Reason Inactive", which explains why a student is inactive, with possible values "Moved", "Graduated", "Left school early", "Expelled", "Other".
+Another column needs to be added to the Person-table, called "Remarks", 1250 character limit. 
+
+In the row below the stars, the scores (grade) for that level are written in the format "96%", "99.5%" or "100%", i.e. with one decimal when there is a decimal vaue, such as "99.5%" or just two digits, when there is no decimal value, such as "96%". 
+
+Below that row the cells are populated with a concatenation of the `YearTerm` (obtained from the Date-table), a period (".") and the letter "T" and the `Term` (also obtained from the Date-table). The Start Date of the number of the course is leading. 
+So, for example, someone starts a number of a course in `2026-12-16`, then value in the cells needs to be `25–26.T1`. 

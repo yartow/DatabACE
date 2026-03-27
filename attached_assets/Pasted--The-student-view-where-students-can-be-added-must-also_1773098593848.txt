@@ -1,0 +1,30 @@
+
+The student view where students can be added must also contain an edit button so that info of students can be changed. At the top of the page there must be a drop-down to select so that it show a view of the students, personnel, parents and families. So the drop-down has four options. Each option shows a different view. The student view is already fine as it is. The teacher view should contain the columns 
+* First name 
+* Last name 
+* Group
+  * This can only be one of four values: Kindergarten, ABCs, Juniors, Seniors
+* Type 
+  * This can only be one of six values: Supervisor, Monitor, Intern, Secretary, Board Member, Principal.
+Of course this data is populated by a to-be-created table named "Personell" which contains the same columns plus a column "ID" (primary key). 
+
+Create a table named "Family". The Family-table contains the following columns: 
+* ID
+* First Name 
+* Last Name
+* Address (varchar, 120 characters max.)
+* City
+* Postal Code
+On the family-view new families can be added. 
+
+Also create a table named "Parent". This will be the source of the Parent-view. This view shows information about the parents of the students. The table contains the columns: 
+* ID
+* First Name
+* Last Name
+* Phone Number (varchar, phone numbers are stored in the format "+31624745057")
+* FamilyID
+
+On the Parent view new Parents can be added. Upon filling in the phone number, users will usually add dashes, but upon saving these dashes and spaces must be discarded. 
+On the same view there must also be an option to match a parents to a family. So when a parent is added, there must be a text field which says "Add to family..." and when the user clicks on it, the user can start typing the family name (using autocomplete). There must always be an option "Create new family". The user can click on that option in order to create a new family. 
+
+The Students-table must have an two extra columns. One, a "Date of Birth" column (type, `date`), and another one named "FamilyID", which is a foreign key, referring to the table named "Family". 
