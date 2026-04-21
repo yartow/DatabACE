@@ -77,7 +77,7 @@ function AuthenticatedLayout() {
         <div className="flex h-screen w-full">
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0">
-            <header className="flex items-center gap-2 p-2 border-b h-12">
+            <header className="md:hidden flex items-center px-2 py-0.5 border-b">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
             </header>
             <main className="flex-1 overflow-auto">

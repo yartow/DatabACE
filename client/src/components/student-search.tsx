@@ -80,6 +80,7 @@ export function StudentSearch({ onSelect, selectedStudent, placeholder = "Type s
       setQuery(`${s.callName} ${s.surname}`);
       setOpen(false);
       setHighlightIndex(-1);
+      inputRef.current?.blur();
     }
   }
 
@@ -88,6 +89,7 @@ export function StudentSearch({ onSelect, selectedStudent, placeholder = "Type s
     setQuery(`${s.callName} ${s.surname}`);
     setOpen(false);
     setHighlightIndex(-1);
+    inputRef.current?.blur();
   }
 
   return (
