@@ -382,49 +382,49 @@ export default function GradesPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="min-w-0">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div>
+        <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Grades</h1>
-          <p className="text-muted-foreground mt-1">Enter and review PACE grades per student.</p>
+          {selectedStudent && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {editMode && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={undo}
+                    disabled={undoStack.length === 0}
+                    title="Undo (Ctrl+Z)"
+                    data-testid="button-undo-grade-edit"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={redo}
+                    disabled={redoStack.length === 0}
+                    title="Redo (Ctrl+Shift+Z)"
+                    data-testid="button-redo-grade-edit"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+              <Button
+                variant={editMode ? "default" : "outline"}
+                size="sm"
+                onClick={handleEditToggle}
+                data-testid="button-toggle-grade-edit"
+              >
+                <Pencil className="w-4 h-4 mr-1.5" />
+                {editMode ? "Done Editing" : "Edit"}
+              </Button>
+            </div>
+          )}
         </div>
-        {selectedStudent && (
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:pt-1">
-            {editMode && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={undo}
-                  disabled={undoStack.length === 0}
-                  title="Undo (Ctrl+Z)"
-                  data-testid="button-undo-grade-edit"
-                >
-                  <Undo2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={redo}
-                  disabled={redoStack.length === 0}
-                  title="Redo (Ctrl+Shift+Z)"
-                  data-testid="button-redo-grade-edit"
-                >
-                  <Redo2 className="w-4 h-4" />
-                </Button>
-              </>
-            )}
-            <Button
-              variant={editMode ? "default" : "outline"}
-              size="sm"
-              onClick={handleEditToggle}
-              data-testid="button-toggle-grade-edit"
-            >
-              <Pencil className="w-4 h-4 mr-1.5" />
-              {editMode ? "Done Editing" : "Edit"}
-            </Button>
-          </div>
-        )}
+        <p className="text-muted-foreground mt-1">Enter and review PACE grades per student.</p>
       </div>
 
       <div className="space-y-1.5">
