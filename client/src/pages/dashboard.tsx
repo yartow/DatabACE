@@ -40,8 +40,8 @@ const TEACHER_TILES = [
   },
   {
     label: "Grades",
-    description: "Manage student enrollments and PACE grades",
-    href: "/enrollments",
+    description: "Enter and review student PACE grades",
+    href: "/grades",
     icon: GraduationCap,
     accent: "from-violet-500/10 to-violet-500/5 border-violet-400/30 hover:border-violet-400/60",
     iconColor: "text-violet-500",
