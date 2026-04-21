@@ -236,13 +236,13 @@ export default function InventoryPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Inventory</h1>
           <p className="text-muted-foreground mt-1">Track how many of each PACE version are in stock and with whom.</p>
         </div>
         {isTeacher && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0">
             <Button variant="outline" size="sm" onClick={() => window.open("/api/inventory/template", "_blank")} data-testid="button-download-inv-template">
               <Download className="h-4 w-4 mr-1" /> Template
             </Button>

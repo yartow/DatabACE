@@ -383,13 +383,13 @@ export default function GradesPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-serif font-bold tracking-tight">Grades</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Grades</h1>
           <p className="text-muted-foreground mt-1">Enter and review PACE grades per student.</p>
         </div>
         {selectedStudent && (
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:pt-1">
             {editMode && (
               <>
                 <Button
@@ -398,6 +398,7 @@ export default function GradesPage() {
                   onClick={undo}
                   disabled={undoStack.length === 0}
                   title="Undo (Ctrl+Z)"
+                  data-testid="button-undo-grade-edit"
                 >
                   <Undo2 className="w-4 h-4" />
                 </Button>
@@ -407,6 +408,7 @@ export default function GradesPage() {
                   onClick={redo}
                   disabled={redoStack.length === 0}
                   title="Redo (Ctrl+Shift+Z)"
+                  data-testid="button-redo-grade-edit"
                 >
                   <Redo2 className="w-4 h-4" />
                 </Button>
@@ -416,6 +418,7 @@ export default function GradesPage() {
               variant={editMode ? "default" : "outline"}
               size="sm"
               onClick={handleEditToggle}
+              data-testid="button-toggle-grade-edit"
             >
               <Pencil className="w-4 h-4 mr-1.5" />
               {editMode ? "Done Editing" : "Edit"}
