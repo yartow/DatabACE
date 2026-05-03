@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Package, ShoppingCart, BookOpen, GraduationCap, BarChart3, FileText, Settings, User, Users, ChevronRight } from "lucide-react";
+import { HelpTip } from "@/components/help-tip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -169,10 +170,14 @@ export default function Dashboard() {
   if (isTeacher) {
     return (
       <div className="relative h-full flex flex-col p-5 gap-4">
-        <div>
+        <div className="flex items-center gap-2">
           <h1 className="text-xl font-serif font-bold tracking-tight" data-testid="text-welcome">
             Welcome back, {displayName}
           </h1>
+          <HelpTip
+            content="This is the teacher dashboard. Tap any tile to navigate to that section. Use the sidebar (left panel) to navigate between pages at any time."
+            side="bottom"
+          />
         </div>
 
         <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-4 min-h-0">

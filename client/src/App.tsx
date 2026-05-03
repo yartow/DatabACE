@@ -11,6 +11,7 @@ import { OfflineBanner } from "@/components/offline-banner";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import ParentHomePage from "@/pages/parent-home";
 import SPCPage from "@/pages/spc";
 import ReportsPage from "@/pages/reports";
 import MaterialsPage from "@/pages/materials";
@@ -26,10 +27,16 @@ import OrderMaterialsPage from "@/pages/order-materials";
 import GradesPage from "@/pages/grades";
 import type { UserProfile } from "@shared/schema";
 
+function HomeRoute() {
+  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
+  if (profile?.role === "parent") return <ParentHomePage />;
+  return <Dashboard />;
+}
+
 function AuthenticatedRouter() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={HomeRoute} />
       <Route path="/spc" component={SPCPage} />
       <Route path="/reports" component={ReportsPage} />
       <Route path="/materials" component={MaterialsPage} />

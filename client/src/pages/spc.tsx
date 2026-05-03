@@ -6,6 +6,7 @@ import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, Course, Enrollment, Subject, DateEntry, PaceCourse, UserProfile } from "@shared/schema";
 import { Star } from "lucide-react";
 import { StudentSearch } from "@/components/student-search";
+import { HelpTip } from "@/components/help-tip";
 
 function formatGrade(grade: number | null): string {
   if (grade === null || grade === undefined) return "";
@@ -179,12 +180,24 @@ export default function SPCPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Student Progress Chart</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Student Progress Chart</h1>
+          <HelpTip
+            content="The SPC shows every PACE booklet a student is working on, grouped by course. Each cell shows the PACE number and grade (if completed). A gold star means the student scored high enough for a Gold Star award."
+            side="right"
+          />
+        </div>
         <p className="text-muted-foreground mt-1">View per-student PACE progress with grades and terms.</p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Select Student</label>
+        <div className="flex items-center gap-1.5">
+          <label className="text-sm font-medium">Select Student</label>
+          <HelpTip
+            content="Type the student's name, call name, or alias to search. The list shows up to 10 matches. Use arrow keys and Enter to select from the keyboard."
+            side="right"
+          />
+        </div>
         <StudentSearch
           onSelect={(s) => setSelectedStudentId(String(s.id))}
           selectedStudent={selectedStudent}

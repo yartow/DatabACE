@@ -25,8 +25,8 @@ const teacherItems = [
 ];
 
 const parentItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Student Progress Chart", url: "/spc", icon: BarChart3 },
+  { title: "My Children", url: "/", icon: LayoutDashboard },
+  { title: "Progress Chart", url: "/spc", icon: BarChart3 },
   { title: "Term Reports", url: "/reports", icon: FileText },
   { title: "Courses & PACEs", url: "/materials", icon: BookOpen },
 ];

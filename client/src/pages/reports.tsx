@@ -7,6 +7,7 @@ import cederLogoPath from "@assets/cederlogo_basic_v2017_1_1773068129584.png";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StudentSearch } from "@/components/student-search";
+import { HelpTip } from "@/components/help-tip";
 
 const TERMS = [1, 2, 3, 4, 5];
 const SCHOOL_NAME = "ICS De Ceder \u2013 Boskoop";
@@ -349,6 +350,21 @@ export default function ReportsPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="reports-page">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-2xl font-serif font-bold tracking-tight">Term Reports</h1>
+          <HelpTip
+            content={
+              <div className="space-y-1.5">
+                <p>The Term Report shows a complete academic overview for a student across all five terms.</p>
+                <p>Select a student, then use <strong>Print Report</strong> or <strong>Download PDF</strong> to save or print the report.</p>
+              </div>
+            }
+            side="right"
+          />
+        </div>
+        <p className="text-muted-foreground text-sm">Generate and print the annual year report per student.</p>
+      </div>
       <div className="flex items-center gap-4 flex-wrap print:hidden">
         <StudentSearch
           onSelect={(s) => setSelectedStudentId(String(s.id))}

@@ -26,6 +26,7 @@ import { usePersistedState } from "@/lib/persisted-state";
 import type { Student, Course, Enrollment, Subject, PaceCourse, UserProfile } from "@shared/schema";
 import { Pencil, Undo2, Redo2 } from "lucide-react";
 import { StudentSearch } from "@/components/student-search";
+import { HelpTip } from "@/components/help-tip";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queueMutation } from "@/lib/offline";
@@ -404,50 +405,65 @@ export default function GradesPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-serif font-bold tracking-tight">Grades</h1>
-          <p className="text-muted-foreground mt-1">Enter and review PACE grades per student.</p>
-        </div>
-        {selectedStudent && (
-          <div className="flex items-center gap-2 pt-1">
-            {editMode && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={undo}
-                  disabled={undoStack.length === 0}
-                  title="Undo (Ctrl+Z)"
-                >
-                  <Undo2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={redo}
-                  disabled={redoStack.length === 0}
-                  title="Redo (Ctrl+Shift+Z)"
-                >
-                  <Redo2 className="w-4 h-4" />
-                </Button>
-              </>
-            )}
-            <Button
-              variant={editMode ? "default" : "outline"}
-              size="sm"
-              onClick={handleEditToggle}
-            >
-              <Pencil className="w-4 h-4 mr-1.5" />
-              {editMode ? "Done Editing" : "Edit"}
-            </Button>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-2xl font-serif font-bold tracking-tight" data-testid="text-page-title">Grades</h1>
+            <HelpTip
+              content="This page lets you enter and review PACE scores per student. Tap 'Edit' to enter edit mode, then tap any PACE cell to open the grade entry dialog. All changes are saved at once when you tap 'Done Editing'."
+              side="bottom"
+            />
           </div>
-        )}
+          {selectedStudent && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {editMode && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={undo}
+                    disabled={undoStack.length === 0}
+                    title="Undo (Ctrl+Z)"
+                    data-testid="button-undo-grade-edit"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={redo}
+                    disabled={redoStack.length === 0}
+                    title="Redo (Ctrl+Shift+Z)"
+                    data-testid="button-redo-grade-edit"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+              <Button
+                variant={editMode ? "default" : "outline"}
+                size="sm"
+                onClick={handleEditToggle}
+                data-testid="button-toggle-grade-edit"
+              >
+                <Pencil className="w-4 h-4 mr-1.5" />
+                {editMode ? "Done Editing" : "Edit"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <p className="text-muted-foreground mt-1">Enter and review PACE grades per student.</p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Select Student</label>
+        <div className="flex items-center gap-1.5">
+          <label className="text-sm font-medium">Select Student</label>
+          <HelpTip
+            content="Type the student's name or alias to search. Select a student to view their PACE results by course."
+            side="right"
+          />
+        </div>
         <StudentSearch
           onSelect={(s) => setSelectedStudentId(String(s.id))}
           selectedStudent={selectedStudent}
@@ -605,7 +621,13 @@ export default function GradesPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="grade-input">Grade (%)</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="grade-input">Grade (%)</Label>
+                <HelpTip
+                  content="Enter the score as a percentage (0–100). Most PACEs require 80% to pass. Leave blank if the PACE has not been scored yet."
+                  side="right"
+                />
+              </div>
               <Input
                 id="grade-input"
                 type="number"
@@ -620,7 +642,13 @@ export default function GradesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="date-input">Date</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="date-input">Date completed</Label>
+                <HelpTip
+                  content="The date the student finished and scored this PACE booklet. Leave blank if not yet completed."
+                  side="right"
+                />
+              </div>
               <Input
                 id="date-input"
                 type="date"
