@@ -28,6 +28,7 @@ import { Pencil, Undo2, Redo2 } from "lucide-react";
 import { StudentSearch } from "@/components/student-search";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { queueMutation } from "@/lib/offline";
 
 function formatGrade(grade: number | null): string {
   if (grade === null || grade === undefined) return "—";
@@ -333,6 +334,7 @@ export default function GradesPage() {
 
   const saveChanges = async () => {
     setSaving(true);
+    const isOffline = !navigator.onLine;
     try {
       const entries = Array.from(pendingChanges.entries()).filter(([id]) => {
         const enrollment = enrollments?.find(e => e.id === id);
@@ -340,20 +342,40 @@ export default function GradesPage() {
         const p = pendingChanges.get(id)!;
         return p.grade !== (enrollment.grade ?? null) || p.dateEnded !== (enrollment.dateEnded ?? null);
       });
-      await Promise.all(
-        entries.map(([id, change]) =>
-          apiRequest("PATCH", `/api/enrollments/${id}`, {
-            grade: change.grade,
-            dateEnded: change.dateEnded,
-          })
-        )
-      );
-      await queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
-      setPendingChanges(new Map());
-      setUndoStack([]);
-      setRedoStack([]);
-      setEditMode(false);
-      toast({ title: "Grades saved" });
+
+      if (isOffline) {
+        // Queue mutations for later sync
+        await Promise.all(
+          entries.map(([id, change]) =>
+            queueMutation({
+              method: "PATCH",
+              url: `/api/enrollments/${id}`,
+              body: { grade: change.grade, dateEnded: change.dateEnded },
+              description: `Update grade for enrollment ${id}`,
+            }),
+          ),
+        );
+        setPendingChanges(new Map());
+        setUndoStack([]);
+        setRedoStack([]);
+        setEditMode(false);
+        toast({ title: "Saved offline", description: "Changes will sync when you reconnect." });
+      } else {
+        await Promise.all(
+          entries.map(([id, change]) =>
+            apiRequest("PATCH", `/api/enrollments/${id}`, {
+              grade: change.grade,
+              dateEnded: change.dateEnded,
+            })
+          )
+        );
+        await queryClient.invalidateQueries({ queryKey: ["/api/enrollments", selectedStudentId] });
+        setPendingChanges(new Map());
+        setUndoStack([]);
+        setRedoStack([]);
+        setEditMode(false);
+        toast({ title: "Grades saved" });
+      }
     } catch (err: any) {
       toast({ title: "Save failed", description: err.message, variant: "destructive" });
     } finally {

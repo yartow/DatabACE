@@ -41,6 +41,8 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -48,10 +50,13 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
+      gcTime: SEVEN_DAYS,
       retry: false,
+      networkMode: "offlineFirst",
     },
     mutations: {
       retry: false,
+      networkMode: "offlineFirst",
     },
   },
 });

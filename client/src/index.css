@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Touch-target safety net ──────────────────────────────────────────────
+   Ensures all interactive elements meet the 44px minimum recommended by
+   Apple HIG and WCAG 2.5.5 for comfortable use by elderly users and on
+   touch screens (iPad mini, iPhone, Android). Applied via padding trick
+   so layout does not shift.                                               */
+@layer base {
+  button:not([data-sidebar]),
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a.btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Sidebar nav links are sized by ShadCN sidebar — keep their own sizing */
+  [data-sidebar="menu-button"] {
+    min-height: 40px;
+  }
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

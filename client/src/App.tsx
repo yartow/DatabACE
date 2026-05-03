@@ -1,6 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -8,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PersistedStateProvider } from "@/lib/persisted-state";
+import { OfflineBanner } from "@/components/offline-banner";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
@@ -77,7 +77,8 @@ function AuthenticatedLayout() {
         <div className="flex h-screen w-full">
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0">
-            <header className="flex items-center gap-2 p-2 border-b h-12">
+            {/* Compact sidebar trigger — only shown on mobile (sidebar always visible on md+) */}
+            <header className="md:hidden flex items-center px-2 py-0.5 border-b">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
             </header>
             <main className="flex-1 overflow-auto">
@@ -129,12 +130,11 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppContent />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <TooltipProvider>
+      <OfflineBanner />
+      <Toaster />
+      <AppContent />
+    </TooltipProvider>
   );
 }
 
